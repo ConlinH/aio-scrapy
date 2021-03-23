@@ -1,0 +1,7 @@
+*.log
+*.pyc
+aioScrapy.egg-info/
+__pycache__/
+.idea/
+build/
+dist/
