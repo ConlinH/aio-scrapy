@@ -5,13 +5,11 @@ See documentation in docs/topics/spider-middleware.rst
 """
 from itertools import islice
 
-from twisted.python.failure import Failure
-
 from scrapy.exceptions import _InvalidOutput
 from scrapy.utils.conf import build_component_list
-from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.python import MutableChain
-from .AbstractMiddlewareManager import AbstractMiddlewareManager
+
+from .middleware import MiddlewareManager
 
 
 def _isiterable(possible_iterator):
@@ -25,7 +23,7 @@ def _fname(f):
     )
 
 
-class SpiderMiddlewareManager(AbstractMiddlewareManager):
+class SpiderMiddlewareManager(MiddlewareManager):
     component_name = 'spider middleware'
 
     @classmethod

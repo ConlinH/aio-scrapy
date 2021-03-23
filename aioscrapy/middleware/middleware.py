@@ -9,7 +9,7 @@ from scrapy.utils.misc import create_instance, load_object
 logger = logging.getLogger(__name__)
 
 
-class AbstractMiddlewareManager:
+class MiddlewareManager:
     """Base class for implementing middleware managers"""
 
     component_name = 'foo middleware'

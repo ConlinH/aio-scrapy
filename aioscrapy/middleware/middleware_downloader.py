@@ -5,12 +5,12 @@ from scrapy.exceptions import _InvalidOutput
 from scrapy.http import Request, Response
 from scrapy.utils.conf import build_component_list
 
-from .AbstractMiddlewareManager import AbstractMiddlewareManager
+from .middleware import MiddlewareManager
 
 logger = logging.getLogger(__name__)
 
 
-class DownloaderMiddlewareManager(AbstractMiddlewareManager):
+class DownloaderMiddlewareManager(MiddlewareManager):
     component_name = 'downloader middleware'
 
     @classmethod

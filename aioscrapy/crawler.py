@@ -2,7 +2,7 @@ import logging
 import pprint
 
 from scrapy import signals, Spider
-from scrapy.extension import ExtensionManager
+from aioscrapy.middleware import ExtensionManager
 from scrapy.settings import overridden_settings
 from scrapy.utils.log import (
     get_scrapy_root_handler,

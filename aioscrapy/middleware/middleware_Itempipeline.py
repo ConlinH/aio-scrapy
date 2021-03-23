@@ -2,14 +2,13 @@ import logging
 
 from scrapy.utils.conf import build_component_list
 
-from .AbstractMiddlewareManager import AbstractMiddlewareManager
+from .middleware import MiddlewareManager
 
-__all__ = ["DownloaderMiddlewareManager", "ItemPipelineManager"]
 
 logger = logging.getLogger(__name__)
 
 
-class ItemPipelineManager(AbstractMiddlewareManager):
+class ItemPipelineManager(MiddlewareManager):
     component_name = 'item pipeline'
 
     @classmethod
