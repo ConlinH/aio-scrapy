@@ -1,5 +1,6 @@
 import logging
 import pprint
+import asyncio
 
 from scrapy import signals, Spider
 from aioscrapy.middleware import ExtensionManager
@@ -14,6 +15,7 @@ from scrapy.utils.misc import load_object
 from aioscrapy.core.engine import ExecutionEngine
 from aioscrapy.settings import AioSettings
 from aioscrapy.signalmanager import SignalManager
+from aioscrapy.utils.ossignal import install_shutdown_handlers
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +51,7 @@ class Crawler:
         lf_cls = load_object(self.settings['LOG_FORMATTER'])
         self.logformatter = lf_cls.from_crawler(self)
         self.extensions = ExtensionManager.from_crawler(self)
-
+        install_shutdown_handlers(self.stop_helper)
         self.settings.freeze()
         self.crawling = False
         self.spider = None
@@ -84,3 +86,6 @@ class Crawler:
         if self.crawling:
             self.crawling = False
             await self.engine.stop()
+
+    def stop_helper(self, *arg, **kw):
+        asyncio.create_task(self.stop())
