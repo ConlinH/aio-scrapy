@@ -87,5 +87,8 @@ class Crawler:
             self.crawling = False
             await self.engine.stop()
 
+    async def close(self):
+        await self.engine.close_spider()
+
     def stop_helper(self, *arg, **kw):
-        asyncio.create_task(self.stop())
+        asyncio.create_task(self.close())

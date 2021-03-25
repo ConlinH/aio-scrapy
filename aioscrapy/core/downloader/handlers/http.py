@@ -1,4 +1,3 @@
-
 import asyncio
 import logging
 import sys
@@ -41,11 +40,10 @@ class AioHttpDownloadHandler:
             headers = headers.to_unicode_dict()
         kwargs['headers'] = headers
 
-        timeout = self.settings.get("timeout", 10)
-        kwargs['timeout'] = timeout
+        if timeout := self.settings.get("DOWNLOAD_TIMEOUT", None):
+            kwargs['timeout'] = timeout
 
-        proxy = request.meta.get("proxy", False)
-        if proxy:
+        if proxy := request.meta.get("proxy", False):
             kwargs["proxy"] = proxy
             logger.info(f"使用代理{proxy}抓取: {request.url}")
 
