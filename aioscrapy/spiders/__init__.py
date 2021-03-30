@@ -1,5 +1,3 @@
-import asyncio
-
 from scrapy import signals
 from scrapy.exceptions import DontCloseSpider
 from scrapy.spiders import Spider, CrawlSpider
@@ -13,16 +11,10 @@ class ExtensionMixin:
 
     @classmethod
     def start(cls):
-        from aioscrapy.crawler import Crawler
-        import sys
-        from scrapy.utils.log import configure_logging
-        crawler = Crawler(cls)
-        configure_logging(crawler.settings)
-
-        if not sys.platform.startswith('win'):
-            import uvloop
-            asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
-        asyncio.run(crawler.crawl())
+        from aioscrapy.crawler import CrawlerProcess
+        cp = CrawlerProcess()
+        cp.add_crawler(cls)
+        cp.start()
 
     @classmethod
     def update_settings(cls, settings):

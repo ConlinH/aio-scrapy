@@ -1,28 +1,46 @@
 import logging
 import pprint
+import warnings
 import asyncio
+import signal
+import sys
 
+from zope.interface.exceptions import DoesNotImplement
+
+try:
+    # zope >= 5.0 only supports MultipleInvalid
+    from zope.interface.exceptions import MultipleInvalid
+except ImportError:
+    MultipleInvalid = None
+
+from zope.interface.verify import verifyClass
 from scrapy import signals, Spider
-from aioscrapy.middleware import ExtensionManager
 from scrapy.settings import overridden_settings
 from scrapy.utils.log import (
     get_scrapy_root_handler,
     install_scrapy_root_handler,
     LogCounterHandler,
+    configure_logging,
 )
 from scrapy.utils.misc import load_object
+from scrapy.interfaces import ISpiderLoader
+from scrapy.exceptions import ScrapyDeprecationWarning
 
+from aioscrapy.middleware import ExtensionManager
 from aioscrapy.core.engine import ExecutionEngine
 from aioscrapy.settings import AioSettings
 from aioscrapy.signalmanager import SignalManager
-from aioscrapy.utils.ossignal import install_shutdown_handlers
+from aioscrapy.utils.ossignal import install_shutdown_handlers, signal_names
 
 logger = logging.getLogger(__name__)
+
+_crawlers = {}
+_active = set()
 
 
 class Crawler:
 
-    def __init__(self, spidercls, settings=None):
+    def __init__(self, spidercls, *args, settings=None, **kwargs):
         if isinstance(spidercls, Spider):
             raise ValueError('The spidercls argument must be a class, not an object')
 
@@ -51,28 +69,27 @@ class Crawler:
         lf_cls = load_object(self.settings['LOG_FORMATTER'])
         self.logformatter = lf_cls.from_crawler(self)
         self.extensions = ExtensionManager.from_crawler(self)
-        install_shutdown_handlers(self.stop_helper)
         self.settings.freeze()
         self.crawling = False
-        self.spider = None
+        self.spider = self._create_spider(*args, **kwargs)
         self.engine = None
 
-    async def crawl(self, *args, **kwargs):
+    async def crawl(self):
         if self.crawling:
             raise RuntimeError("Crawling already taking place")
         self.crawling = True
 
         try:
-            self.spider = self._create_spider(*args, **kwargs)
             self.engine = self._create_engine()
             start_requests = iter(self.spider.start_requests())
             # await self.engine.open_spider(self.spider, start_requests)
             await self.engine.start(self.spider, start_requests)
         except Exception as e:
+            logger.exception(e)
             self.crawling = False
             if self.engine is not None:
                 await self.engine.close()
-            raise
+            raise e
 
     def _create_spider(self, *args, **kwargs):
         return self.spidercls.from_crawler(self, *args, **kwargs)
@@ -86,9 +103,121 @@ class Crawler:
         if self.crawling:
             self.crawling = False
             await self.engine.stop()
+        _active.discard(self)
 
-    async def close(self):
-        await self.engine.close_spider()
 
-    def stop_helper(self, *arg, **kw):
-        asyncio.create_task(self.close())
+class CrawlerRunner:
+
+    @staticmethod
+    def _get_spider_loader(settings):
+        """ Get SpiderLoader instance from settings """
+        cls_path = settings.get('SPIDER_LOADER_CLASS')
+        loader_cls = load_object(cls_path)
+        excs = (DoesNotImplement, MultipleInvalid) if MultipleInvalid else DoesNotImplement
+        try:
+            verifyClass(ISpiderLoader, loader_cls)
+        except excs:
+            warnings.warn(
+                'SPIDER_LOADER_CLASS (previously named SPIDER_MANAGER_CLASS) does '
+                'not fully implement scrapy.interfaces.ISpiderLoader interface. '
+                'Please add all missing methods to avoid unexpected runtime errors.',
+                category=ScrapyDeprecationWarning, stacklevel=2
+            )
+        return loader_cls.from_settings(settings.frozencopy())
+
+    def __init__(self, settings=None):
+        if isinstance(settings, dict) or settings is None:
+            settings = AioSettings(settings)
+        self.settings = settings
+        self.spider_loader = self._get_spider_loader(settings)
+        self.bootstrap_failed = False
+
+    @property
+    def spiders(self):
+        warnings.warn("CrawlerRunner.spiders attribute is renamed to "
+                      "CrawlerRunner.spider_loader.",
+                      category=ScrapyDeprecationWarning, stacklevel=2)
+        return self.spider_loader
+
+    def create_crawler(self, crawler_or_spidercls, *args, **kwargs):
+        if isinstance(crawler_or_spidercls, Spider):
+            raise ValueError(
+                'The crawler_or_spidercls argument cannot be a spider object, '
+                'it must be a spider class (or a Crawler object)')
+        if isinstance(crawler_or_spidercls, Crawler):
+            return crawler_or_spidercls
+        return self._create_crawler(crawler_or_spidercls, *args, **kwargs)
+
+    def _create_crawler(self, spidercls, *args, **kwargs):
+        if isinstance(spidercls, str):
+            spidercls = self.spider_loader.load(spidercls)
+        return Crawler(spidercls, *args, setting=self.settings, **kwargs)
+
+    @staticmethod
+    async def stop():
+        return await asyncio.gather(*[c.stop() for c in _crawlers.values()])
+
+
+class CrawlerProcess(CrawlerRunner):
+
+    def __init__(self, settings=None, install_root_handler=True):
+        super().__init__(settings)
+        install_shutdown_handlers(self._signal_shutdown)
+        configure_logging(self.settings, install_root_handler)
+
+    def _signal_shutdown(self, signum, _):
+        install_shutdown_handlers(self._signal_kill)
+        signame = signal_names[signum]
+        logger.info("Received %(signame)s, shutting down gracefully. Send again to force ",
+                    {'signame': signame})
+        asyncio.create_task(self._graceful_stop_reactor())
+
+    def _signal_kill(self, signum, _):
+        install_shutdown_handlers(signal.SIG_IGN)
+        signame = signal_names[signum]
+        logger.info('Received %(signame)s twice, forcing unclean shutdown',
+                    {'signame': signame})
+        asyncio.create_task(self._stop_reactor())
+
+    def run_crawler(self, crawler_or_spidercls, *args, **kwargs):
+        if isinstance(crawler_or_spidercls, Spider):
+            raise ValueError(
+                'The crawler_or_spidercls argument cannot be a spider object, '
+                'it must be a spider class (or a Crawler object)')
+        crawler = self.add_crawler(crawler_or_spidercls, *args, **kwargs)
+        _active.add(crawler)
+        asyncio.run_coroutine_threadsafe(crawler.crawl(), asyncio.get_event_loop())
+
+    def add_crawler(self, crawler_or_spidercls, *args, **kwargs):
+        if crawler := _crawlers.get(crawler_or_spidercls):
+            return crawler
+        crawler = self.create_crawler(crawler_or_spidercls, *args, **kwargs)
+        return _crawlers.setdefault(crawler_or_spidercls, crawler)
+
+    async def run(self):
+        for crawler in _crawlers.values():
+            _active.add(crawler)
+            asyncio.run_coroutine_threadsafe(crawler.crawl(), asyncio.get_event_loop())
+            await asyncio.sleep(1)
+        while _active:
+            await asyncio.sleep(1)
+
+    def start(self, stop_after_crawl=True):
+        if not sys.platform.startswith('win'):
+            try:
+                import uvloop
+                asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+            except:
+                pass
+        asyncio.run(self.run())
+
+    async def _graceful_stop_reactor(self):
+        await self.stop()
+        from aioscrapy.connection import redis_manager
+        await redis_manager.close_all()
+
+    async def _stop_reactor(self, _=None):
+        try:
+            asyncio.get_event_loop().stop()
+        except RuntimeError:
+            pass

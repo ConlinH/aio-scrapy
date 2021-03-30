@@ -50,11 +50,13 @@ class AioRedisManager(object):
         else:
             raise
         if con := self._clients.get(alias):
-            await con.close()
+            con.close()
+            await con.wait_closed()
 
     async def close_all(self):
         for con in self._clients.values():
-            await con.close()
+            con.close()
+            await con.wait_closed()
 
     async def from_settings(self, settings: Settings):
         redis_args = settings.getdict('REDIS_ARGS')
