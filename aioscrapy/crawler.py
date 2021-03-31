@@ -151,7 +151,7 @@ class CrawlerRunner:
     def _create_crawler(self, spidercls, *args, **kwargs):
         if isinstance(spidercls, str):
             spidercls = self.spider_loader.load(spidercls)
-        return Crawler(spidercls, *args, setting=self.settings, **kwargs)
+        return Crawler(spidercls, *args, settings=self.settings, **kwargs)
 
     @staticmethod
     async def stop():

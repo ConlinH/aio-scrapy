@@ -1,3 +1,5 @@
+import asyncio
+
 from scrapy import signals
 from scrapy.exceptions import DontCloseSpider
 from scrapy.spiders import Spider, CrawlSpider
@@ -12,16 +14,12 @@ class ExtensionMixin:
     @classmethod
     def start(cls):
         from aioscrapy.crawler import CrawlerProcess
-        cp = CrawlerProcess()
+        from aioscrapy.utils.tools import get_project_settings
+
+        settings = get_project_settings()
+        cp = CrawlerProcess(settings)
         cp.add_crawler(cls)
         cp.start()
-
-    @classmethod
-    def update_settings(cls, settings):
-        settings.setmodule(aio_settings, priority='default')
-        if (property_settings := getattr(cls, 'property_settings', None)) is not None:
-            settings.setmodule(property_settings)
-        settings.setdict(cls.custom_settings or {}, priority='spider')
 
     def spider_idle(self):
         raise DontCloseSpider
