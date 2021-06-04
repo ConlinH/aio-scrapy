@@ -20,10 +20,14 @@ DOWNLOAD_HANDLERS_BASE = {
 
 
 # ===========下载中间件 ======================
-DOWNLOADER_MIDDLEWARES = {
+from scrapy.settings.default_settings import DOWNLOADER_MIDDLEWARES_BASE
+
+DOWNLOADER_MIDDLEWARES_BASE.update({
     # 不需要对response做压缩相关的处理, aiohttp已经处理了
     'scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware': None,
-}
+    'scrapy.downloadermiddlewares.retry.RetryMiddleware': None,
+    'aioscrapy.downloadermiddlewares.retry.RetryMiddleware': 550,
+})
 # ===========下载中间件 ======================
 
 

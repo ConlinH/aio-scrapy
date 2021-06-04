@@ -73,4 +73,5 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                 )
             if response:
                 return response
-        raise exception
+        return exception
+

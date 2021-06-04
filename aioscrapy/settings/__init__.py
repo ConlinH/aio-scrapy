@@ -4,7 +4,7 @@ from aioscrapy.settings import aio_settings
 
 
 class AioSettings(Settings):
-
+    
     def __init__(self, values=None, priority='project'):
         super().__init__()
         self.setmodule(aio_settings, 'default')
