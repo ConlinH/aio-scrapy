@@ -14,6 +14,9 @@ git clone https://github.com/conlin-huang/aioscrapy.git
 # 安装包
 python setup.py install
 
-# 跑爬虫
+# 跑单个爬虫
 python example/baiduSpider.py
+
+# 跑多个爬虫
+python example/run.py
 ```
