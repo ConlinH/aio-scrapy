@@ -26,7 +26,7 @@ class AioMysqlManager(object):
         return self._clients.setdefault(alias, pool)
 
     @asynccontextmanager
-    async def get(self, alias_or_params):
+    async def get(self, alias_or_params, ping=False):
         if isinstance(alias_or_params, dict):
             alias, params = self.get_alias(alias_or_params)
             if not (pool := self._clients.get(alias)):
@@ -39,6 +39,8 @@ class AioMysqlManager(object):
             raise
 
         conn = await pool.acquire()
+        if ping:
+            await conn.ping()
         cur = await conn.cursor()
         yield conn, cur
         await cur.close()
@@ -71,16 +73,14 @@ if __name__ == '__main__':
     async def t():
         await mysql_manager.create({
             'db': 'test',
-            'user': 'cc',
-            'password': 'mysql123',
-            'host': '192.168.5.215',
+            'user': 'root',
+            'password': '123456',
+            'host': '172.16.177.22',
             'port': 3306,
             'charset': 'utf8',
-            "minsize": 1,
-            "maxsize": 4, 
         }, alias='xc')
         async with mysql_manager.get('xc') as (conn, cur):
-            print(cur.execte('select 1'))
+            print(cur.execute('select 1'))
             # print(conn.commit())
         await mysql_manager.close_all()
 
