@@ -6,7 +6,7 @@
 
 ``` 
 
-# python版本>=3.7 (此项目是在3.8版本开发的)
+# python版本>=3.7
 
 # 下载
 git clone https://github.com/conlin-huang/aioscrapy.git
