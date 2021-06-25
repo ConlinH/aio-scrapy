@@ -39,11 +39,11 @@ class AioHttpDownloadHandler:
         if isinstance(headers, Headers):
             headers = headers.to_unicode_dict()
         kwargs['headers'] = headers
-
-        if timeout := self.settings.get("DOWNLOAD_TIMEOUT", None):
+        timeout = self.settings.get("DOWNLOAD_TIMEOUT", None)
+        if timeout:
             kwargs['timeout'] = timeout
-
-        if proxy := request.meta.get("proxy", False):
+        proxy = request.meta.get("proxy", False)
+        if proxy:
             kwargs["proxy"] = proxy
             logger.info(f"使用代理{proxy}抓取: {request.url}")
 

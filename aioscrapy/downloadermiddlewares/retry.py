@@ -1,4 +1,8 @@
-from asyncio.exceptions import TimeoutError
+
+try:
+    from asyncio.exceptions import TimeoutError
+except:
+    from concurrent.futures._base import TimeoutError
 from aiohttp.client_exceptions import ClientError
 
 from scrapy.downloadermiddlewares.retry import RetryMiddleware as ScrapyRetryMiddleware

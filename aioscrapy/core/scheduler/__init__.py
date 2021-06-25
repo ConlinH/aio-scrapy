@@ -99,7 +99,8 @@ class Scheduler(object):
         if self.flush_on_start:
             await self.flush()
         # notice if there are requests already in the queue to resume the crawl
-        if count := await self.queue.len():
+        count = await self.queue.len()
+        if count:
             spider.log("Resuming crawl (%d requests scheduled)" % count)
 
     async def close(self, reason):

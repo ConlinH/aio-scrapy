@@ -118,8 +118,10 @@ class ExecutionEngine(object):
         if self.paused:
             return
 
-        while not self._needs_backout(spider) \
-                and (request := await call_helper(slot.scheduler.next_request)):
+        while not self._needs_backout(spider):
+            request = await call_helper(slot.scheduler.next_request)
+            if not request:
+                break
             slot.add_request(request)
             asyncio.create_task(self.downloader.fetch(request, spider, self._handle_downloader_output))
 

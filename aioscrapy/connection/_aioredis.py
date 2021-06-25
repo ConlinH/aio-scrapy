@@ -33,12 +33,14 @@ class AioRedisManager(object):
     async def get(self, alias_or_params):
         if isinstance(alias_or_params, dict):
             alias, params = self.get_alias(alias_or_params)
-            if not (con := self._clients.get(alias)):
+            con = self._clients.get(alias)
+            if not con:
                 return await self.create(params, alias=alias)
             return con
         elif isinstance(alias_or_params, str):
             alias = alias_or_params
-            if con := self._clients.get(alias):
+            con = self._clients.get(alias)
+            if con:
                 return con
         raise
 
@@ -49,7 +51,8 @@ class AioRedisManager(object):
             alias = alias_or_params
         else:
             raise
-        if con := self._clients.get(alias):
+        con = self._clients.get(alias)
+        if con:
             con.close()
             await con.wait_closed()
 

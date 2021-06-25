@@ -186,10 +186,11 @@ class CrawlerProcess(CrawlerRunner):
                 'it must be a spider class (or a Crawler object)')
         crawler = self.add_crawler(crawler_or_spidercls, *args, **kwargs)
         _active.add(crawler)
-        asyncio.run_coroutine_threadsafe(crawler.crawl(), asyncio.get_event_loop())
+        asyncio.create_task(crawler.crawl())
 
     def add_crawler(self, crawler_or_spidercls, *args, **kwargs):
-        if crawler := _crawlers.get(crawler_or_spidercls):
+        crawler = _crawlers.get(crawler_or_spidercls)
+        if crawler:
             return crawler
         crawler = self.create_crawler(crawler_or_spidercls, *args, **kwargs)
         return _crawlers.setdefault(crawler_or_spidercls, crawler)
@@ -197,7 +198,7 @@ class CrawlerProcess(CrawlerRunner):
     async def run(self):
         for crawler in _crawlers.values():
             _active.add(crawler)
-            asyncio.run_coroutine_threadsafe(crawler.crawl(), asyncio.get_event_loop())
+            asyncio.create_task(crawler.crawl())
             await asyncio.sleep(1)
         while _active:
             await asyncio.sleep(1)

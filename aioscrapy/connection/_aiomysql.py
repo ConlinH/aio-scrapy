@@ -29,11 +29,13 @@ class AioMysqlManager(object):
     async def get(self, alias_or_params, ping=False):
         if isinstance(alias_or_params, dict):
             alias, params = self.get_alias(alias_or_params)
-            if not (pool := self._clients.get(alias)):
+            pool = self._clients.get(alias)
+            if not pool:
                 pool = await self.create(params, alias=alias)
         elif isinstance(alias_or_params, str):
             alias = alias_or_params
-            if not (pool := self._clients.get(alias)):
+            pool = self._clients.get(alias)
+            if not pool:
                 raise
         else:
             raise
@@ -53,8 +55,8 @@ class AioMysqlManager(object):
             alias = alias_or_params
         else:
             raise
-
-        if pool := self._clients.get(alias):
+        pool = self._clients.get(alias)
+        if pool:
             pool.close()
             await pool.wait_closed()
 
