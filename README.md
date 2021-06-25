@@ -6,13 +6,10 @@
 
 ``` 
 
-# python版本>=3.7
+# python版本==3.7
 
-# 下载
-git clone https://github.com/conlin-huang/aioscrapy.git
-
-# 安装包
-python setup.py install
+# 下载安装
+pip install git+https://github.com/conlin-huang/aioscrapy.git
 
 # 跑单个爬虫
 python example/baiduSpider.py
