@@ -1,6 +1,10 @@
-# aioscrapy
 
+
+# aioscrapy
 将基于twisted的scrapy/scrapy-redis改成基于asyncio, 保留了几乎所有的scrapy/scrapy-reids功能
+
+### 声明
+仅供学习使用，禁止项目源码用于任何目的，由此引发的任何法律纠纷与本人无关
 
 ### 安装
 
