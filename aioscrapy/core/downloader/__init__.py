@@ -121,6 +121,7 @@ class Downloader:
 
     async def _download(self, slot, request, spider, _handle_downloader_output):
         slot.transferring.add(request)
+        response = None
         try:
             response = await self.middleware.process_request(spider, request)
             if response is None or isinstance(response, Request):
@@ -129,7 +130,10 @@ class Downloader:
         except (Exception, BaseException) as exc:
             response = await self.middleware.process_exception(spider, request, exc)
         else:
-            response = await self.middleware.process_response(spider, request, response)
+            try:
+                response = await self.middleware.process_response(spider, request, response)
+            except (Exception, BaseException) as exc:
+                response = exc
         finally:
             slot.transferring.remove(request)
             slot.active.remove(request)
@@ -138,13 +142,13 @@ class Downloader:
                                         request=request,
                                         spider=spider)
             asyncio.create_task(self._process_queue(spider, slot))
-        if isinstance(response, Response):
-            response.request = request
-            self.signals.send_catch_log(signal=signals.response_downloaded,
-                                        response=response,
-                                        request=request,
-                                        spider=spider)
-        asyncio.create_task(_handle_downloader_output(response, request, spider))
+            if isinstance(response, Response):
+                response.request = request
+                self.signals.send_catch_log(signal=signals.response_downloaded,
+                                            response=response,
+                                            request=request,
+                                            spider=spider)
+            asyncio.create_task(_handle_downloader_output(response, request, spider))
 
     def close(self):
         self._slot_gc_loop = False

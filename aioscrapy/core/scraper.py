@@ -92,48 +92,70 @@ class Scraper:
 
     async def enqueue_scrape(self, response, request, spider):
         slot = self.slot
+        # 将结果缓存到slot中
         slot.add_response_request(response, request)
-        await self._scrape_next(spider, slot)
+        try:
+            # 处理响应结果
+            await self._scrape_next(spider, slot)
+        except (Exception, BaseException) as e:
+            logger.error('Scraper bug processing %(request)s',
+                         {'request': request},
+                         exc_info=response,
+                         extra={'spider': spider})
+        finally:
+            # 将slot中的缓存结果删除
+            slot.finish_response(response, request)
+            # 检测slot还有未处理的任务
+            self._check_if_closing(spider, slot)
+            # 继续处理slot缓存中的任务
+            asyncio.create_task(self._scrape_next(spider, slot))
 
     async def _scrape_next(self, spider, slot):
         while slot.queue:
             response, request = slot.next_response_request_deferred()
-            if not isinstance(response, (Response, Exception, BaseException)):
-                raise TypeError(
-                    "Incorrect type: expected Response or Failure, got %s: %r"
-                    % (type(response), response)
-                )
+            await self._scrape(response, request, spider)
 
-            if not isinstance(response, (Exception, BaseException)):
-                iterable_or_exception = self.spidermw.scrape_response(self.call_spider, response, request, spider)
-            else:
-                iterable_or_exception = self.call_spider(response, request, spider)
-                self._log_download_errors(iterable_or_exception, response, request, spider)
-                logger.error('Scraper bug processing %(request)s',
-                             {'request': request},
-                             exc_info=response,
-                             extra={'spider': spider})
+    async def _scrape(self, result, request, spider):
+        """
+        Handle the downloaded response or failure through the spider callback/errback
+        """
+        if not isinstance(result, (Response, Exception, BaseException)):
+            raise TypeError(f"Incorrect type: expected Response or Failure, got {type(result)}: {result!r}")
+        try:
+            response = await self._scrape2(result, request, spider)  # returns spider's processed output
+        except (Exception, BaseException) as e:
+            await self.handle_spider_error(e, request, result, spider)
+        else:
+            await self.handle_spider_output(response, request, result, spider)
 
-            if hasattr(iterable_or_exception, '__iter__'):
-                await self.handle_spider_output(iterable_or_exception, request, response, spider)
-            else:
-                await self.handle_spider_error(iterable_or_exception, request, response, spider)
-
-            slot.finish_response(response, request)
-            self._check_if_closing(spider, slot)
-            asyncio.create_task(self._scrape_next(spider, slot))
+    async def _scrape2(self, result, request, spider):
+        """
+        Handle the different cases of request's result been a Response or a Failure
+        """
+        if isinstance(result, Response):
+            # 将Response丢给爬虫中间件处理, 处理结果将将给self.call_spider处理
+            return self.spidermw.scrape_response(self.call_spider, result, request, spider)
+        else:
+            try:
+                # 处理下载错误或经过下载中间件时出现的错误
+                return self.call_spider(result, request, spider)
+            except (Exception, BaseException) as e:
+                await self._log_download_errors(e, result, request, spider)
 
     def call_spider(self, result, request, spider):
         if isinstance(result, Response):
+            # 将Response丢给spider的解析函数
             callback = request.callback or spider._parse
             warn_on_generator_with_return_value(spider, callback)
             result.request = request
-            return iterate_spider_output(callback(result))
-        elif request.errback is not None:
+            # 将parse解析出的结果,变成可迭代对象
+            return iterate_spider_output(callback(result, **result.request.cb_kwargs))
+        else:
+            if request.errback is None:
+                raise result
+            # 下载中间件或下载结果出现错误,回调request中的errback函数
             warn_on_generator_with_return_value(spider, request.errback)
             return iterate_spider_output(request.errback(result))
-        else:
-            return result
 
     async def handle_spider_error(self, exc, request, response, spider):
         if isinstance(exc, CloseSpider):
@@ -185,9 +207,14 @@ class Scraper:
                 extra={'spider': spider},
             )
 
-    def _log_download_errors(self, spider_exception, download_exception, request, spider):
-        """Log and silence errors that come from the engine (typically download
-        errors that got propagated thru here)
+    async def _log_download_errors(self, spider_exception, download_exception, request, spider):
+        """
+        处理并记录错误
+        :param spider_exception: 将download_exception丢给request.errback处理时,触发的新错误
+        :param download_exception: 下载过程发生的错误,或中间件中发生的错误
+        :param request:
+        :param spider:
+        :return:
         """
         if isinstance(download_exception, (Exception, BaseException)) \
                 and not isinstance(download_exception, IgnoreRequest):
@@ -199,7 +226,7 @@ class Scraper:
             )
 
         if spider_exception is not download_exception:
-            return spider_exception
+            raise spider_exception
 
     async def _itemproc_finished(self, output, item, response, spider):
         """ItemProcessor finished for the given ``item`` and returned ``output``
