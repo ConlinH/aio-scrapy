@@ -150,28 +150,28 @@ class ExecutionEngine(object):
         )
 
     async def _handle_downloader_output(self, result, request, spider):
+        try:
+            if not isinstance(result, (Request, Response, Exception, BaseException)):
+                raise TypeError(
+                    "Incorrect type: expected Request, Response or Failure, got %s: %r"
+                    % (type(result), result)
+                )
 
-        if not isinstance(result, (Request, Response, Exception, BaseException)):
-            raise TypeError(
-                "Incorrect type: expected Request, Response or Failure, got %s: %r"
-                % (type(result), result)
-            )
+            if isinstance(result, Request):
+                await self.crawl(result, spider)
+                return
 
-        if isinstance(result, Request):
-            await self.crawl(result, spider)
-            return
+            if isinstance(result, Response):
+                result.request = request
+                logkws = self.logformatter.crawled(request, result, spider)
+                if logkws is not None:
+                    logger.log(*logformatter_adapter(logkws), extra={'spider': spider})
+                self.signals.send_catch_log(signals.response_received,
+                                            response=result, request=request, spider=spider)
 
-        if isinstance(result, Response):
-            result.request = request
-            logkws = self.logformatter.crawled(request, result, spider)
-            if logkws is not None:
-                logger.log(*logformatter_adapter(logkws), extra={'spider': spider})
-            self.signals.send_catch_log(signals.response_received,
-                                        response=result, request=request, spider=spider)
-
+        finally:
+            self.slot.remove_request(request)
         await self.scraper.enqueue_scrape(result, request, spider)
-
-        self.slot.remove_request(request)
         asyncio.create_task(self._next_request(self.spider))
 
     async def spider_is_idle(self, spider):
