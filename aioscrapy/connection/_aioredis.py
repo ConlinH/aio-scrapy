@@ -31,6 +31,7 @@ class AioRedisManager(object):
         return self._clients.setdefault(alias, con)
 
     async def get(self, alias_or_params):
+        alias_or_params = alias_or_params.copy()
         if isinstance(alias_or_params, dict):
             alias, params = self.get_alias(alias_or_params)
             con = self._clients.get(alias)
