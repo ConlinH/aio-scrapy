@@ -27,6 +27,7 @@ DOWNLOADER_MIDDLEWARES_BASE.update({
     'scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware': None,
     'scrapy.downloadermiddlewares.retry.RetryMiddleware': None,
     'aioscrapy.downloadermiddlewares.retry.RetryMiddleware': 550,
+    'aioscrapy.downloadermiddlewares.ssl_ciphers.SSLCiphersMiddleware': 950,
 })
 # ===========下载中间件 ======================
 

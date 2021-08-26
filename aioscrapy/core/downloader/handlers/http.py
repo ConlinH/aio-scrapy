@@ -39,9 +39,11 @@ class AioHttpDownloadHandler:
         if isinstance(headers, Headers):
             headers = headers.to_unicode_dict()
         kwargs['headers'] = headers
+
         timeout = self.settings.get("DOWNLOAD_TIMEOUT", None)
         if timeout:
             kwargs['timeout'] = timeout
+
         proxy = request.meta.get("proxy", False)
         if proxy:
             kwargs["proxy"] = proxy
@@ -50,6 +52,11 @@ class AioHttpDownloadHandler:
         cookies = request.cookies
         if cookies:
             kwargs['cookies'] = dict(cookies)
+
+        ssl_ciphers = request.meta.get('SSL_CIPHERS', None)
+        if ssl_ciphers:
+            kwargs['ssl'] = ssl_ciphers
+
         session = self.get_session()
         method = getattr(session, request.method.lower())
         if request.body:
