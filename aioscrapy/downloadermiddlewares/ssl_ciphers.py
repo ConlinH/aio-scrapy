@@ -24,7 +24,7 @@ class SSLCiphersMiddleware:
     (http_user and http_pass spider class attributes)"""
 
     def __init__(self, ciphers=None, is_random=False):
-        self.ciphers = ciphers
+        self.ciphers = None if ciphers=='DEFAULT' else ciphers
         self.is_random = is_random
 
     @classmethod
