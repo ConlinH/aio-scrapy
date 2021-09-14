@@ -58,7 +58,8 @@ class Scheduler(object):
 
         # Support serializer as a path to a module.
         if isinstance(kwargs.get('serializer'), six.string_types):
-            kwargs['serializer'] = importlib.import_module(kwargs['serializer'])
+            # kwargs['serializer'] = importlib.import_module(kwargs['serializer'])
+            kwargs['serializer'] = load_object(kwargs['serializer'])
 
         server = await redis_manager.from_settings(settings)
         # Ensure the connection is working.

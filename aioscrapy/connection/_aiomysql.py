@@ -1,7 +1,6 @@
 from contextlib import asynccontextmanager
 
 from aiomysql import create_pool
-from scrapy.settings import Settings
 
 from aioscrapy.utils.tools import singleton
 

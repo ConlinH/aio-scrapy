@@ -1,12 +1,8 @@
 import logging
 
-from scrapy import Request
-from scrapy.utils.misc import load_object
-from scrapy.utils.python import to_unicode
-from scrapy.utils.reqser import _get_method
 from scrapy.utils.reqser import request_to_dict, request_from_dict
 
-from .picklecompat import PickleCompat, JsonPickleCompat
+from .serializ import PickleCompat
 
 logger = logging.getLogger(__name__)
 
@@ -151,54 +147,7 @@ class LifoQueue(Base):
             return self._decode_request(data)
 
 
-class JsonPriorityQueue(PriorityQueue):
-
-    def __init__(self, server, spider, key, serializer=None):
-        if serializer is None:
-            serializer = JsonPickleCompat
-
-        super().__init__(server, spider, key, serializer)
-
-    def _decode_request(self, encoded_request):
-        obj = self.serializer.loads(encoded_request)
-        return self._request_from_dict(obj, self.spider)
-
-    @staticmethod
-    def _request_from_dict(d, spider=None):
-        """对 scrapy.utils.reqser.request_from_dict 方法的重写, 使其能处理formdata的post请求"""
-        cb = d.setdefault('callback', 'parse')
-        if cb and spider:
-            cb = _get_method(spider, cb)
-        eb = d.setdefault('errback', None)
-        if eb and spider:
-            eb = _get_method(spider, eb)
-
-        kwargs = dict(
-            url=to_unicode(d['url']),
-            callback=cb,
-            errback=eb,
-            method=d.setdefault('method', 'GET'),
-            headers=d.setdefault('headers', None),
-            body=d.setdefault('body', None),
-            cookies=d.setdefault('cookies', None),
-            meta=d.setdefault('meta', None),
-            encoding=d.setdefault('_encoding', 'utf-8'),
-            priority=d.setdefault('priority', 0),
-            dont_filter=d.setdefault('dont_filter', False),
-            flags=d.setdefault('flags', None)
-        )
-        if 'formdata' in d:
-            d['_class'] = 'scrapy.FormRequest'
-            kwargs['method'] = 'POST'
-            kwargs['formdata'] = {key: _to_str(d['formdata'][key]) for key in d['formdata']}
-
-        request_cls = load_object(d['_class']) if '_class' in d else Request
-
-        return request_cls(**kwargs)
-
-
 # TODO: Deprecate the use of these names.
 SpiderQueue = FifoQueue
 SpiderStack = LifoQueue
 SpiderPriorityQueue = PriorityQueue
-SpiderJsonPriorityQueue = JsonPriorityQueue

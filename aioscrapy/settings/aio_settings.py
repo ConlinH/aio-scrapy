@@ -27,7 +27,7 @@ DOWNLOADER_MIDDLEWARES_BASE.update({
     'scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware': None,
     'scrapy.downloadermiddlewares.retry.RetryMiddleware': None,
     'aioscrapy.downloadermiddlewares.retry.RetryMiddleware': 550,
-    'aioscrapy.downloadermiddlewares.ssl_ciphers.SSLCiphersMiddleware': 950,
+    'aioscrapy.downloadermiddlewares.tls_ciphers.TLSCiphersMiddleware': 950,
 })
 # ===========下载中间件 ======================
 
@@ -50,3 +50,15 @@ EXTENSIONS_BASE = {
     'aioscrapy.extensions.throttle.AutoThrottle': 0,
 }
 # =========扩展中间件===============================
+
+# =========爬虫中间件===============================
+SPIDER_MIDDLEWARES_BASE = {
+    # Engine side
+    'aioscrapy.spidermiddlewares.httperror.HttpErrorMiddleware': 50,
+    'aioscrapy.spidermiddlewares.offsite.OffsiteMiddleware': 500,
+    'aioscrapy.spidermiddlewares.referer.RefererMiddleware': 700,
+    'aioscrapy.spidermiddlewares.urllength.UrlLengthMiddleware': 800,
+    'aioscrapy.spidermiddlewares.depth.DepthMiddleware': 900,
+    # Spider side
+}
+# =========爬虫中间件===============================

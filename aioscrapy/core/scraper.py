@@ -10,10 +10,9 @@ from scrapy.exceptions import CloseSpider, DropItem, IgnoreRequest
 from scrapy.http import Request, Response
 from scrapy.utils.log import logformatter_adapter
 from scrapy.utils.misc import load_object, warn_on_generator_with_return_value
-from scrapy.utils.spider import iterate_spider_output
 
 from aioscrapy.middleware import SpiderMiddlewareManager
-from aioscrapy.utils.tools import iter_errback
+from aioscrapy.utils.tools import call_helper
 
 logger = logging.getLogger(__name__)
 
@@ -134,32 +133,32 @@ class Scraper:
         """
         if isinstance(result, Response):
             # 将Response丢给爬虫中间件处理, 处理结果将将给self.call_spider处理
-            return self.spidermw.scrape_response(self.call_spider, result, request, spider)
+            return await self.spidermw.scrape_response(self.call_spider, result, request, spider)
         else:
             try:
                 # 处理下载错误或经过下载中间件时出现的错误
-                return self.call_spider(result, request, spider)
+                return await self.call_spider(result, request, spider)
             except (Exception, BaseException) as e:
                 await self._log_download_errors(e, result, request, spider)
 
-    def call_spider(self, result, request, spider):
+    async def call_spider(self, result, request, spider):
         if isinstance(result, Response):
             # 将Response丢给spider的解析函数
             callback = request.callback or spider._parse
             warn_on_generator_with_return_value(spider, callback)
             result.request = request
             # 将parse解析出的结果,变成可迭代对象
-            return iterate_spider_output(callback(result, **result.request.cb_kwargs))
+            return await call_helper(callback, result, **result.request.cb_kwargs)
         else:
             if request.errback is None:
                 raise result
             # 下载中间件或下载结果出现错误,回调request中的errback函数
             warn_on_generator_with_return_value(spider, request.errback)
-            return iterate_spider_output(request.errback(result))
+            return await call_helper(request.errback, result)
 
     async def handle_spider_error(self, exc, request, response, spider):
         if isinstance(exc, CloseSpider):
-            await self.crawler.engine.close_spider(spider, exc.reason or 'cancelled')
+            asyncio.create_task(self.crawler.engine.close_spider(spider, exc.reason or 'cancelled'))
             return
         logkws = self.logformatter.spider_error(exc, request, response, spider)
         logger.log(
@@ -180,32 +179,35 @@ class Scraper:
     async def handle_spider_output(self, result, request, response, spider):
         if not result:
             return
-        it = iter_errback(result, self.handle_spider_error, request, response, spider)
-        # sem = asyncio.Semaphore(self.concurrent_items)
-        async for elem in it:
-            async with self.concurrent_items_semaphore:
-                if isinstance(elem, Request):
-                    await self.crawler.engine.crawl(request=elem, spider=spider)
-                else:
-                    asyncio.create_task(self._process_spidermw_output(elem, request, response, spider))
+        try:
+            async for elem in result:
+                asyncio.create_task(self._process_spidermw_output(elem, request, response, spider))
+        except (Exception, BaseException) as e:
+            await self.handle_spider_error(e, request, response, spider)
 
     async def _process_spidermw_output(self, output, request, response, spider):
         """Process each Request/Item (given in the output parameter) returned
         from the given spider
         """
-        if is_item(output):
-            self.slot.itemproc_size += 1
-            item = await self.itemproc.process_item(output, spider)
-            await self._itemproc_finished(output, item, response, spider)
-        elif output is None:
-            pass
-        else:
-            typename = type(output).__name__
-            logger.error(
-                'Spider must return request, item, or None, got %(typename)r in %(request)s',
-                {'request': request, 'typename': typename},
-                extra={'spider': spider},
-            )
+        async with self.concurrent_items_semaphore:
+            if isinstance(output, Request):
+                await self.crawler.engine.crawl(request=output, spider=spider)
+            elif is_item(output):
+                self.slot.itemproc_size += 1
+                item = await self.itemproc.process_item(output, spider)
+                process_item_method = getattr(spider, 'process_item', None)
+                if process_item_method:
+                    await call_helper(process_item_method, item)
+                await self._itemproc_finished(output, item, response, spider)
+            elif output is None:
+                pass
+            else:
+                typename = type(output).__name__
+                logger.error(
+                    'Spider must return request, item, or None, got %(typename)r in %(request)s',
+                    {'request': request, 'typename': typename},
+                    extra={'spider': spider},
+                )
 
     async def _log_download_errors(self, spider_exception, download_exception, request, spider):
         """

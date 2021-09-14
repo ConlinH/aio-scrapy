@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import ssl
 import sys
 
 from scrapy.http import Headers
@@ -44,7 +45,7 @@ class AioHttpDownloadHandler:
         if timeout:
             kwargs['timeout'] = timeout
 
-        proxy = request.meta.get("proxy", False)
+        proxy = request.meta.get("proxy")
         if proxy:
             kwargs["proxy"] = proxy
             logger.info(f"使用代理{proxy}抓取: {request.url}")
@@ -53,9 +54,11 @@ class AioHttpDownloadHandler:
         if cookies:
             kwargs['cookies'] = dict(cookies)
 
-        ssl_ciphers = request.meta.get('SSL_CIPHERS', None)
+        ssl_ciphers = request.meta.get('TLS_CIPHERS')
         if ssl_ciphers:
-            kwargs['ssl'] = ssl_ciphers
+            context = ssl.create_default_context()
+            context.set_ciphers(ssl_ciphers)
+            kwargs['ssl'] = context
 
         session = self.get_session()
         method = getattr(session, request.method.lower())
