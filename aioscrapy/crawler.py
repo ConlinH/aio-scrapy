@@ -35,7 +35,6 @@ from aioscrapy.utils.ossignal import install_shutdown_handlers, signal_names
 logger = logging.getLogger(__name__)
 
 _crawlers = {}
-_active = set()
 
 
 class Crawler:
@@ -103,7 +102,6 @@ class Crawler:
         if self.crawling:
             self.crawling = False
             await self.engine.stop()
-        _active.discard(self)
 
 
 class CrawlerRunner:
@@ -185,7 +183,6 @@ class CrawlerProcess(CrawlerRunner):
                 'The crawler_or_spidercls argument cannot be a spider object, '
                 'it must be a spider class (or a Crawler object)')
         crawler = self.add_crawler(crawler_or_spidercls, *args, **kwargs)
-        _active.add(crawler)
         asyncio.create_task(crawler.crawl())
 
     def add_crawler(self, crawler_or_spidercls, *args, **kwargs):
@@ -195,15 +192,11 @@ class CrawlerProcess(CrawlerRunner):
         crawler = self.create_crawler(crawler_or_spidercls, *args, **kwargs)
         return _crawlers.setdefault(crawler_or_spidercls, crawler)
 
-    async def run(self):
-        for crawler in _crawlers.values():
-            _active.add(crawler)
-            asyncio.create_task(crawler.crawl())
-            await asyncio.sleep(1)
-        while _active:
-            await asyncio.sleep(1)
+    @staticmethod
+    async def run():
+        await asyncio.gather(*[crawler.crawl() for crawler in _crawlers.values()])
 
-    def start(self, stop_after_crawl=True):
+    def start(self):
         if not sys.platform.startswith('win'):
             try:
                 import uvloop
@@ -214,8 +207,11 @@ class CrawlerProcess(CrawlerRunner):
 
     async def _graceful_stop_reactor(self):
         await self.stop()
-        from aioscrapy.connection import redis_manager
+
+        # 回收所以的链接
+        from aioscrapy.connection import redis_manager, mysql_manager
         await redis_manager.close_all()
+        await mysql_manager.close_all()
 
     async def _stop_reactor(self, _=None):
         try:

@@ -105,7 +105,7 @@ def exec_js_func(js_file_path, func_name, func_params=None, cwd_path=None, cmd_p
     import execjs
 
     if func_params is None:
-        params = []
+        func_params = []
     name = "MyNode"
     execjs.register(name, execjs._external_runtime.ExternalRuntime(
         name="Node.js (V8)",

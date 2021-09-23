@@ -84,7 +84,6 @@ class ExecutionEngine(object):
         self.running = False
         await self._close_all_spiders()
         await self.signals.send_catch_log_deferred(signal=signals.engine_stopped)
-        await asyncio.sleep(0.5)
         self._closewait.set_result(None)
 
     async def close(self):
@@ -141,10 +140,9 @@ class ExecutionEngine(object):
             await self._spider_idle(spider)
 
     def _needs_backout(self, spider):
-        slot = self.slot
         return (
                 not self.running
-                or slot.closing
+                or self.slot.closing
                 or self.downloader.needs_backout()
                 or self.scraper.slot.needs_backout()
         )
@@ -166,8 +164,8 @@ class ExecutionEngine(object):
                 logkws = self.logformatter.crawled(request, result, spider)
                 if logkws is not None:
                     logger.log(*logformatter_adapter(logkws), extra={'spider': spider})
-                self.signals.send_catch_log(signals.response_received,
-                                            response=result, request=request, spider=spider)
+                await self.signals.send_catch_log(signals.response_received,
+                                                  response=result, request=request, spider=spider)
 
         finally:
             self.slot.remove_request(request)
@@ -209,13 +207,13 @@ class ExecutionEngine(object):
         if spider not in self.open_spiders:
             raise RuntimeError("Spider %r not opened when crawling: %s" % (spider.name, request))
 
-        self.signals.send_catch_log(signals.request_scheduled, request=request, spider=spider)
+        await self.signals.send_catch_log(signals.request_scheduled, request=request, spider=spider)
         if asyncio.iscoroutinefunction(self.slot.scheduler.enqueue_request):
             succ = await self.slot.scheduler.enqueue_request(request)
         else:
             succ = self.slot.scheduler.enqueue_request(request)
         if not succ:
-            self.signals.send_catch_log(signals.request_dropped, request=request, spider=spider)
+            await self.signals.send_catch_log(signals.request_dropped, request=request, spider=spider)
         asyncio.create_task(self._next_request(spider))
 
     async def open_spider(self, spider, start_requests=(), close_if_idle=True):
@@ -290,14 +288,14 @@ class ExecutionEngine(object):
         next loop and this function is guaranteed to be called (at least) once
         again for this spider.
         """
-        res = self.signals.send_catch_log(signals.spider_idle, spider=spider, dont_log=DontCloseSpider)
+        res = await self.signals.send_catch_log(signals.spider_idle, spider=spider, dont_log=DontCloseSpider)
         if any(isinstance(x, DontCloseSpider) for _, x in res):
             return
 
         if await self.spider_is_idle(spider):
             await self.close_spider(spider, reason='finished')
 
-    async def heart_beat(self, t, spider, slot):
-        while slot.close:
-            await asyncio.sleep(t)
+    async def heart_beat(self, delay, spider, slot):
+        while not slot.closing:
+            await asyncio.sleep(delay)
             asyncio.create_task(self._next_request(spider))

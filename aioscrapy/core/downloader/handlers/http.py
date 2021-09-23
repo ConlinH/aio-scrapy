@@ -75,3 +75,7 @@ class AioHttpDownloadHandler:
     async def close(self):
         if self.session is not None:
             await self.session.close()
+
+        # Wait 250 ms for the underlying SSL connections to close
+        # https://docs.aiohttp.org/en/latest/client_advanced.html#graceful-shutdown
+        await asyncio.sleep(0.250)

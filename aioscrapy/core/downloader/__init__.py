@@ -79,7 +79,7 @@ class Downloader:
         self.randomize_delay = self.settings.getbool('RANDOMIZE_DOWNLOAD_DELAY')
         self.middleware = DownloaderMiddlewareManager.from_crawler(crawler)
         self._slot_gc_loop = True
-        asyncio.ensure_future(self._slot_gc(60))
+        asyncio.create_task(self._slot_gc(60))
 
     async def fetch(self, request, spider, _handle_downloader_output):
         self.active.add(request)
@@ -87,9 +87,9 @@ class Downloader:
         request.meta[self.DOWNLOAD_SLOT] = key
 
         slot.active.add(request)
-        self.signals.send_catch_log(signal=signals.request_reached_downloader,
-                                    request=request,
-                                    spider=spider)
+        await self.signals.send_catch_log(signal=signals.request_reached_downloader,
+                                          request=request,
+                                          spider=spider)
         slot.queue.append((request, _handle_downloader_output))
         asyncio.create_task(self._process_queue(spider, slot))
 
@@ -138,16 +138,16 @@ class Downloader:
             slot.transferring.remove(request)
             slot.active.remove(request)
             self.active.remove(request)
-            self.signals.send_catch_log(signal=signals.request_left_downloader,
-                                        request=request,
-                                        spider=spider)
+            await self.signals.send_catch_log(signal=signals.request_left_downloader,
+                                              request=request,
+                                              spider=spider)
             asyncio.create_task(self._process_queue(spider, slot))
             if isinstance(response, Response):
                 response.request = request
-                self.signals.send_catch_log(signal=signals.response_downloaded,
-                                            response=response,
-                                            request=request,
-                                            spider=spider)
+                await self.signals.send_catch_log(signal=signals.response_downloaded,
+                                                  response=response,
+                                                  request=request,
+                                                  spider=spider)
             asyncio.create_task(_handle_downloader_output(response, request, spider))
 
     def close(self):

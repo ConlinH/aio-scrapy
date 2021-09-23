@@ -166,7 +166,7 @@ class Scraper:
             exc_info=exc,
             extra={'spider': spider}
         )
-        self.signals.send_catch_log(
+        await self.signals.send_catch_log(
             signal=signals.spider_error,
             failure=exc, response=response,
             spider=spider

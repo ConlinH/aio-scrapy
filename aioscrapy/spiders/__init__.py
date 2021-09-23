@@ -1,4 +1,3 @@
-import asyncio
 
 from scrapy import signals
 from scrapy.exceptions import DontCloseSpider

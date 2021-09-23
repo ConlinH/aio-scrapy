@@ -33,7 +33,7 @@ class SignalManager:
         kwargs.setdefault('sender', self.sender)
         return dispatcher.disconnect(receiver, signal, **kwargs)
 
-    def send_catch_log(self, signal, **kwargs):
+    async def send_catch_log(self, signal, **kwargs):
         """
         Send a signal, catch exceptions and log them.
 
@@ -41,7 +41,7 @@ class SignalManager:
         through the :meth:`connect` method).
         """
         kwargs.setdefault('sender', self.sender)
-        return _signal.send_catch_log(signal, **kwargs)
+        return await _signal.send_catch_log(signal, **kwargs)
 
     async def send_catch_log_deferred(self, signal, **kwargs):
         """

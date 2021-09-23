@@ -13,42 +13,32 @@ class _IgnoredException(Exception):
     pass
 
 
-def send_catch_log(signal=Any, sender=Anonymous, *arguments, **named):
-    """Like pydispatcher.robust.sendRobust but it also logs errors and returns
-    Failures instead of exceptions.
-    """
-    dont_log = (named.pop('dont_log', _IgnoredException), StopDownload)
-    spider = named.get('spider', None)
-    responses = []
-    for receiver in liveReceivers(getAllReceivers(sender, signal)):
-        try:
-            response = robustApply(receiver, signal=signal, sender=sender, *arguments, **named)
-        except dont_log as exc:
-            result = exc
-        except Exception as exc:
-            result = exc
-            logger.error("Error caught on signal handler: %(receiver)s",
-                         {'receiver': receiver},
-                         exc_info=True, extra={'spider': spider})
-        else:
-            result = response
-        responses.append((receiver, result))
-    return responses
-
-
 async def robustApplyWrap(f, recv, *args, **kw):
     dont_log = kw.pop('dont_log', None)
     spider = kw.get('spider', None)
     try:
         result = f(recv, *args, **kw)
         if asyncio.iscoroutine(result):
-            await result
+            return await result
     except (Exception, BaseException) as exc:  # noqa: E722
         if dont_log is None or not isinstance(exc, dont_log):
             logger.error("Error caught on signal handler: %(receiver)s",
                          {'receiver': recv},
                          exc_info=exc,
                          extra={'spider': spider})
+        return exc
+
+
+async def send_catch_log(signal=Any, sender=Anonymous, *arguments, **named):
+    """Like pydispatcher.robust.sendRobust but it also logs errors and returns
+    Failures instead of exceptions.
+    """
+    named['dont_log'] = (named.pop('dont_log', _IgnoredException), StopDownload)
+    responses = []
+    for receiver in liveReceivers(getAllReceivers(sender, signal)):
+        result = await robustApplyWrap(robustApply, receiver, signal=signal, sender=sender, *arguments, **named)
+        responses.append((receiver, result))
+    return responses
 
 
 async def send_catch_log_deferred(signal=Any, sender=Anonymous, *arguments, **named):
