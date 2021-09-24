@@ -108,7 +108,7 @@ class PriorityQueue(Base):
         # We don't use zadd method as the order of arguments change depending on
         # whether the class is Redis or StrictRedis, and the option of using
         # kwargs only accepts strings, not bytes.
-        await self.server.zadd(self.key, score, data)
+        await self.server.zadd(self.key, {data: score})
 
     async def pop(self, timeout=0):
         """
@@ -116,10 +116,12 @@ class PriorityQueue(Base):
         timeout not support in this queue class
         """
         # use atomic range/remove using multi/exec
-        pipe = self.server.multi_exec()
-        pipe.zrange(self.key, 0, 0)
-        pipe.zremrangebyrank(self.key, 0, 0)
-        results, count = await pipe.execute()
+        async with self.server.pipeline(transaction=True) as pipe:
+            results, count = await (
+                pipe.zrange(self.key, 0, 0)
+                    .zremrangebyrank(self.key, 0, 0)
+                    .execute()
+            )
         if results:
             return self._decode_request(results[0])
 

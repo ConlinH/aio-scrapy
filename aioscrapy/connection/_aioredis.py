@@ -1,8 +1,6 @@
 from typing import Union, Tuple
 
-from aioredis import create_redis_pool, Redis
-from aioredis.util import parse_url
-from scrapy.settings import Settings
+import aioredis
 
 
 class AioRedisManager(object):
@@ -17,43 +15,40 @@ class AioRedisManager(object):
             return alias_or_params, None
 
         redis_params = alias_or_params.copy()
-        address = redis_params.pop('address', None)
-        db = redis_params.pop('db', None)
-        if isinstance(address, str):
-            address, options = parse_url(address)
-            db = options.setdefault('db', db)
-            redis_params.update(options)
-            redis_params.update({"address": address})
-        alias = redis_params.pop('alias', ''.join([str(i) for i in address]) + str(db))
+        url = redis_params.get('url')
+        db = redis_params.get('db', '')
+        alias = redis_params.pop('alias', url + str(db))
         return alias, redis_params
 
-    async def get(self, alias_or_params: Union[str, dict]) -> Redis:
+    def create(self, params: Union[dict], alias=None) -> aioredis.Redis:
+        if alias is None:
+            alias, params = self.parse_params(params)
+        url = params.pop('url')
+        redis = aioredis.from_url(url, **params)
+        return self._clients.setdefault(alias, redis)
+
+    def get(self, alias_or_params: Union[str, dict]) -> aioredis.Redis:
         """获取redis链接"""
         assert isinstance(alias_or_params, (str, dict)), "alias_or_params 参数不正确"
         alias, redis_params = self.parse_params(alias_or_params)
-        redis_pool = self._clients.get(alias)
-        if redis_pool:
-            return redis_pool
-        address = redis_params.pop('address')
-        redis_pool = await create_redis_pool(address, **redis_params)
-        return self._clients.setdefault(alias, redis_pool)
+        return self._clients.get(alias, self.create(redis_params, alias))
 
     async def close(self, alias_or_params: Union[str, dict]):
         """关闭指定redis pool"""
         assert isinstance(alias_or_params, (str, dict)), "alias_or_params 参数不正确"
         alias, _ = self.parse_params(alias_or_params)
-        redis_pool = self._clients.pop(alias, None)
-        if redis_pool:
-            redis_pool.close()
-            await redis_pool.wait_closed()
+        redis = self._clients.pop(alias, None)
+        if redis:
+            await redis.close()
+            await redis.connection_pool.disconnect()
 
     async def close_all(self):
         for alias in list(self._clients.keys()):
             await self.close(alias)
 
-    async def from_settings(self, settings: Settings):
+    async def from_settings(self, settings: "scrapy.settings.Setting"):
         redis_args = settings.getdict('REDIS_ARGS')
-        return await self.get(redis_args)
+        return self.get(redis_args)
 
     async def from_crawler(self, crawler):
         return await self.from_settings(crawler.settings)
@@ -66,14 +61,25 @@ if __name__ == '__main__':
     import asyncio
 
     async def test():
-        r1 = await redis_manager.get({
+        redis = redis_manager.get({
                 'alias': 'xx',
-                'address': 'redis://:erpteam_redis@192.168.5.216:6381/9',
-                'maxsize': 4
+                'url': 'redis://:erpteam_redis@192.168.5.216:6381/9',
+                'max_connections': 4
             })
-        r2 = await redis_manager.get('xx')
-        print(r1 is r2)
+
+        await redis.zadd('key1', {'value': 1})
+
+        async with redis.pipeline(transaction=True) as pipe:
+            results, count = await (
+                pipe.zrange('key1', 0, 0)
+                    .zremrangebyrank('key1', 0, 0)
+                    .execute()
+            )
+
+        print(results)
         await redis_manager.close_all()
 
 
-    asyncio.run(test())
+    # asyncio.run(test(), debug=True)
+    asyncio.get_event_loop().run_until_complete(test())
+

@@ -33,8 +33,8 @@ class Baidu3Spider(AioSpider):
         'DUPEFILTER_CLASS': 'aioscrapy.core.scheduler.dupefilter.RFPDupeFilter',
         # 'SCHEDULER_SERIALIZER': 'aioscrapy.core.scheduler.serializ.JsonCompat',
         'REDIS_ARGS': {
-            'address': 'redis://:password@172.0.0.1:6381/9',
-            'maxsize': 2,
+            'url': 'redis://:erpteam_redis@192.168.5.216:6381/9',
+            'max_connections': 2,
         },
     }
 

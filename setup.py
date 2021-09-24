@@ -43,7 +43,7 @@ setup(
         "scrapy-redis",
         "scrapy",
         "aiohttp",
-        "aioredis",
+        "aioredis >= 2.0.0",
         "aiomysql"
     ]
 )
