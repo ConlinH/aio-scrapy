@@ -19,7 +19,7 @@ pip install git+https://github.com/conlin-huang/aioscrapy.git
 ```python example/demo2/baiduSpider.py```
 
 ##### 跑多个爬虫
-```python example/demo2/run.py```
+```python example/demo2/start.py```
 
 ##### 运行爬虫项目
 ```python example/demo1/start.py```
