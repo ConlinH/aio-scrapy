@@ -4,16 +4,16 @@ sys.path.append(os.path.dirname(os.getcwd()) + '/aioscrapy')
 
 from aioscrapy.utils.tools import get_project_settings
 from aioscrapy.crawler import CrawlerProcess
-from baiduSpider import BaiduSpider
-from baidu2Spider import Baidu2Spider
-from baidu3Spider import Baidu3Spider
+from demo_scrapy import DemoScrapySpider
+from demo_scrapy_redis import DemoScrapyRedisSpider
+from demo_aioscrapy_redis import DemoAioscrapyRedisSpider
 
 
 settings = get_project_settings()
 cp = CrawlerProcess(settings)
-cp.crawl(BaiduSpider)
-cp.crawl(Baidu2Spider)
-cp.crawl(Baidu3Spider)
+cp.crawl(DemoScrapySpider)
+cp.crawl(DemoScrapyRedisSpider)
+cp.crawl(DemoAioscrapyRedisSpider)
 cp.start()
 
 
