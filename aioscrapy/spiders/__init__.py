@@ -3,8 +3,6 @@ from scrapy import signals
 from scrapy.exceptions import DontCloseSpider
 from scrapy.spiders import Spider, CrawlSpider
 
-from aioscrapy.settings import aio_settings
-
 __all__ = ["AioSpider", "AioCrawlSpider"]
 
 
@@ -17,7 +15,7 @@ class ExtensionMixin:
 
         settings = get_project_settings()
         cp = CrawlerProcess(settings)
-        cp.add_crawler(cls)
+        cp.crawl(cls)
         cp.start()
 
     def spider_idle(self):

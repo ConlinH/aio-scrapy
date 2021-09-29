@@ -20,6 +20,11 @@ class BaiduSpider(AioSpider):
         'SCHEDULER': 'scrapy.core.scheduler.Scheduler',
         'DUPEFILTER_CLASS': 'scrapy.dupefilters.RFPDupeFilter',
 
+        # 'SCHEDULER': 'scrapy.core.scheduler.Scheduler',
+        # 'SCHEDULER_DISK_QUEUE': 'scrapy.squeues.PickleLifoDiskQueue',
+        # 'SCHEDULER_MEMORY_QUEUE': 'scrapy.squeues.LifoMemoryQueue',
+        # 'SCHEDULER_PRIORITY_QUEUE': 'scrapy.pqueues.ScrapyPriorityQueue',
+
         # 使用scrapy-redis的调度
         # 'SCHEDULER': 'scrapy_redis.scheduler.Scheduler',
         # 'SCHEDULER_QUEUE_CLASS': 'scrapy_redis.queue.PriorityQueue',

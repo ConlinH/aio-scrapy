@@ -4,6 +4,8 @@ import time
 from scrapy.dupefilters import BaseDupeFilter
 from scrapy.utils.request import request_fingerprint
 
+from aioscrapy.connection import redis_manager
+
 
 logger = logging.getLogger(__name__)
 
@@ -55,12 +57,12 @@ class RFPDupeFilter(BaseDupeFilter):
 
 
         """
-        server = get_redis_from_settings(settings)
+        server = redis_manager.from_settings(settings)
         # XXX: This creates one-time key. needed to support to use this
         # class as standalone dupefilter with scrapy's default scheduler
         # if scrapy passes spider on open() method this wouldn't be needed
         # TODO: Use SCRAPY_JOB env as default and fallback to timestamp.
-        key = defaults.DUPEFILTER_KEY % {'timestamp': int(time.time())}
+        key = settings['DUPEFILTER_KEY'] % {'timestamp': int(time.time())}
         debug = settings.getbool('DUPEFILTER_DEBUG')
         return cls(server, key=key, debug=debug)
 

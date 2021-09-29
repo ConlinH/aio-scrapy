@@ -1,6 +1,6 @@
 from typing import Union, Tuple
 
-import aioredis
+from aioredis import BlockingConnectionPool, Redis
 
 
 class AioRedisManager(object):
@@ -20,18 +20,21 @@ class AioRedisManager(object):
         alias = redis_params.pop('alias', url + str(db))
         return alias, redis_params
 
-    def create(self, params: Union[dict], alias=None) -> aioredis.Redis:
+    def create(self, params: Union[dict], alias=None) -> Redis:
         if alias is None:
             alias, params = self.parse_params(params)
         url = params.pop('url')
-        redis = aioredis.from_url(url, **params)
+        redis = Redis(connection_pool=BlockingConnectionPool.from_url(url, **params))
         return self._clients.setdefault(alias, redis)
 
-    def get(self, alias_or_params: Union[str, dict]) -> aioredis.Redis:
+    def get(self, alias_or_params: Union[str, dict]) -> Redis:
         """获取redis链接"""
         assert isinstance(alias_or_params, (str, dict)), "alias_or_params 参数不正确"
         alias, redis_params = self.parse_params(alias_or_params)
-        return self._clients.get(alias, self.create(redis_params, alias))
+        redis = self._clients.get(alias)
+        if redis:
+            return redis
+        return self.create(redis_params, alias)
 
     async def close(self, alias_or_params: Union[str, dict]):
         """关闭指定redis pool"""

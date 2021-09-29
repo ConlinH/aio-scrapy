@@ -62,8 +62,8 @@ if __name__ == '__main__':
         mysql_pool = await mysql_manager.create({
             'alias': 'xx',
             'db': 'test',
-            'user': 'cc',
-            'password': 'mysql123',
+            'user': 'root',
+            'password': 'root',
             'host': '192.168.5.237',
             'port': 3306,
             'charset': 'utf8',

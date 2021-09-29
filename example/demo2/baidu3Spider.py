@@ -50,13 +50,13 @@ class Baidu3Spider(AioSpider):
         }
         yield item
 
-        new_character = response.xpath('//a[@class="img-link"]/@href').getall()
-        for character in new_character:
-            new_url = 'https://hanyu.baidu.com/zici' + character
-            yield Request(new_url, callback=self.parse, dont_filter=True)
+        # new_character = response.xpath('//a[@class="img-link"]/@href').getall()
+        # for character in new_character:
+        #     new_url = 'https://hanyu.baidu.com/zici' + character
+        #     yield Request(new_url, callback=self.parse, dont_filter=True)
 
-    def spider_idle(self):
-        """跑完关闭爬虫"""
+    # def spider_idle(self):
+    #     """跑完关闭爬虫"""
 
     async def process_item(self, item):
         print(item)

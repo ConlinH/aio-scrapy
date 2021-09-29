@@ -182,19 +182,19 @@ class CrawlerProcess(CrawlerRunner):
             raise ValueError(
                 'The crawler_or_spidercls argument cannot be a spider object, '
                 'it must be a spider class (or a Crawler object)')
-        crawler = self.add_crawler(crawler_or_spidercls, *args, **kwargs)
+        crawler = self.crawl(crawler_or_spidercls, *args, **kwargs)
         asyncio.create_task(crawler.crawl())
 
-    def add_crawler(self, crawler_or_spidercls, *args, **kwargs):
+    def crawl(self, crawler_or_spidercls, *args, **kwargs):
         crawler = _crawlers.get(crawler_or_spidercls)
         if crawler:
             return crawler
         crawler = self.create_crawler(crawler_or_spidercls, *args, **kwargs)
         return _crawlers.setdefault(crawler_or_spidercls, crawler)
 
-    @staticmethod
-    async def run():
+    async def run(self):
         await asyncio.gather(*[crawler.crawl() for crawler in _crawlers.values()])
+        await self.recycle_db_connect()
 
     def start(self):
         if not sys.platform.startswith('win'):
@@ -207,14 +207,17 @@ class CrawlerProcess(CrawlerRunner):
 
     async def _graceful_stop_reactor(self):
         await self.stop()
-
-        # 回收所以的链接
-        from aioscrapy.connection import redis_manager, mysql_manager
-        await redis_manager.close_all()
-        await mysql_manager.close_all()
+        await self.recycle_db_connect()
 
     async def _stop_reactor(self, _=None):
         try:
             asyncio.get_event_loop().stop()
         except RuntimeError:
             pass
+
+    @staticmethod
+    async def recycle_db_connect():
+        # 回收所以的链接
+        from aioscrapy.connection import redis_manager, mysql_manager
+        await redis_manager.close_all()
+        await mysql_manager.close_all()

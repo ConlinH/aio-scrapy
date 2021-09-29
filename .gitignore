@@ -1,6 +1,6 @@
 *.log
 *.pyc
-aioScrapy.egg-info/
+*.egg-info/
 __pycache__/
 .idea/
 build/
