@@ -1,6 +1,6 @@
 
 
-# aioscrapy
+# aio-scrapy
 > 将基于twisted的scrapy/scrapy-redis改成基于asyncio, 保留了几乎所有的scrapy/scrapy-reids功能
 
 ### 声明
