@@ -19,8 +19,8 @@ class DemoScrapyRedisSpider(AioSpider):
         # 使用scrapy-redis的调度
         'SCHEDULER': 'scrapy_redis.scheduler.Scheduler',
         'SCHEDULER_QUEUE_CLASS': 'scrapy_redis.queue.PriorityQueue',
-        'SCHEDULER_DUPEFILTER_CLASS': 'scrapy_redis.dupefilter.RFPDupeFilter',
-        'REDIS_URL': 'redis://:password@l27.0.0.1:6379/1',
+        'DUPEFILTER_CLASS': 'scrapy_redis.dupefilter.RFPDupeFilter',
+        'REDIS_URL': 'redis://:password@127.0.0.1:6379/1',
     }
 
     start_urls = ['https://hanyu.baidu.com/zici/s?wd=王&query=王']

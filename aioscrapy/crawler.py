@@ -34,8 +34,6 @@ from aioscrapy.utils.ossignal import install_shutdown_handlers, signal_names
 
 logger = logging.getLogger(__name__)
 
-_crawlers = {}
-
 
 class Crawler:
 
@@ -81,7 +79,6 @@ class Crawler:
         try:
             self.engine = self._create_engine()
             start_requests = iter(self.spider.start_requests())
-            # await self.engine.open_spider(self.spider, start_requests)
             await self.engine.start(self.spider, start_requests)
         except Exception as e:
             logger.exception(e)
@@ -106,6 +103,12 @@ class Crawler:
 
 class CrawlerRunner:
 
+    crawlers = property(
+        lambda self: self._crawlers,
+        doc="Set of :class:`crawlers <scrapy.crawler.Crawler>` started by "
+            ":meth:`crawl` and managed by this class."
+    )
+
     @staticmethod
     def _get_spider_loader(settings):
         """ Get SpiderLoader instance from settings """
@@ -128,6 +131,8 @@ class CrawlerRunner:
             settings = AioSettings(settings)
         self.settings = settings
         self.spider_loader = self._get_spider_loader(settings)
+        self._crawlers = set()
+        self._active = set()
         self.bootstrap_failed = False
 
     @property
@@ -136,6 +141,31 @@ class CrawlerRunner:
                       "CrawlerRunner.spider_loader.",
                       category=ScrapyDeprecationWarning, stacklevel=2)
         return self.spider_loader
+
+    def crawl(self, crawler_or_spidercls, *args, **kwargs):
+        if isinstance(crawler_or_spidercls, Spider):
+            raise ValueError(
+                'The crawler_or_spidercls argument cannot be a spider object, '
+                'it must be a spider class (or a Crawler object)')
+        crawler = self.create_crawler(crawler_or_spidercls, *args, **kwargs)
+        self.crawlers.add(crawler)
+        return crawler
+
+    def crawl_soon(self, crawler_or_spidercls, *args, **kwargs):
+        crawler = self.crawl(crawler_or_spidercls, *args, **kwargs)
+        self.active_crawler(crawler)
+
+    def active_crawler(self, crawler):
+        task = asyncio.create_task(crawler.crawl())
+        self._active.add(task)
+
+        def _done(result):
+            self.crawlers.discard(crawler)
+            self._active.discard(task)
+            self.bootstrap_failed |= not getattr(crawler, 'spider', None)
+            return result
+
+        task.add_done_callback(_done)
 
     def create_crawler(self, crawler_or_spidercls, *args, **kwargs):
         if isinstance(crawler_or_spidercls, Spider):
@@ -151,9 +181,8 @@ class CrawlerRunner:
             spidercls = self.spider_loader.load(spidercls)
         return Crawler(spidercls, *args, settings=self.settings, **kwargs)
 
-    @staticmethod
-    async def stop():
-        return await asyncio.gather(*[c.stop() for c in _crawlers.values()])
+    async def stop(self):
+        return await asyncio.gather(*[c.stop() for c in list(self.crawlers)])
 
 
 class CrawlerProcess(CrawlerRunner):
@@ -177,23 +206,11 @@ class CrawlerProcess(CrawlerRunner):
                     {'signame': signame})
         asyncio.create_task(self._stop_reactor())
 
-    def run_crawler(self, crawler_or_spidercls, *args, **kwargs):
-        if isinstance(crawler_or_spidercls, Spider):
-            raise ValueError(
-                'The crawler_or_spidercls argument cannot be a spider object, '
-                'it must be a spider class (or a Crawler object)')
-        crawler = self.crawl(crawler_or_spidercls, *args, **kwargs)
-        asyncio.create_task(crawler.crawl())
-
-    def crawl(self, crawler_or_spidercls, *args, **kwargs):
-        crawler = _crawlers.get(crawler_or_spidercls)
-        if crawler:
-            return crawler
-        crawler = self.create_crawler(crawler_or_spidercls, *args, **kwargs)
-        return _crawlers.setdefault(crawler_or_spidercls, crawler)
-
     async def run(self):
-        await asyncio.gather(*[crawler.crawl() for crawler in _crawlers.values()])
+        for crawler in self.crawlers:
+            self.active_crawler(crawler)
+        while self._active:
+            await asyncio.gather(*self._active)
         await self.recycle_db_connect()
 
     def start(self):
@@ -201,7 +218,7 @@ class CrawlerProcess(CrawlerRunner):
             try:
                 import uvloop
                 asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
-            except:
+            except ImportError:
                 pass
         asyncio.run(self.run())
 
@@ -209,11 +226,11 @@ class CrawlerProcess(CrawlerRunner):
         await self.stop()
         await self.recycle_db_connect()
 
-    async def _stop_reactor(self, _=None):
+    async def _stop_reactor(self):
         try:
+            await self.recycle_db_connect()
+        finally:
             asyncio.get_event_loop().stop()
-        except RuntimeError:
-            pass
 
     @staticmethod
     async def recycle_db_connect():

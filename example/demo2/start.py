@@ -1,6 +1,6 @@
 import sys
 import os
-sys.path.append(os.path.dirname(os.getcwd()) + '/aioscrapy')
+sys.path.append(os.path.dirname(os.path.dirname(os.getcwd())))
 
 from aioscrapy.utils.tools import get_project_settings
 from aioscrapy.crawler import CrawlerProcess

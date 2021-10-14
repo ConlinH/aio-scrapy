@@ -20,9 +20,9 @@ class DemoAioscrapyRedisSpider(AioSpider):
         'SCHEDULER': 'aioscrapy.core.scheduler.Scheduler',
         'SCHEDULER_QUEUE_CLASS': 'aioscrapy.core.scheduler.queue.PriorityQueue',
         'DUPEFILTER_CLASS': 'aioscrapy.core.scheduler.dupefilter.RFPDupeFilter',
-        # 'SCHEDULER_SERIALIZER': 'aioscrapy.core.scheduler.serializ.JsonCompat',
+        'SCHEDULER_SERIALIZER': 'aioscrapy.core.scheduler.serializ.JsonCompat',
         'REDIS_ARGS': {
-            'url': 'redis://:passworld@127.0.0.1:6379/1',
+            'url': 'redis://:password@127.0.0.1:6379/1',
             'max_connections': 2,
         },
     }

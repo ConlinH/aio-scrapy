@@ -1,16 +1,21 @@
 import pickle
 import json
 
+from scrapy.utils.python import to_unicode
+
+
 __all__ = ['PickleCompat', 'JsonCompat']
 
 
-def _request_body_byte2str(obj):
-    obj['body'] = obj['body'].decode(obj['_encoding'])
-    return obj
-
-
-def _request_body_str2byte(obj):
-    obj['body'] = obj['body'].encode(obj['_encoding'])
+def _request_byte2str(obj):
+    _encoding = obj.get('_encoding', 'utf-8')
+    obj.update({
+        'body': obj['body'].decode(_encoding),
+        'headers': {
+            to_unicode(k, encoding=_encoding): to_unicode(b','.join(v), encoding=_encoding)
+            for k, v in obj['headers'].items()
+        }
+    })
     return obj
 
 
@@ -27,9 +32,8 @@ class PickleCompat:
 class JsonCompat:
     @staticmethod
     def loads(s):
-        return _request_body_str2byte(json.loads(s))
+        return json.loads(s)
 
     @staticmethod
     def dumps(obj):
-        print(obj)
-        return json.dumps(_request_body_byte2str(obj))
+        return json.dumps(_request_byte2str(obj))

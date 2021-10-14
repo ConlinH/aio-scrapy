@@ -9,11 +9,13 @@ __all__ = ["AioSpider", "AioCrawlSpider"]
 class ExtensionMixin:
 
     @classmethod
-    def start(cls):
+    def start(cls, setting_path=None):
         from aioscrapy.crawler import CrawlerProcess
         from aioscrapy.utils.tools import get_project_settings
 
         settings = get_project_settings()
+        if setting_path is not None:
+            settings.setmodule(setting_path)
         cp = CrawlerProcess(settings)
         cp.crawl(cls)
         cp.start()

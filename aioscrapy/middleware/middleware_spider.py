@@ -8,7 +8,6 @@ from types import AsyncGeneratorType
 
 from scrapy.exceptions import _InvalidOutput
 from scrapy.utils.conf import build_component_list
-from scrapy.utils.python import MutableChain
 
 from aioscrapy.utils.tools import async_generator_wrapper
 from aioscrapy.utils.tools import call_helper
