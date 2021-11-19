@@ -32,12 +32,14 @@ class AioMysqlManager(object):
             mysql_pool = await self.create(params, alias)
 
         conn = await mysql_pool.acquire()
-        if ping:
-            await conn.ping()
         cur = await conn.cursor()
-        yield conn, cur
-        await cur.close()
-        await mysql_pool.release(conn)
+        try:
+            if ping:
+                await conn.ping()
+            yield conn, cur
+        finally:
+            await cur.close()
+            await mysql_pool.release(conn)
 
     async def close(self, alias_or_params: Union[str, dict]):
         assert isinstance(alias_or_params, (str, dict)), "alias_or_params 参数不正确"
