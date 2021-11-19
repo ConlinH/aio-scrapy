@@ -179,7 +179,8 @@ class CrawlerRunner:
     def _create_crawler(self, spidercls, *args, **kwargs):
         if isinstance(spidercls, str):
             spidercls = self.spider_loader.load(spidercls)
-        return Crawler(spidercls, *args, settings=self.settings, **kwargs)
+        settings = kwargs.pop('settings', self.settings)
+        return Crawler(spidercls, *args, settings=settings, **kwargs)
 
     async def stop(self):
         return await asyncio.gather(*[c.stop() for c in list(self.crawlers)])
