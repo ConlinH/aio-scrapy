@@ -2,8 +2,6 @@ import asyncio
 import logging
 import ssl
 import sys
-from urllib.request import _parse_proxy
-from urllib.parse import urlunparse
 
 from scrapy.http import Headers
 from aioscrapy.https import TextResponse
@@ -49,10 +47,6 @@ class AioHttpDownloadHandler:
 
         proxy = request.meta.get("proxy")
         if proxy:
-            proxy_type, user, password, host_port = _parse_proxy(proxy)
-            if user:
-                kwargs['proxy_auth'] = aiohttp.BasicAuth(user, password)
-                proxy = urlunparse((proxy_type, host_port, '', '', '', ''))
             kwargs["proxy"] = proxy
             logger.info(f"使用代理{proxy}抓取: {request.url}")
 
