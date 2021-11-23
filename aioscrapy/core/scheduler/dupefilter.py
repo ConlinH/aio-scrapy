@@ -10,132 +10,52 @@ from aioscrapy.connection import redis_manager
 logger = logging.getLogger(__name__)
 
 
-# TODO: Rename class to RedisDupeFilter.
 class RFPDupeFilter(BaseDupeFilter):
-    """Redis-based request duplicates filter.
-
-    This class can also be used with default Scrapy's scheduler.
-
-    """
+    """ 使用redis集合构建的过滤器"""
 
     logger = logger
 
     def __init__(self, server, key, debug=False):
-        """Initialize the duplicates filter.
-
-        Parameters
-        ----------
-        server : redis.StrictRedis
-            The redis server instance.
-        key : str
-            Redis key Where to store fingerprints.
-        debug : bool, optional
-            Whether to log filtered requests.
-
-        """
         self.server = server
         self.key = key
         self.debug = debug
         self.logdupes = True
 
     @classmethod
-    def from_settings(cls, settings):
-        """Returns an instance from given settings.
+    async def from_spider(cls, spider):
+        settings = spider.settings
+        server = await redis_manager.from_settings(settings)
+        dupefilter_key = settings.get("SCHEDULER_DUPEFILTER_KEY",  '%(spider)s:bloomfilter')
+        key = dupefilter_key % {'spider': spider.name}
+        debug = settings.getbool('DUPEFILTER_DEBUG', False)
+        instance = cls(server, key=key, debug=debug)
+        return instance
 
-        This uses by default the key ``dupefilter:<timestamp>``. When using the
-        ``scrapy_redis.scheduler.Scheduler`` class, this method is not used as
-        it needs to pass the spider name in the key.
-
-        Parameters
-        ----------
-        settings : scrapy.settings.Settings
-
-        Returns
-        -------
-        RFPDupeFilter
-            A RFPDupeFilter instance.
-
-
-        """
-        server = redis_manager.from_settings(settings)
-        # XXX: This creates one-time key. needed to support to use this
-        # class as standalone dupefilter with scrapy's default scheduler
-        # if scrapy passes spider on open() method this wouldn't be needed
-        # TODO: Use SCRAPY_JOB env as default and fallback to timestamp.
+    @classmethod
+    async def from_settings(cls, settings):
+        server = await redis_manager.from_settings(settings)
         key = settings['DUPEFILTER_KEY'] % {'timestamp': int(time.time())}
         debug = settings.getbool('DUPEFILTER_DEBUG')
         return cls(server, key=key, debug=debug)
 
     @classmethod
-    def from_crawler(cls, crawler):
-        """Returns instance from crawler.
-
-        Parameters
-        ----------
-        crawler : scrapy.crawler.Crawler
-
-        Returns
-        -------
-        RFPDupeFilter
-            Instance of RFPDupeFilter.
-
-        """
-        return cls.from_settings(crawler.settings)
+    async def from_crawler(cls, crawler):
+        return await cls.from_settings(crawler.settings)
 
     async def request_seen(self, request):
-        """Returns True if request was already seen.
-
-        Parameters
-        ----------
-        request : scrapy.http.Request
-
-        Returns
-        -------
-        bool
-
-        """
         fp = self.request_fingerprint(request)
-        # This returns the number of values added, zero if already exists.
-        added = await self.server.sadd(self.key, fp)
-        return added == 0
+        return await self.server.sadd(self.key, fp) == 0
 
     def request_fingerprint(self, request):
-        """Returns a fingerprint for a given request.
-
-        Parameters
-        ----------
-        request : scrapy.http.Request
-
-        Returns
-        -------
-        str
-
-        """
         return request_fingerprint(request)
 
     async def close(self, reason=''):
-        """Delete data on close. Called by Scrapy's scheduler.
-
-        Parameters
-        ----------
-        reason : str, optional
-
-        """
         await self.clear()
 
     async def clear(self):
-        """Clears fingerprints data."""
         await self.server.delete(self.key)
 
     def log(self, request, spider):
-        """Logs given request.
-
-        Parameters
-        ----------
-        request : scrapy.http.Request
-        spider : scrapy.spiders.Spider
-
-        """
         if self.debug:
             msg = "Filtered duplicate request: %(request)s"
             self.logger.debug(msg, {'request': request}, extra={'spider': spider})
@@ -145,3 +65,100 @@ class RFPDupeFilter(BaseDupeFilter):
                    " (see DUPEFILTER_DEBUG to show all duplicates)")
             self.logger.debug(msg, {'request': request}, extra={'spider': spider})
             self.logdupes = False
+
+
+class HashMap(object):
+    def __init__(self, m, seed):
+        self.m = m
+        self.seed = seed
+
+    def hash(self, value):
+        """
+        Hash Algorithm
+        :param value: Value
+        :return: Hash Value
+        """
+        ret = 0
+        for i in range(len(value)):
+            ret += self.seed * ret + ord(value[i])
+        return (self.m - 1) & ret
+
+
+class BloomFilter(object):
+    def __init__(self, server, key, bit=30, hash_number=6):
+        """
+        Initialize BloomFilter
+        :param server: Redis Server
+        :param key: BloomFilter Key
+        :param bit: m = 2 ^ bit
+        :param hash_number: the number of hash function
+        """
+        # default to 1 << 30 = 10,7374,1824 = 2^30 = 128MB, max filter 2^30/hash_number = 1,7895,6970 fingerprints
+        self.m = 1 << bit
+        self.seeds = range(hash_number)
+        self.server = server
+        self.key = key
+        self.maps = [HashMap(self.m, seed) for seed in self.seeds]
+
+    async def exists(self, value):
+        if not value:
+            return False
+        exist = True
+        for map_ in self.maps:
+            offset = map_.hash(value)
+            exist = exist & await self.server.getbit(self.key, offset)
+            if not exist:
+                return False
+        return exist
+
+    async def insert(self, value):
+        """
+        add value to bloom
+        :param value:
+        :return:
+        """
+        for f in self.maps:
+            offset = f.hash(value)
+            await self.server.setbit(self.key, offset, 1)
+
+
+class BloomDupeFilter(RFPDupeFilter):
+    """ 使用redis的位图构建的布隆过滤器 """
+
+    def __init__(self, server, key, debug, bit, hash_number):
+        super().__init__(server, key, debug)
+        self.bit = bit
+        self.hash_number = hash_number
+        self.bf = BloomFilter(server, self.key, bit, hash_number)
+
+    @classmethod
+    async def from_settings(cls, settings):
+        server = await redis_manager.from_settings(settings)
+
+        key = settings.get('DUPEFILTER_KEY', 'dupefilter:%(timestamp)s') % {'timestamp': int(time.time())}
+        debug = settings.getbool('DUPEFILTER_DEBUG')
+        bit = settings.getint('BLOOMFILTER_BIT', 30)
+        hash_number = settings.getint('BLOOMFILTER_HASH_NUMBER', 6)
+        return cls(server, key=key, debug=debug, bit=bit, hash_number=hash_number)
+
+    @classmethod
+    async def from_spider(cls, spider):
+        settings = spider.settings
+        server = await redis_manager.from_settings(settings)
+        dupefilter_key = settings.get("SCHEDULER_DUPEFILTER_KEY",  '%(spider)s:bloomfilter')
+        key = dupefilter_key % {'spider': spider.name}
+        debug = settings.getbool('DUPEFILTER_DEBUG', False)
+        bit = settings.getint('BLOOMFILTER_BIT', 30)
+        hash_number = settings.getint('BLOOMFILTER_HASH_NUMBER', 6)
+        return cls(server, key=key, debug=debug, bit=bit, hash_number=hash_number)
+
+    async def request_seen(self, request):
+        fp = self.request_fingerprint(request)
+        if await self.bf.exists(fp):
+            return True
+        await self.bf.insert(fp)
+        return False
+
+    def log(self, request, spider):
+        super().log(request, spider)
+        spider.crawler.stats.inc_value('bloomfilter/filtered', spider=spider)

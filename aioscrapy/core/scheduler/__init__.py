@@ -88,11 +88,7 @@ class Scheduler(object):
             raise ValueError("Failed to instantiate queue class '%s': %s",
                              self.queue_cls, e)
         try:
-            self.df = load_object(self.dupefilter_cls)(
-                server=self.server,
-                key=self.dupefilter_key % {'spider': spider.name},
-                debug=spider.settings.getbool('DUPEFILTER_DEBUG'),
-            )
+            self.df = await load_object(self.dupefilter_cls).from_spider(spider)
         except TypeError as e:
             raise ValueError("Failed to instantiate dupefilter class '%s': %s",
                              self.dupefilter_cls, e)
