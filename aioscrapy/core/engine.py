@@ -136,7 +136,7 @@ class ExecutionEngine(object):
             else:
                 await self.crawl(request, spider)
 
-        if await self.spider_is_idle(spider) and slot.close_if_idle:
+        if self.running and await self.spider_is_idle(spider) and slot.close_if_idle:
             await self._spider_idle(spider)
 
     def _needs_backout(self, spider):
@@ -181,15 +181,15 @@ class ExecutionEngine(object):
             # downloader has pending requests
             return False
 
-        if self.running and self.slot.start_requests is not None:
+        if self.slot.start_requests is not None:
             # not all start requests are handled
             return False
 
-        if self.running and self.slot.inprogress:
+        if self.slot.inprogress:
             # not all start requests are handled
             return False
 
-        if self.running and await call_helper(self.slot.scheduler.has_pending_requests):
+        if await call_helper(self.slot.scheduler.has_pending_requests):
             # scheduler has pending requests
             return False
 
@@ -237,9 +237,6 @@ class ExecutionEngine(object):
 
     async def close_spider(self, spider, reason='cancelled'):
         """Close (cancel) spider and clear all its outstanding requests"""
-
-        if not self.running:
-            return
 
         slot = self.slot
         if slot.closing:
