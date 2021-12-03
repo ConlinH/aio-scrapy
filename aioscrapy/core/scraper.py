@@ -181,7 +181,7 @@ class Scraper:
             return
         try:
             async for elem in result:
-                asyncio.create_task(self._process_spidermw_output(elem, request, response, spider))
+                await self._process_spidermw_output(elem, request, response, spider)
         except (Exception, BaseException) as e:
             await self.handle_spider_error(e, request, response, spider)
 

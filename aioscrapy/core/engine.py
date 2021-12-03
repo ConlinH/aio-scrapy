@@ -50,6 +50,7 @@ class Slot:
 class ExecutionEngine(object):
 
     def __init__(self, crawler, spider_closed_callback):
+        self.lock = True
         self.start_time = time()
         self.crawler = crawler
         self.settings = crawler.settings
@@ -117,12 +118,14 @@ class ExecutionEngine(object):
         if self.paused:
             return
 
-        while not self._needs_backout(spider):
+        while not self._needs_backout(spider) and self.lock:
+            self.lock = False
             request = await call_helper(slot.scheduler.next_request)
             if not request:
                 break
             slot.add_request(request)
-            asyncio.create_task(self.downloader.fetch(request, spider, self._handle_downloader_output))
+            await self.downloader.fetch(request, spider, self._handle_downloader_output)
+            self.lock = True
 
         if slot.start_requests and not self._needs_backout(spider):
             try:
@@ -169,8 +172,8 @@ class ExecutionEngine(object):
 
         finally:
             self.slot.remove_request(request)
+            asyncio.create_task(self._next_request(self.spider))
         await self.scraper.enqueue_scrape(result, request, spider)
-        asyncio.create_task(self._next_request(self.spider))
 
     async def spider_is_idle(self, spider):
         if not self.scraper.slot.is_idle():
@@ -208,13 +211,8 @@ class ExecutionEngine(object):
             raise RuntimeError("Spider %r not opened when crawling: %s" % (spider.name, request))
 
         await self.signals.send_catch_log(signals.request_scheduled, request=request, spider=spider)
-        if asyncio.iscoroutinefunction(self.slot.scheduler.enqueue_request):
-            succ = await self.slot.scheduler.enqueue_request(request)
-        else:
-            succ = self.slot.scheduler.enqueue_request(request)
-        if not succ:
+        if not await call_helper(self.slot.scheduler.enqueue_request, request):
             await self.signals.send_catch_log(signals.request_dropped, request=request, spider=spider)
-        asyncio.create_task(self._next_request(spider))
 
     async def open_spider(self, spider, start_requests=(), close_if_idle=True):
         if not self.has_capacity():
@@ -228,8 +226,8 @@ class ExecutionEngine(object):
         await call_helper(self.scraper.open_spider, spider)
         await call_helper(self.crawler.stats.open_spider, spider)
         await self.signals.send_catch_log_deferred(signals.spider_opened, spider=spider)
+        await self._next_request(spider)
         self.slot.heartbeat = asyncio.create_task(self.heart_beat(5, spider, self.slot))
-        asyncio.create_task(self._next_request(spider))
 
     async def _close_all_spiders(self):
         dfds = [self.close_spider(s, reason='shutdown') for s in self.open_spiders]
@@ -297,4 +295,4 @@ class ExecutionEngine(object):
     async def heart_beat(self, delay, spider, slot):
         while not slot.closing:
             await asyncio.sleep(delay)
-            asyncio.create_task(self._next_request(spider))
+            await self._next_request(spider)
