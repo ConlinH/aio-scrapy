@@ -120,12 +120,14 @@ class ExecutionEngine(object):
 
         while not self._needs_backout(spider) and self.lock:
             self.lock = False
-            request = await call_helper(slot.scheduler.next_request)
-            if not request:
-                break
-            slot.add_request(request)
-            await self.downloader.fetch(request, spider, self._handle_downloader_output)
-            self.lock = True
+            try:
+                request = await call_helper(slot.scheduler.next_request)
+                if not request:
+                    break
+                slot.add_request(request)
+                await self.downloader.fetch(request, spider, self._handle_downloader_output)
+            finally:
+                self.lock = True
 
         if slot.start_requests and not self._needs_backout(spider):
             try:
