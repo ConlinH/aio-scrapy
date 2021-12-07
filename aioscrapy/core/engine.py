@@ -228,7 +228,7 @@ class ExecutionEngine(object):
         await call_helper(self.scraper.open_spider, spider)
         await call_helper(self.crawler.stats.open_spider, spider)
         await self.signals.send_catch_log_deferred(signals.spider_opened, spider=spider)
-        await self._next_request(spider)
+        asyncio.create_task(self._next_request(spider))
         self.slot.heartbeat = asyncio.create_task(self.heart_beat(5, spider, self.slot))
 
     async def _close_all_spiders(self):
@@ -297,4 +297,4 @@ class ExecutionEngine(object):
     async def heart_beat(self, delay, spider, slot):
         while not slot.closing:
             await asyncio.sleep(delay)
-            await self._next_request(spider)
+            asyncio.create_task(self._next_request(spider))
