@@ -11,48 +11,35 @@ logger = logging.getLogger(__name__)
 
 
 class AioHttpDownloadHandler:
-    session = None
 
-    def __init__(self, settings, crawler=None):
-        self._crawler = crawler
+    def __init__(self, settings):
         self.settings = settings
+        self.aiohttp_client_session_args = settings.get('AIOHTTP_CLIENT_SESSION_ARGS', {})
+        self.verify_ssl = self.settings.get("VERIFY_SSL")
+        if sys.platform.startswith('win'):
+            asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
     @classmethod
-    def from_crawler(cls, crawler):
-        return cls(crawler.settings, crawler)
-
-    def get_session(self, *arg, **kw):
-        if self.session is None:
-            if sys.platform.startswith('win'):
-                asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-            self.session = aiohttp.ClientSession(*arg, **kw)
-        return self.session
+    def from_settings(cls, settings):
+        return cls(settings)
 
     async def download_request(self, request, spider):
-        kwargs = {}
+        kwargs = {
+            'verify_ssl': request.meta.get('verify_ssl', self.verify_ssl),
+            'timeout': self.settings.get('DOWNLOAD_TIMEOUT'),
+            'cookies': dict(request.cookies),
+            'data': request.body or None
+        }
 
-        if request.headers:
-            headers = request.headers
-        elif self.settings.get('headers', False):
-            headers = self.settings.get('headers')
-        else:
-            headers = {}
+        headers = request.headers or self.settings.get('DEFAULT_REQUEST_HEADERS ')
         if isinstance(headers, Headers):
             headers = headers.to_unicode_dict()
         kwargs['headers'] = headers
-
-        timeout = self.settings.get("DOWNLOAD_TIMEOUT", None)
-        if timeout:
-            kwargs['timeout'] = timeout
 
         proxy = request.meta.get("proxy")
         if proxy:
             kwargs["proxy"] = proxy
             logger.info(f"使用代理{proxy}抓取: {request.url}")
-
-        cookies = request.cookies
-        if cookies:
-            kwargs['cookies'] = dict(cookies)
 
         ssl_ciphers = request.meta.get('TLS_CIPHERS')
         if ssl_ciphers:
@@ -60,12 +47,11 @@ class AioHttpDownloadHandler:
             context.set_ciphers(ssl_ciphers)
             kwargs['ssl'] = context
 
-        session = self.get_session()
-        method = getattr(session, request.method.lower())
-        if request.body:
-            kwargs['data'] = request.body
-        response = await method(request.url, **kwargs)
-        content = await response.read()
+        async with aiohttp.ClientSession(**self.aiohttp_client_session_args) as session:
+            method = getattr(session, request.method.lower())
+            async with method(request.url, **kwargs) as response:
+                content = await response.read()
+
         return TextResponse(str(response.url),
                             status=response.status,
                             headers=response.headers,
@@ -73,9 +59,4 @@ class AioHttpDownloadHandler:
                             cookies=response.cookies)
 
     async def close(self):
-        if self.session is not None:
-            await self.session.close()
-
-        # Wait 250 ms for the underlying SSL connections to close
-        # https://docs.aiohttp.org/en/latest/client_advanced.html#graceful-shutdown
-        await asyncio.sleep(0.250)
+        pass
