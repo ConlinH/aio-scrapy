@@ -28,7 +28,8 @@ class Slot:
         self.active = set()
         self.active_size = 0
         self.itemproc_size = 0
-        self.closing = None
+        self.closing_future = None
+        self.closing_lock = True
 
     def add_response_request(self, response, request):
         self.queue.append((response, request))
@@ -76,18 +77,19 @@ class Scraper:
     async def close_spider(self, spider):
         """Close a spider being scraped and release its resources"""
         slot = self.slot
-        slot.closing = asyncio.Future()
+        slot.closing_future = asyncio.Future()
         await self.itemproc.close_spider(spider)
         self._check_if_closing(spider, slot)
-        await slot.closing
+        await slot.closing_future
 
     def is_idle(self):
         """Return True if there isn't any more spiders to process"""
         return not self.slot
 
     def _check_if_closing(self, spider, slot):
-        if slot.closing and slot.is_idle():
-            slot.closing.set_result(spider)
+        if slot.closing_future and slot.is_idle() and slot.closing_lock:
+            slot.closing_future.set_result(spider)
+            slot.closing_lock = False
 
     async def enqueue_scrape(self, response, request, spider):
         slot = self.slot

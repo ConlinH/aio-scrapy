@@ -31,7 +31,7 @@ class AioHttpDownloadHandler:
             'data': request.body or None
         }
 
-        headers = request.headers or self.settings.get('DEFAULT_REQUEST_HEADERS')
+        headers = request.headers or self.settings.get('DEFAULT_REQUEST_HEADERS ')
         if isinstance(headers, Headers):
             headers = headers.to_unicode_dict()
         kwargs['headers'] = headers
