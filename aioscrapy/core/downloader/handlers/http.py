@@ -31,7 +31,7 @@ class AioHttpDownloadHandler:
             'data': request.body or None
         }
 
-        headers = request.headers or self.settings.get('DEFAULT_REQUEST_HEADERS ')
+        headers = request.headers or self.settings.get('DEFAULT_REQUEST_HEADERS')
         if isinstance(headers, Headers):
             headers = headers.to_unicode_dict()
         kwargs['headers'] = headers
@@ -48,8 +48,7 @@ class AioHttpDownloadHandler:
             kwargs['ssl'] = context
 
         async with aiohttp.ClientSession(**self.aiohttp_client_session_args) as session:
-            method = getattr(session, request.method.lower())
-            async with method(request.url, **kwargs) as response:
+            async with session.request(request.method, request.url, **kwargs) as response:
                 content = await response.read()
 
         return TextResponse(str(response.url),
