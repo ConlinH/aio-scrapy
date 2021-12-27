@@ -26,6 +26,7 @@ from scrapy.utils.misc import load_object
 from scrapy.interfaces import ISpiderLoader
 from scrapy.exceptions import ScrapyDeprecationWarning
 
+from aioscrapy.utils.tools import async_generator_wrapper
 from aioscrapy.middleware import ExtensionManager
 from aioscrapy.core.engine import ExecutionEngine
 from aioscrapy.settings import AioSettings
@@ -78,7 +79,7 @@ class Crawler:
 
         try:
             self.engine = self._create_engine()
-            start_requests = iter(self.spider.start_requests())
+            start_requests = await async_generator_wrapper(self.spider.start_requests())
             await self.engine.start(self.spider, start_requests)
         except Exception as e:
             logger.exception(e)
@@ -233,9 +234,9 @@ class CrawlerProcess(CrawlerRunner):
         finally:
             asyncio.get_event_loop().stop()
 
-    @staticmethod
-    async def recycle_db_connect():
+    async def recycle_db_connect(self):
         # 回收所以的链接
-        from aioscrapy.connection import redis_manager, mysql_manager
-        await redis_manager.close_all()
-        await mysql_manager.close_all()
+        if not len(self._active):
+            from aioscrapy.connection import redis_manager, mysql_manager
+            await redis_manager.close_all()
+            await mysql_manager.close_all()
