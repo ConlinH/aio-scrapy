@@ -1,3 +1,4 @@
+import socket
 from typing import Union, Tuple
 from contextlib import asynccontextmanager
 
@@ -13,6 +14,11 @@ class AioMysqlManager(object):
             return alias_or_params, None
 
         mysql_params = alias_or_params.copy()
+
+        # 当host为域名形式时，将域名转换为ip形式
+        # https://github.com/aio-libs/aiomysql/issues/641
+        mysql_params.update({'host': socket.gethostbyname(mysql_params['host'])})
+
         alias = mysql_params.pop('alias', f"{mysql_params['host']}{mysql_params['port']}")
         return alias, mysql_params
 
@@ -62,27 +68,28 @@ if __name__ == '__main__':
 
     async def test():
         mysql_pool = await mysql_manager.create({
-            'alias': 'xx',
-            'db': 'test',
+            'alias': 'xxx',  # 为改链接池取个别名
+            'db': 'mysql',
             'user': 'root',
-            'password': 'root',
-            'host': '192.168.5.237',
-            'port': 3306,
-            'charset': 'utf8',
+            'password': '123456',
+            'host': '192.168.234.128',
+            # 'host': 'mysql.test.com',
+            'port': 3306
         })
 
         # 方式一:
         try:
             conn = await mysql_pool.acquire()
             cur = await conn.cursor()
-            print(await cur.execute('select 1'))
+            await cur.execute('select * from user')
+            print(await cur.fetchall())
             # await conn.commit()
         finally:
             await cur.close()
             await mysql_pool.release(conn)
 
         # 方式二:
-        async with mysql_manager.get('xx') as (conn, cur):
+        async with mysql_manager.get('xxx') as (conn, cur):
             print(await cur.execute('select 1'))
             # await conn.commit()
 
