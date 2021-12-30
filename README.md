@@ -8,7 +8,7 @@
 
 ### 安装
 ``` 
-# python版本==3.7
+# python版本>=3.7
 
 # 下载安装
 pip install aio-scrapy
