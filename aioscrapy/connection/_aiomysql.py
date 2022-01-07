@@ -19,7 +19,7 @@ class AioMysqlManager(object):
         # https://github.com/aio-libs/aiomysql/issues/641
         mysql_params.update({'host': socket.gethostbyname(mysql_params['host'])})
 
-        alias = mysql_params.pop('alias', f"{mysql_params['host']}{mysql_params['port']}")
+        alias = mysql_params.pop('alias', f"{mysql_params['host']}{mysql_params['port']}{mysql_params.get('db', '')}")
         return alias, mysql_params
 
     async def create(self, params: Union[dict], alias=None):
