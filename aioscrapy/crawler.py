@@ -237,5 +237,5 @@ class CrawlerProcess(CrawlerRunner):
     async def recycle_db_connect(self):
         # 回收所以的链接
         if not len(self._active):
-            from aioscrapy.db import DBManager
-            await DBManager.close_all()
+            from aioscrapy.db import db_manager
+            await db_manager.close_all()
