@@ -1,6 +1,6 @@
 import logging
 
-from scrapy.utils.reqser import request_to_dict, request_from_dict
+from aioscrapy.utils.reqser import request_to_dict, request_from_dict
 
 from .serializ import PickleCompat
 
@@ -104,7 +104,7 @@ class PriorityQueue(Base):
     async def push(self, request):
         """Push a request"""
         data = self._encode_request(request)
-        score = -request.priority
+        score = request.priority
         # We don't use zadd method as the order of arguments change depending on
         # whether the class is Redis or StrictRedis, and the option of using
         # kwargs only accepts strings, not bytes.
