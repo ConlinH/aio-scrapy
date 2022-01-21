@@ -130,9 +130,6 @@ class ExecutionEngine(object):
             self.lock = False
             try:
                 request = await call_helper(slot.scheduler.next_request)
-                if request == 'repeat_request_task':
-                    continue
-
                 if not request:
                     break
                 slot.add_request(request)
