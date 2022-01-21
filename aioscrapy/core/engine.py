@@ -13,6 +13,8 @@ from scrapy.utils.log import (
 from scrapy.utils.misc import load_object
 
 from aioscrapy.utils.tools import call_helper
+from aioscrapy.db import db_manager
+
 from .scraper import Scraper
 
 logger = logging.getLogger(__name__)
@@ -23,7 +25,9 @@ class Slot:
     def __init__(self, start_requests, close_if_idle, scheduler):
         self.closing = None
         self.inprogress = set()  # requests in progress
+
         self.start_requests = start_requests
+        self.doing_start_requests = False
         self.close_if_idle = close_if_idle
         self.scheduler = scheduler
         self.heartbeat = None
@@ -71,6 +75,10 @@ class ExecutionEngine(object):
         """Start the execution engine"""
         if self.running:
             raise RuntimeError("Engine already running")
+
+        # 创建所有数据库链接
+        await db_manager.from_crawler(spider)
+
         self.start_time = time()
         await self.signals.send_catch_log_deferred(signal=signals.engine_started)
         self.running = True
@@ -118,10 +126,13 @@ class ExecutionEngine(object):
         if self.paused:
             return
 
-        while not self._needs_backout(spider) and self.lock:
+        while self.lock and not self._needs_backout(spider) and self.lock:
             self.lock = False
             try:
                 request = await call_helper(slot.scheduler.next_request)
+                if request == 'repeat_request_task':
+                    continue
+
                 if not request:
                     break
                 slot.add_request(request)

@@ -237,6 +237,5 @@ class CrawlerProcess(CrawlerRunner):
     async def recycle_db_connect(self):
         # 回收所以的链接
         if not len(self._active):
-            from aioscrapy.connection import redis_manager, mysql_manager
-            await redis_manager.close_all()
-            await mysql_manager.close_all()
+            from aioscrapy.db import DBManager
+            await DBManager.close_all()

@@ -22,8 +22,10 @@ class DemoAioscrapyRedisSpider(AioSpider):
         'DUPEFILTER_CLASS': 'aioscrapy.core.scheduler.dupefilter.RFPDupeFilter',
         'SCHEDULER_SERIALIZER': 'aioscrapy.core.scheduler.serializ.JsonCompat',
         'REDIS_ARGS': {
-            'url': 'redis://:password@127.0.0.1:6379/1',
-            'max_connections': 2,
+            'default': {
+                'url': 'redis://:password@127.0.0.1:6379/1',
+                'max_connections': 2,
+            }
         },
     }
 

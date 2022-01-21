@@ -1,8 +1,7 @@
-import importlib
 import six
 
 from scrapy.utils.misc import load_object
-from aioscrapy.connection import redis_manager
+from aioscrapy.db import get_pool
 
 
 # TODO: add SCRAPY_JOB support.
@@ -61,7 +60,7 @@ class Scheduler(object):
             # kwargs['serializer'] = importlib.import_module(kwargs['serializer'])
             kwargs['serializer'] = load_object(kwargs['serializer'])
 
-        server = await redis_manager.from_settings(settings)
+        server = await get_pool('redis')
         # Ensure the connection is working.
         await server.ping()
 

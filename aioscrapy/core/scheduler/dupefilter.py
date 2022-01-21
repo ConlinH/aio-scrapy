@@ -4,7 +4,7 @@ import time
 from scrapy.dupefilters import BaseDupeFilter
 from scrapy.utils.request import request_fingerprint
 
-from aioscrapy.connection import redis_manager
+from aioscrapy.db import get_pool
 
 
 logger = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ class RFPDupeFilter(BaseDupeFilter):
     @classmethod
     async def from_spider(cls, spider):
         settings = spider.settings
-        server = await redis_manager.from_settings(settings)
+        server = await get_pool('redis')
         dupefilter_key = settings.get("SCHEDULER_DUPEFILTER_KEY",  '%(spider)s:bloomfilter')
         key = dupefilter_key % {'spider': spider.name}
         debug = settings.getbool('DUPEFILTER_DEBUG', False)
@@ -33,7 +33,7 @@ class RFPDupeFilter(BaseDupeFilter):
 
     @classmethod
     async def from_settings(cls, settings):
-        server = await redis_manager.from_settings(settings)
+        server = await get_pool('redis')
         key = settings['DUPEFILTER_KEY'] % {'timestamp': int(time.time())}
         debug = settings.getbool('DUPEFILTER_DEBUG')
         return cls(server, key=key, debug=debug)
