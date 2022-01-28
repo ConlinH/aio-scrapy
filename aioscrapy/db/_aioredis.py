@@ -1,10 +1,10 @@
 
 from aioredis import BlockingConnectionPool, Redis
 
-from .interface import IManager
+from .abcmanager import ABCManager
 
 
-class AioRedisManager(IManager):
+class AioRedisManager(ABCManager):
     _clients = {}
 
     async def create(self, alias: str, params: dict) -> Redis:

@@ -3,10 +3,10 @@ from contextlib import asynccontextmanager
 
 from aiomysql import create_pool
 
-from .interface import IManager
+from .abcmanager import ABCManager
 
 
-class AioMysqlManager(IManager):
+class AioMysqlManager(ABCManager):
     _clients = {}
 
     async def create(self, alias: str, params: dict):
