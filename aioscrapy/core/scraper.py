@@ -181,11 +181,16 @@ class Scraper:
     async def handle_spider_output(self, result, request, response, spider):
         if not result:
             return
-        try:
-            async for elem in result:
-                await self._process_spidermw_output(elem, request, response, spider)
-        except (Exception, BaseException) as e:
-            await self.handle_spider_error(e, request, response, spider)
+
+        while True:
+            try:
+                res = await result.__anext__()
+            except StopAsyncIteration:
+                break
+            except Exception as e:
+                await self.handle_spider_error(e, request, response, spider)
+            else:
+                await self._process_spidermw_output(res, request, response, spider)
 
     async def _process_spidermw_output(self, output, request, response, spider):
         """Process each Request/Item (given in the output parameter) returned
