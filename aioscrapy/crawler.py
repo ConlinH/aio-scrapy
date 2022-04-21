@@ -216,7 +216,9 @@ class CrawlerProcess(CrawlerRunner):
         await self.recycle_db_connect()
 
     def start(self):
-        if not sys.platform.startswith('win'):
+        if sys.platform.startswith('win'):
+            asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+        else:
             try:
                 import uvloop
                 asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())

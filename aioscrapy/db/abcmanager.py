@@ -20,6 +20,10 @@ class ABCManager(object, metaclass=ABCMeta):
         """关闭指定连接池"""
 
     @abstractmethod
+    async def from_dict(self, db_args: dict):
+        """更具dict实例化连接池管理类"""
+
+    @abstractmethod
     async def from_settings(self, settings: "scrapy.settings.Setting"):
         """更具setting实例化连接池管理类"""
 

@@ -1,7 +1,9 @@
+import logging
 
 from ._aioredis import redis_manager
 from ._aiomysql import mysql_manager
 
+logger = logging.getLogger(__name__)
 
 __all__ = ['db_manager', 'get_pool', 'get_manager']
 
@@ -28,6 +30,15 @@ class DBManager:
     async def close_all():
         for manager in db_manager_map.values():
             await manager.close_all()
+
+    @staticmethod
+    async def from_dict(db_args: dict):
+        for db_type, args in db_args.items():
+            for db_args in args.items():
+                manager = db_manager_map.get(db_type)
+                if manager is None:
+                    logger.warning(f'Not support db type: {db_type}; Only {", ".join(db_manager_map.keys())} supported')
+                await manager.from_dict(db_args)
 
     @staticmethod
     async def from_settings(settings: "scrapy.settings.Setting"):

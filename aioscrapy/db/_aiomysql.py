@@ -10,6 +10,8 @@ class AioMysqlManager(ABCManager):
     _clients = {}
 
     async def create(self, alias: str, params: dict):
+        if alias in self._clients.keys():
+            return self._clients[alias]
         # 当host为域名形式时，将域名转换为ip形式
         # https://github.com/aio-libs/aiomysql/issues/641
         params.update({'host': socket.gethostbyname(params['host'])})
@@ -46,6 +48,10 @@ class AioMysqlManager(ABCManager):
     async def close_all(self):
         for alias in list(self._clients.keys()):
             await self.close(alias)
+
+    async def from_dict(self, db_args: dict):
+        for alias, mysql_args in db_args.items():
+            await self.create(alias, mysql_args)
 
     async def from_settings(self, settings: "scrapy.settings.Setting"):
         for alias, mysql_args in settings.getdict('MYSQL_ARGS').items():

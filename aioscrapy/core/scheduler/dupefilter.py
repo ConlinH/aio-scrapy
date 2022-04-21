@@ -133,7 +133,7 @@ class BloomDupeFilter(RFPDupeFilter):
 
     @classmethod
     async def from_settings(cls, settings):
-        server = await redis_manager.from_settings(settings)
+        server = await get_pool('redis')
 
         key = settings.get('DUPEFILTER_KEY', 'dupefilter:%(timestamp)s') % {'timestamp': int(time.time())}
         debug = settings.getbool('DUPEFILTER_DEBUG')
@@ -144,7 +144,7 @@ class BloomDupeFilter(RFPDupeFilter):
     @classmethod
     async def from_spider(cls, spider):
         settings = spider.settings
-        server = await redis_manager.from_settings(settings)
+        server = await get_pool('redis')
         dupefilter_key = settings.get("SCHEDULER_DUPEFILTER_KEY",  '%(spider)s:bloomfilter')
         key = dupefilter_key % {'spider': spider.name}
         debug = settings.getbool('DUPEFILTER_DEBUG', False)

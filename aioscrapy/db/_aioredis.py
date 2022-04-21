@@ -33,6 +33,10 @@ class AioRedisManager(ABCManager):
         for alias in list(self._clients.keys()):
             await self.close(alias)
 
+    async def from_dict(self, db_args: dict):
+        for alias, redis_args in db_args.items():
+            await self.create(alias, redis_args)
+
     async def from_settings(self, settings: "scrapy.settings.Setting"):
         for alias, redis_args in settings.getdict('REDIS_ARGS').items():
             await self.create(alias, redis_args)
