@@ -1,13 +1,17 @@
 
 from aioredis import BlockingConnectionPool, Redis
 
-from .abcmanager import ABCManager
+from .absmanager import ABSManager
 
 
-class AioRedisManager(ABCManager):
+class AioRedisManager(ABSManager):
     _clients = {}
 
     async def create(self, alias: str, params: dict) -> Redis:
+        if alias in self._clients:
+            return self._clients[alias]
+        
+        params = params.copy()
         url = params.pop('url', None)
         if url:
             connection_pool = BlockingConnectionPool.from_url(url, **params)

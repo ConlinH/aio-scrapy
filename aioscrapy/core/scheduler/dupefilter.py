@@ -24,7 +24,7 @@ class RFPDupeFilter(BaseDupeFilter):
     @classmethod
     async def from_spider(cls, spider):
         settings = spider.settings
-        server = await get_pool('redis')
+        server = get_pool('redis')
         dupefilter_key = settings.get("SCHEDULER_DUPEFILTER_KEY",  '%(spider)s:bloomfilter')
         key = dupefilter_key % {'spider': spider.name}
         debug = settings.getbool('DUPEFILTER_DEBUG', False)
@@ -33,7 +33,7 @@ class RFPDupeFilter(BaseDupeFilter):
 
     @classmethod
     async def from_settings(cls, settings):
-        server = await get_pool('redis')
+        server = get_pool('redis')
         key = settings['DUPEFILTER_KEY'] % {'timestamp': int(time.time())}
         debug = settings.getbool('DUPEFILTER_DEBUG')
         return cls(server, key=key, debug=debug)

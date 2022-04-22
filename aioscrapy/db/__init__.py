@@ -34,11 +34,10 @@ class DBManager:
     @staticmethod
     async def from_dict(db_args: dict):
         for db_type, args in db_args.items():
-            for db_args in args.items():
-                manager = db_manager_map.get(db_type)
-                if manager is None:
-                    logger.warning(f'Not support db type: {db_type}; Only {", ".join(db_manager_map.keys())} supported')
-                await manager.from_dict(db_args)
+            manager = db_manager_map.get(db_type)
+            if manager is None:
+                logger.warning(f'Not support db type: {db_type}; Only {", ".join(db_manager_map.keys())} supported')
+            await manager.from_dict(args)
 
     @staticmethod
     async def from_settings(settings: "scrapy.settings.Setting"):
@@ -47,6 +46,11 @@ class DBManager:
 
     async def from_crawler(self, crawler):
         return await self.from_settings(crawler.settings)
+
+    def __getattr__(self, db_type: str):
+        if db_type not in db_manager_map:
+            raise AttributeError(f'Not support db type: {db_type}')
+        return db_manager_map[db_type]
 
 
 db_manager = DBManager()

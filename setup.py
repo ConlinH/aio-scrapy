@@ -18,7 +18,7 @@ LONG_DESCRIPTION = ''
 URL = "https://github.com/conlin-huang/aio-scrapy.git"
 AUTHOR = "conlin"
 AUTHOR_EMAIL = "995018884@qq.com"
-VERSION = "0.0.3"
+VERSION = "0.0.4"
 LICENSE = "MIT"
 
 setup(

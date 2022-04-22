@@ -1,7 +1,12 @@
 from abc import ABCMeta, abstractmethod
 
 
-class ABCManager(object, metaclass=ABCMeta):
+class ABSManager(object, metaclass=ABCMeta):
+
+    @property
+    @abstractmethod
+    def _clients(self):
+        return {}
 
     @abstractmethod
     async def create(self, alias: str, params: dict):
@@ -29,3 +34,12 @@ class ABCManager(object, metaclass=ABCMeta):
 
     async def from_crawler(self, crawler):
         return await self.from_settings(crawler.settings)
+
+    def __call__(self, alias):
+        return self.get_pool(alias)
+
+    def __getitem__(self, alias):
+        return self.get_pool(alias)
+
+    def __getattr__(self, alias):
+        return self.get_pool(alias)

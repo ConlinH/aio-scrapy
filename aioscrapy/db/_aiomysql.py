@@ -3,15 +3,16 @@ from contextlib import asynccontextmanager
 
 from aiomysql import create_pool
 
-from .abcmanager import ABCManager
+from .absmanager import ABSManager
 
 
-class AioMysqlManager(ABCManager):
+class AioMysqlManager(ABSManager):
     _clients = {}
 
     async def create(self, alias: str, params: dict):
-        if alias in self._clients.keys():
+        if alias in self._clients:
             return self._clients[alias]
+        
         # 当host为域名形式时，将域名转换为ip形式
         # https://github.com/aio-libs/aiomysql/issues/641
         params.update({'host': socket.gethostbyname(params['host'])})
