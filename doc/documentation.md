@@ -1,6 +1,6 @@
 
 English | [中文](./documentation_zh.md)
-#### Scheduler Queue
+### Scheduler Queue
 `SCHEDULER_QUEUE_CLASS`: gets the queue type of the request task, The default type is `memory`.
 ##### memory
 ```python
@@ -34,7 +34,7 @@ RABBITMQ_ARGS = {
 }
 ```
 
-#### Dupefilters
+### Dupefilters
 `DUPEFILTER_CLASS`: filter duplicate urls, No default configuration.
 
 ##### disk
@@ -57,7 +57,7 @@ DUPEFILTER_CLASS = 'aioscrapy.dupefilters.redis.BloomDupeFilter'
 ### Close Sipder
 `CLOSE_SPIDER_ON_IDLE`: Whether to close crawler when queue has no work, Default `True`.
 
-#### Scrapyd
+### Scrapyd
 How to deploy distributed crawler of aio-scrapy with scrapyd
 
 Install scrapyd
@@ -106,7 +106,7 @@ scrapyd &
 ```
 Please refer to scrapyd's documentation for more details.
 
-#### Other
+### Other
 
 ##### MysqlPipeline
 Mysql Bulk Storage Middleware

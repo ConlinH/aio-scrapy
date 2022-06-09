@@ -1,6 +1,6 @@
 
-[英文](./Documentation.md)| 中文
-#### 调度的队列
+[英文](./documentation.md)| 中文
+### 调度的队列
 `SCHEDULER_QUEUE_CLASS`：获取请求任务的队列类型，默认为`memory`
 ##### memory
 ```python
@@ -34,7 +34,7 @@ RABBITMQ_ARGS = {
 }
 ```
 
-#### Dupefilters
+### Dupefilters
 `DUPEFILTER_CLASS`：配置url的去重类， 默认不配
 
 ##### disk
@@ -57,7 +57,7 @@ DUPEFILTER_CLASS = 'aioscrapy.dupefilters.redis.BloomDupeFilter'
 `CLOSE_SPIDER_ON_IDLE`: 当没有队列任务的时候是否关闭爬虫, 默认 `True`.
 
 
-#### Scrapyd
+### Scrapyd
 如可使用scrapyd部署aio-scrapy的分布式爬虫
 
 安装scrapyd
@@ -105,7 +105,7 @@ scrapyd &
 ```
 更多具体操作请参考scrapyd的文档
 
-#### 其它
+### 其它
 
 ##### MysqlPipeline
 Mysql批量存储中间件
