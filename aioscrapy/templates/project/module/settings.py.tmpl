@@ -1,0 +1,66 @@
+
+BOT_NAME = '$project_name'
+
+SPIDER_MODULES = ['$project_name.spiders']
+NEWSPIDER_MODULE = '$project_name.spiders'
+
+# SPIDER_MIDDLEWARES = {
+#     '$project_name.middlewares.${ProjectName}SpiderMiddleware': 543,
+# }
+
+# DOWNLOADER_MIDDLEWARES = {
+#     '$project_name.middlewares.${ProjectName}DownloaderMiddleware': 543,
+# }
+
+# EXTENSIONS = {
+# }
+
+# ITEM_PIPELINES = {
+#     '$project_name.pipelines.${ProjectName}Pipeline': 300,
+#     # 'aioscrapy.pipelines.db.MysqlPipeline': 100,
+# }
+
+# REDIS_ARGS = {
+#     # "default"为该链接池别名 (只从该redis获取任务队列)
+#     'default': {
+#         'url': 'redis://192.168.234.128:6379/1',
+#         'max_connections': 4,
+#         'retry_on_timeout': True,
+#         'health_check_interval': 30,
+#     },
+#
+#     # 'proxy': {
+#     #     'url': 'redis://:password@192.168.234.128:6379/2',
+#     #     'max_connections': 4,
+#     #     'retry_on_timeout': True,
+#     #     'health_check_interval': 30,
+#     # }
+# }
+
+# MYSQL_ARGS = {
+#     'default': {
+#         'db': 'test',
+#         'user': 'root',
+#         'password': '123456',
+#         'host': '192.168.234.128',
+#         'port': 3306,
+#         'charset': 'utf8mb4',
+#     },
+#
+#     # 'mysql2': {
+#     #     'db': 'test2',
+#     #     'user': 'root',
+#     #     'password': 'root',
+#     #     'host': '127.0.0.1',
+#     #     'port': 3306,
+#     #     'charset': 'utf8mb4',
+#     # }
+# }
+# SAVE_CACHE_NUM = 500        # 每500个item触发一次数据库写入， 将所有缓存的数据写入
+# SAVE_CACHE_INTERVAL = 10    # 每10秒触发一次数据库写入， 将所有缓存的数据写入
+
+
+# CONCURRENT_REQUESTS = 32
+# DOWNLOAD_DELAY = 3
+# CONCURRENT_REQUESTS_PER_DOMAIN = 16
+# CONCURRENT_REQUESTS_PER_IP = 16

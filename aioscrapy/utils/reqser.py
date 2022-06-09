@@ -3,9 +3,9 @@ Helper functions for serializing (and deserializing) requests.
 """
 import inspect
 
-from scrapy.http import Request
-from scrapy.utils.python import to_unicode
-from scrapy.utils.misc import load_object
+from aioscrapy.http import Request
+from aioscrapy.utils.python import to_unicode
+from aioscrapy.utils.misc import load_object
 
 
 def request_to_dict(request, spider=None):

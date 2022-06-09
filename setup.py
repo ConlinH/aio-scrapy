@@ -1,53 +1,57 @@
-import os
+from os.path import dirname, join
+from setuptools import setup, find_packages
 
-from setuptools import setup
+with open(join(dirname(__file__), 'aioscrapy/VERSION'), 'rb') as f:
+    version = f.read().decode('ascii').strip()
 
-
-def list_dir(dir_path):
-    result = [dir_path]
-    for file in os.listdir(dir_path):
-        if os.path.isdir(os.path.join(dir_path, file)):
-            result.extend(list_dir(os.path.join(dir_path, file)))
-    return result
-
-
-NAME = "aio_scrapy"
-PACKAGES = list_dir('aioscrapy')
-DESCRIPTION = "Replace twisted of Scrapy with asyncio and aiohttp"
-LONG_DESCRIPTION = ''
-URL = "https://github.com/conlin-huang/aio-scrapy.git"
-AUTHOR = "conlin"
-AUTHOR_EMAIL = "995018884@qq.com"
-VERSION = "0.0.4"
-LICENSE = "MIT"
+install_requires = [
+    "aiohttp",
+    "w3lib",
+    "parsel",
+    "PyDispatcher",
+    'zope.interface>=4.1.3'
+    "redis>=4.3.1",
+]
+extras_require = {}
 
 setup(
-    name=NAME,
-    version=VERSION,
-    description=DESCRIPTION,
-    long_description=LONG_DESCRIPTION,
+    name='aio-scrapy',
+    version=version,
+    url='https://github.com/conlin-huang/aio-scrapy.git',
+    description='A high-level Web Crawling and Web Scraping framework based on Asyncio',
+    long_description=open('README.md', encoding='utf-8').read(),
+    author='conlin',
+    author_email="995018884@qq.com",
+    license="MIT",
+    packages=find_packages(exclude=('example',)),
+    include_package_data=True,
+    zip_safe=False,
+    entry_points={
+        'console_scripts': ['aioscrapy = aioscrapy.cmdline:execute']
+    },
     classifiers=[
+        'Framework :: aioscrapy',
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 3.7',
         'Intended Audience :: Developers',
         'Operating System :: OS Independent',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Topic :: Internet :: WWW/HTTP',
+        'Topic :: Software Development :: Libraries :: Application Frameworks',
+        'Topic :: Software Development :: Libraries :: Python Modules',
     ],
-    url=URL,
-    author=AUTHOR,
-    author_email=AUTHOR_EMAIL,
-    license=LICENSE,
-    packages=PACKAGES,
-    include_package_data=True,
-    zip_safe=True,
-    install_requires=[
-        "scrapy-redis",
-        "scrapy",
-        "aiohttp",
-        "aioredis >= 2.0.0",
-        "aiomysql"
-    ],
+    python_requires='>=3.7',
+    install_requires=install_requires,
+    extras_require=extras_require,
     keywords=[
-        'aio-scrapy', 'scrapy', 'aioscrapy',
-        'scrapy redis', 'asyncio', 'spider',
+        'aio-scrapy',
+        'scrapy',
+        'aioscrapy',
+        'scrapy redis',
+        'asyncio',
+        'spider',
     ]
 )

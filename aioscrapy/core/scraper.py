@@ -5,11 +5,11 @@ import logging
 from collections import deque
 
 from itemadapter import is_item
-from scrapy import signals
-from scrapy.exceptions import CloseSpider, DropItem, IgnoreRequest
-from scrapy.http import Request, Response
-from scrapy.utils.log import logformatter_adapter
-from scrapy.utils.misc import load_object, warn_on_generator_with_return_value
+from aioscrapy import signals
+from aioscrapy.exceptions import CloseSpider, DropItem, IgnoreRequest
+from aioscrapy.http import Request, Response
+from aioscrapy.utils.log import logformatter_adapter
+from aioscrapy.utils.misc import load_object
 
 from aioscrapy.middleware import SpiderMiddlewareManager
 from aioscrapy.utils.tools import call_helper
@@ -123,11 +123,11 @@ class Scraper:
         if not isinstance(result, (Response, Exception, BaseException)):
             raise TypeError(f"Incorrect type: expected Response or Failure, got {type(result)}: {result!r}")
         try:
-            response = await self._scrape2(result, request, spider)  # returns spider's processed output
+            output = await self._scrape2(result, request, spider)  # returns spider's processed output
         except (Exception, BaseException) as e:
             await self.handle_spider_error(e, request, result, spider)
         else:
-            await self.handle_spider_output(response, request, result, spider)
+            await self.handle_spider_output(output, request, result, spider)
 
     async def _scrape2(self, result, request, spider):
         """
@@ -147,7 +147,6 @@ class Scraper:
         if isinstance(result, Response):
             # 将Response丢给spider的解析函数
             callback = request.callback or spider._parse
-            warn_on_generator_with_return_value(spider, callback)
             result.request = request
             # 将parse解析出的结果,变成可迭代对象
             return await call_helper(callback, result, **result.request.cb_kwargs)
@@ -155,7 +154,6 @@ class Scraper:
             if request.errback is None:
                 raise result
             # 下载中间件或下载结果出现错误,回调request中的errback函数
-            warn_on_generator_with_return_value(spider, request.errback)
             return await call_helper(request.errback, result)
 
     async def handle_spider_error(self, exc, request, response, spider):

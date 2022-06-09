@@ -14,22 +14,22 @@ except ImportError:
     MultipleInvalid = None
 
 from zope.interface.verify import verifyClass
-from scrapy import signals, Spider
-from scrapy.settings import overridden_settings
-from scrapy.utils.log import (
+from aioscrapy import signals, Spider
+from aioscrapy.settings import overridden_settings
+from aioscrapy.utils.log import (
     get_scrapy_root_handler,
     install_scrapy_root_handler,
     LogCounterHandler,
     configure_logging,
 )
-from scrapy.utils.misc import load_object
-from scrapy.interfaces import ISpiderLoader
-from scrapy.exceptions import ScrapyDeprecationWarning
+from aioscrapy.utils.misc import load_object
+from aioscrapy.spiderloader import ISpiderLoader
+from aioscrapy.exceptions import AioScrapyDeprecationWarning
 
 from aioscrapy.utils.tools import async_generator_wrapper
 from aioscrapy.middleware import ExtensionManager
 from aioscrapy.core.engine import ExecutionEngine
-from aioscrapy.settings import AioSettings
+from aioscrapy.settings import Settings
 from aioscrapy.signalmanager import SignalManager
 from aioscrapy.utils.ossignal import install_shutdown_handlers, signal_names
 
@@ -43,7 +43,7 @@ class Crawler:
             raise ValueError('The spidercls argument must be a class, not an object')
 
         if isinstance(settings, dict) or settings is None:
-            settings = AioSettings(settings)
+            settings = Settings(settings)
 
         self.spidercls = spidercls
         self.settings = settings.copy()
@@ -118,18 +118,18 @@ class CrawlerRunner:
         excs = (DoesNotImplement, MultipleInvalid) if MultipleInvalid else DoesNotImplement
         try:
             verifyClass(ISpiderLoader, loader_cls)
-        except excs:
+        except excs as e:
             warnings.warn(
                 'SPIDER_LOADER_CLASS (previously named SPIDER_MANAGER_CLASS) does '
                 'not fully implement scrapy.interfaces.ISpiderLoader interface. '
                 'Please add all missing methods to avoid unexpected runtime errors.',
-                category=ScrapyDeprecationWarning, stacklevel=2
+                category=AioScrapyDeprecationWarning, stacklevel=2
             )
         return loader_cls.from_settings(settings.frozencopy())
 
     def __init__(self, settings=None):
         if isinstance(settings, dict) or settings is None:
-            settings = AioSettings(settings)
+            settings = Settings(settings)
         self.settings = settings
         self.spider_loader = self._get_spider_loader(settings)
         self._crawlers = set()
@@ -140,7 +140,7 @@ class CrawlerRunner:
     def spiders(self):
         warnings.warn("CrawlerRunner.spiders attribute is renamed to "
                       "CrawlerRunner.spider_loader.",
-                      category=ScrapyDeprecationWarning, stacklevel=2)
+                      category=AioScrapyDeprecationWarning, stacklevel=2)
         return self.spider_loader
 
     def crawl(self, crawler_or_spidercls, *args, **kwargs):

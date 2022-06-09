@@ -1,11 +1,11 @@
 import asyncio
 import logging
 import ssl
-import sys
+import re
 
-from scrapy.http import Headers
-from aioscrapy.https import TextResponse
 import aiohttp
+
+from aioscrapy.http import HtmlResponse
 
 logger = logging.getLogger(__name__)
 
@@ -30,14 +30,12 @@ class AioHttpDownloadHandler:
     async def download_request(self, request, spider):
         kwargs = {
             'verify_ssl': request.meta.get('verify_ssl', self.verify_ssl),
-            'timeout': self.settings.get('DOWNLOAD_TIMEOUT'),
+            'timeout': request.meta.get('download_timeout', 180),
             'cookies': dict(request.cookies),
             'data': request.body or None
         }
 
         headers = request.headers or self.settings.get('DEFAULT_REQUEST_HEADERS')
-        if isinstance(headers, Headers):
-            headers = headers.to_unicode_dict()
         kwargs['headers'] = headers
 
         ssl_ciphers = request.meta.get('TLS_CIPHERS')
@@ -49,23 +47,31 @@ class AioHttpDownloadHandler:
         proxy = request.meta.get("proxy")
         if proxy:
             kwargs["proxy"] = proxy
-            logger.info(f"使用代理{proxy}抓取: {request.url}")
+            logger.debug(f"使用代理{proxy}抓取: {request.url}")
 
             async with aiohttp.ClientSession(**self.aiohttp_client_session_args) as session:
                 async with session.request(request.method, request.url, **kwargs) as response:
                     content = await response.read()
 
-        # 当不用代理的时候，session不关闭
+        # Don't close session on the proxy is not in use
         else:
             session = self.get_session(**self.aiohttp_client_session_args)
             async with session.request(request.method, request.url, **kwargs) as response:
                 content = await response.read()
 
-        return TextResponse(str(response.url),
-                            status=response.status,
-                            headers=response.headers,
-                            body=content,
-                            cookies=response.cookies)
+        response_cookies = response.cookies.output() or None
+        if response_cookies:
+            response_cookies = {
+                    cookie[0]: cookie[1] for cookie in re.findall(r'Set-Cookie: (.*?)=(.*?); Domain', response_cookies, re.S)
+                }
+
+        return HtmlResponse(
+            str(response.url),
+            status=response.status,
+            headers=response.headers,
+            body=content,
+            cookies=response_cookies
+        )
 
     async def close(self):
         if self.session is not None:

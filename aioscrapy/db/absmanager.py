@@ -1,7 +1,7 @@
 from abc import ABCMeta, abstractmethod
 
 
-class ABSManager(object, metaclass=ABCMeta):
+class AbsDBPoolManager(object, metaclass=ABCMeta):
 
     @property
     @abstractmethod
@@ -29,7 +29,7 @@ class ABSManager(object, metaclass=ABCMeta):
         """更具dict实例化连接池管理类"""
 
     @abstractmethod
-    async def from_settings(self, settings: "scrapy.settings.Setting"):
+    async def from_settings(self, settings: "aioscrapy.settings.Setting"):
         """更具setting实例化连接池管理类"""
 
     async def from_crawler(self, crawler):

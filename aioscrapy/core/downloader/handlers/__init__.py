@@ -2,11 +2,11 @@
 
 import logging
 
-from scrapy import signals
-from scrapy.exceptions import NotConfigured, NotSupported
-from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.misc import create_instance, load_object
-from scrapy.utils.python import without_none_values
+from aioscrapy import signals
+from aioscrapy.exceptions import NotConfigured, NotSupported
+from aioscrapy.utils.httpobj import urlparse_cached
+from aioscrapy.utils.misc import create_instance, load_object
+from aioscrapy.utils.python import without_none_values
 
 logger = logging.getLogger(__name__)
 

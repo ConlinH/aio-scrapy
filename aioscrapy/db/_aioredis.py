@@ -1,16 +1,15 @@
+from redis.asyncio import BlockingConnectionPool, Redis
 
-from aioredis import BlockingConnectionPool, Redis
-
-from .absmanager import ABSManager
+from aioscrapy.db.absmanager import AbsDBPoolManager
 
 
-class AioRedisManager(ABSManager):
+class AioRedisPoolManager(AbsDBPoolManager):
     _clients = {}
 
     async def create(self, alias: str, params: dict) -> Redis:
         if alias in self._clients:
             return self._clients[alias]
-        
+
         params = params.copy()
         url = params.pop('url', None)
         if url:
@@ -22,9 +21,12 @@ class AioRedisManager(ABSManager):
 
     def get_pool(self, alias: str):
         """获取数据库链接和数据库游标"""
-        redis_pool = self._clients.get(alias)
+        redis_pool: Redis = self._clients.get(alias)
         assert redis_pool is not None, f"redis没有创建该连接池： {alias}"
         return redis_pool
+
+    def executor(self, alias: str):
+        return RedisExecutor(alias, self)
 
     async def close(self, alias: str):
         """关闭指定redis pool"""
@@ -41,24 +43,34 @@ class AioRedisManager(ABSManager):
         for alias, redis_args in db_args.items():
             await self.create(alias, redis_args)
 
-    async def from_settings(self, settings: "scrapy.settings.Setting"):
+    async def from_settings(self, settings: "aioscrapy.settings.Setting"):
         for alias, redis_args in settings.getdict('REDIS_ARGS').items():
             await self.create(alias, redis_args)
 
 
-redis_manager = AioRedisManager()
+redis_manager = AioRedisPoolManager()
+
+
+class RedisExecutor:
+
+    def __init__(self, alias: str, pool_manager: AioRedisPoolManager):
+        self.alias = alias
+        self.pool_manager = pool_manager
+
+    def __getattr__(self, command):
+        redis_pool: Redis = self.pool_manager.get_pool(self.alias)
+        return getattr(redis_pool, command)
 
 
 if __name__ == '__main__':
     import asyncio
 
     async def test():
-        redis = await redis_manager.create('default', {
-                'url': 'redis://:erpteam_redis@192.168.5.216:6381/9',
-                'max_connections': 4
-            })
-
-        await redis.zadd('key1', {'value': 1})
+        await redis_manager.create('default', {
+            'url': 'redis://@192.168.234.128:6379/9',
+        })
+        redis = redis_manager.executor('default')
+        print(await redis.zadd('key1', {'value': 2}))
 
         async with redis.pipeline(transaction=True) as pipe:
             results, count = await (
@@ -70,7 +82,5 @@ if __name__ == '__main__':
         print(results)
         await redis_manager.close_all()
 
-
-    # asyncio.run(test(), debug=True)
+    # asyncio.run(test())
     asyncio.get_event_loop().run_until_complete(test())
-

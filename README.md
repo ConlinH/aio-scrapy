@@ -1,42 +1,161 @@
 
 
-# aio-scrapy
-> 将基于twisted的scrapy/scrapy-redis改成基于asyncio, 保留了几乎所有的scrapy/scrapy-reids功能
+![aio-scrapy](./doc/images/aio-scrapy.png)
 
-### 声明
-> 仅供学习使用，禁止项目源码用于任何目的，由此引发的任何法律纠纷与本人无关
+### aio-scrapy
 
-### 安装
-``` 
-# python版本>=3.7
+An asyncio + aiolibs crawler  imitate scrapy framework
 
-# 下载安装
-pip install aio-scrapy
+English | [中文](./doc/README_ZH.md)
+
+### Overview
+- aio-scrapy framework is base on opensource project Scrapy & scrapy_redis.
+- aio-scrapy implements compatibility with scrapyd.
+- aio-scrapy implements redis queue and rabbitmq queue.
+- aio-scrapy is a fast high-level web crawling and web scraping framework, used to crawl websites and extract structured data from their pages.
+- Distributed crawling/scraping.
+### Requirements
+
+- Python 3.7+
+- Works on Linux, Windows, macOS, BSD
+
+### Install
+
+The quick way:
+
+```shell
+pip install aio-scrapy -U
 ```
-### 使用
-##### 跑单个爬虫
-```python example/demo2/demo_aioscraoy_redis.py```
 
-##### 跑多个爬虫
-```python example/demo2/start.py```
+### Usage
 
-##### 运行爬虫项目
-```python example/demo1/start.py```
+#### create project spider:
 
-##### 部署分布式爬虫
+```shell
+aioscrapy startproject project_quotes
+```
+
+```
+cd project_quotes
+aioscrapy genspider quotes 
+```
+
+quotes.py
+
 ```python
-# 步骤一: 安装scrapyd
-# pip install scrapyd
+from aioscrapy.spiders import Spider
 
-# 步骤二: 修改scrapyd配置
-# 使用aioscrapy/scrapyd/default_scrapyd.conf替换scrapyd的默认配置
 
-# 步骤三: 启动scrapyd
+class QuotesMemorySpider(Spider):
+    name = 'QuotesMemorySpider'
 
-# 步骤四: 上传爬虫
-# 双击执行example/demo1下的deploy.bat
-# 或者直接执行 python deploy.py server1
+    start_urls = ['https://quotes.toscrape.com']
 
-# 启动爬虫
-# curl http://localhost:6800/schedule.json -d project=demo1 -d spider=baidu
+    async def parse(self, response):
+        for quote in response.css('div.quote'):
+            yield {
+                'author': quote.xpath('span/small/text()').get(),
+                'text': quote.css('span.text::text').get(),
+            }
+
+        next_page = response.css('li.next a::attr("href")').get()
+        if next_page is not None:
+            yield response.follow(next_page, self.parse)
+
+
+if __name__ == '__main__':
+    QuotesMemorySpider.start()
+
 ```
+
+run the spider:
+
+```shell
+aioscrapy crawl quotes
+```
+
+#### create single script spider:
+
+```shell
+aioscrapy genspider single_quotes -t single
+```
+
+single_quotes.py:
+
+```python
+from aioscrapy.spiders import Spider
+
+
+class QuotesMemorySpider(Spider):
+    name = 'QuotesMemorySpider'
+    custom_settings = {
+        "USER_AGENT": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36",
+        # 'DOWNLOAD_DELAY': 3,
+        # 'RANDOMIZE_DOWNLOAD_DELAY': True,
+        # 'CONCURRENT_REQUESTS': 1,
+        # 'LOG_LEVEL': 'INFO'
+    }
+
+    start_urls = ['https://quotes.toscrape.com']
+
+    @staticmethod
+    async def process_request(request, spider):
+        """ request middleware """
+        return request
+
+    @staticmethod
+    async def process_response(request, response, spider):
+        """ response middleware """
+        return response
+
+    @staticmethod
+    async def process_exception(request, exception, spider):
+        """ exception middleware """
+        pass
+
+    async def parse(self, response):
+        for quote in response.css('div.quote'):
+            yield {
+                'author': quote.xpath('span/small/text()').get(),
+                'text': quote.css('span.text::text').get(),
+            }
+
+        next_page = response.css('li.next a::attr("href")').get()
+        if next_page is not None:
+            yield response.follow(next_page, self.parse)
+
+    async def process_item(self, item):
+        print(item)
+
+
+if __name__ == '__main__':
+    QuotesMemorySpider.start()
+
+```
+
+run the spider:
+
+```shell
+aioscrapy runspider quotes.py
+```
+
+
+### more commands:
+
+```shell
+aioscrapy -h
+```
+
+### Documentation
+[doc](./doc/documentation.md)
+
+### Ready
+
+please submit your sugguestion to owner by issue
+
+## Thanks
+
+[aiohttp](https://github.com/aio-libs/aiohttp/)
+
+[scrapy](https://github.com/scrapy/scrapy)
+

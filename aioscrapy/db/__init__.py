@@ -1,7 +1,8 @@
 import logging
 
-from ._aioredis import redis_manager
-from ._aiomysql import mysql_manager
+from aioscrapy.db._aioredis import redis_manager
+from aioscrapy.db._aiomysql import mysql_manager
+from aioscrapy.db._aiorabbitmq import rabbitmq_manager
 
 logger = logging.getLogger(__name__)
 
@@ -11,6 +12,7 @@ __all__ = ['db_manager', 'get_pool', 'get_manager']
 db_manager_map = {
     'mysql': mysql_manager,
     'redis': redis_manager,
+    'rabbitmq': rabbitmq_manager,
 }
 
 
@@ -40,7 +42,7 @@ class DBManager:
             await manager.from_dict(args)
 
     @staticmethod
-    async def from_settings(settings: "scrapy.settings.Setting"):
+    async def from_settings(settings: "aioscrapy.settings.Setting"):
         for manager in db_manager_map.values():
             await manager.from_settings(settings)
 

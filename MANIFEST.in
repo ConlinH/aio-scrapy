@@ -1,0 +1,10 @@
+include README.md
+include MANIFEST.in
+
+include aioscrapy/VERSION
+
+include requirements-*.txt
+
+recursive-include aioscrapy/templates *
+
+global-exclude __pycache__ *.py[cod]

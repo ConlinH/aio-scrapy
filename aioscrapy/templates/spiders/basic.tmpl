@@ -1,0 +1,20 @@
+from aioscrapy import Spider
+
+
+class $classname(Spider):
+    name = '$name'
+    custom_settings = {
+        "CLOSE_SPIDER_ON_IDLE": True
+    }
+    start_urls = []
+
+    async def parse(self, response):
+        item = {
+            'title': '\n'.join(response.xpath('//title/text()').extract()),
+        }
+        yield item
+
+
+if __name__ == '__main__':
+    dome = $classname()
+    dome.start()

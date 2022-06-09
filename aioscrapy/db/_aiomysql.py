@@ -1,12 +1,18 @@
+import logging
 import socket
 from contextlib import asynccontextmanager
 
-from aiomysql import create_pool
+logger = logging.getLogger(__name__)
 
-from .absmanager import ABSManager
+try:
+    from aiomysql import create_pool
+except ImportError:
+    logger.warning("Please run 'pip install aiomysql' when you want use mysql related functions")
+
+from aioscrapy.db.absmanager import AbsDBPoolManager
 
 
-class AioMysqlManager(ABSManager):
+class AioMysqlPoolManager(AbsDBPoolManager):
     _clients = {}
 
     async def create(self, alias: str, params: dict):
@@ -40,6 +46,9 @@ class AioMysqlManager(ABSManager):
             await cur.close()
             await mysql_pool.release(conn)
 
+    def executor(self, alias: str):
+        return MysqlExecutor(alias, self)
+
     async def close(self, alias: str):
         mysql_pool = self._clients.pop(alias, None)
         if mysql_pool:
@@ -54,12 +63,36 @@ class AioMysqlManager(ABSManager):
         for alias, mysql_args in db_args.items():
             await self.create(alias, mysql_args)
 
-    async def from_settings(self, settings: "scrapy.settings.Setting"):
+    async def from_settings(self, settings: "aioscrapy.settings.Setting"):
         for alias, mysql_args in settings.getdict('MYSQL_ARGS').items():
             await self.create(alias, mysql_args)
 
 
-mysql_manager = AioMysqlManager()
+mysql_manager = AioMysqlPoolManager()
+
+
+class MysqlExecutor:
+    def __init__(self, alias: str, pool_manager: AioMysqlPoolManager):
+        self.alias = alias
+        self.pool_manager = pool_manager
+
+    async def insert(self, sql, value):
+        async with self.pool_manager.get(self.alias) as (connect, cursor):
+            try:
+                result = await cursor.executemany(sql, value)
+                await connect.commit()
+                return result
+            except Exception as e:
+                await connect.rollback()
+                raise Exception from e
+
+    async def execute(self, sql: str):
+        async with self.pool_manager.get(self.alias) as (connect, cursor):
+            await cursor.execute(sql)
+            return await cursor.fetchall()
+
+    async def query(self, sql: str):
+        return await self.execute(sql)
 
 
 if __name__ == '__main__':

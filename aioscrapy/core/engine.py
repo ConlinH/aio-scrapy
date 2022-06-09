@@ -4,13 +4,13 @@ import asyncio
 import logging
 from time import time
 
-from scrapy import signals
-from scrapy.exceptions import DontCloseSpider
-from scrapy.http import Response
-from scrapy.http.request import Request
-from scrapy.utils.log import (
+from aioscrapy import signals
+from aioscrapy.exceptions import DontCloseSpider
+from aioscrapy.http import Response
+from aioscrapy.http.request import Request
+from aioscrapy.utils.log import (
     logformatter_adapter)
-from scrapy.utils.misc import load_object
+from aioscrapy.utils.misc import load_object
 
 from aioscrapy.utils.tools import call_helper
 from aioscrapy.db import db_manager
@@ -219,13 +219,15 @@ class ExecutionEngine(object):
         """Does the engine have capacity to handle more spiders"""
         return not bool(self.slot)
 
-    async def crawl(self, request, spider):  # 将网址 请求加入队列
+    async def crawl(self, request, spider):
         if spider not in self.open_spiders:
             raise RuntimeError("Spider %r not opened when crawling: %s" % (spider.name, request))
 
         await self.signals.send_catch_log(signals.request_scheduled, request=request, spider=spider)
         if not await call_helper(self.slot.scheduler.enqueue_request, request):
             await self.signals.send_catch_log(signals.request_dropped, request=request, spider=spider)
+        else:
+            asyncio.create_task(self._next_request(spider))
 
     async def open_spider(self, spider, start_requests=None, close_if_idle=True):
         if not self.has_capacity():
@@ -239,8 +241,8 @@ class ExecutionEngine(object):
         await call_helper(self.scraper.open_spider, spider)
         await call_helper(self.crawler.stats.open_spider, spider)
         await self.signals.send_catch_log_deferred(signals.spider_opened, spider=spider)
-        await self._next_request(spider)
-        self.slot.heartbeat = asyncio.create_task(self.heart_beat(5, spider, self.slot))
+        asyncio.create_task(self._next_request(spider))
+        self.slot.heartbeat = asyncio.create_task(self.heart_beat(1, spider, self.slot))
 
     async def _close_all_spiders(self):
         dfds = [self.close_spider(s, reason='shutdown') for s in self.open_spiders]
@@ -260,10 +262,7 @@ class ExecutionEngine(object):
 
         async def close_handler(callback, *args, errmsg='', **kwargs):
             try:
-                if asyncio.iscoroutinefunction(callback):
-                    await callback(*args, **kwargs)
-                else:
-                    callback(*args, **kwargs)
+                await call_helper(callback, *args, **kwargs)
             except (Exception, BaseException) as e:
                 logger.error(
                     errmsg,

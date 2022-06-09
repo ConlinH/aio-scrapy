@@ -4,12 +4,12 @@ from collections import deque
 from datetime import datetime
 from time import time
 
-from scrapy import signals, Request
+from aioscrapy import signals, Request
 from aioscrapy.core.downloader.handlers import DownloadHandlers
 from aioscrapy.middleware import DownloaderMiddlewareManager
-from scrapy.http import Response
-from scrapy.resolver import dnscache
-from scrapy.utils.httpobj import urlparse_cached
+from aioscrapy.http import Response
+from aioscrapy.utils.datatypes import dnscache
+from aioscrapy.utils.httpobj import urlparse_cached
 
 
 class Slot:
