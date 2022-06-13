@@ -5,3 +5,4 @@ __pycache__/
 .idea/
 build/
 dist/
+job_dir/

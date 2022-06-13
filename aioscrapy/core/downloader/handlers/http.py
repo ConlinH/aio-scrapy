@@ -70,7 +70,8 @@ class AioHttpDownloadHandler:
             status=response.status,
             headers=response.headers,
             body=content,
-            cookies=response_cookies
+            cookies=response_cookies,
+            encoding=response.charset
         )
 
     async def close(self):

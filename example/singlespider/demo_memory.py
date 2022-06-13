@@ -16,6 +16,8 @@ class DemoMemorySpider(Spider):
         # 'RANDOMIZE_DOWNLOAD_DELAY': True,
         # 'CONCURRENT_REQUESTS': 1,
         # 'LOG_LEVEL': 'INFO'
+        'DUPEFILTER_CLASS': 'aioscrapy.dupefilters.disk.RFPDupeFilter',
+        "CLOSE_SPIDER_ON_IDLE": True,
     }
 
     start_urls = ['https://quotes.toscrape.com']

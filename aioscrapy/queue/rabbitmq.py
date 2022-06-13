@@ -8,6 +8,19 @@ class RabbitMqPriorityQueue(AbsQueue):
     inc_key = 'scheduler/enqueued/rabbitmq'
 
     @classmethod
+    def from_dict(cls, data: dict) -> "AbsQueue":
+        alias = data.get("alias", 'queue')
+        server = db_manager.rabbitmq.executor(alias)
+        spider_name = data["spider_name"]
+        serializer = data.get("serializer", "aioscrapy.serializer.JsonSerializer")
+        serializer: AbsSerializer = load_object(serializer)
+        return cls(
+            server,
+            key='%(spider)s:requests' % {'spider': spider_name},
+            serializer=serializer
+        )
+
+    @classmethod
     async def from_spider(cls, spider) -> "RabbitMqPriorityQueue":
         settings = spider.settings
         alias = settings.get("SCHEDULER_QUEUE_ALIAS", 'queue')

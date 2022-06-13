@@ -3,13 +3,16 @@ from typing import Optional
 
 from aioscrapy.utils.reqser import request_to_dict, request_from_dict
 from aioscrapy.serializer import AbsSerializer
+from aioscrapy.utils.misc import load_object
+from aioscrapy.db import db_manager
 
 
 class AbsQueue(object, metaclass=ABCMeta):
     """Per-spider base queue class"""
 
     def __init__(
-            self, container, spider,
+            self, container,
+            spider: Optional[str] = None,
             key: Optional[str] = None,
             serializer: Optional[AbsSerializer] = None
     ):

@@ -6,10 +6,8 @@ See documentation in docs/topics/request-response.rst
 """
 from w3lib.url import safe_url_string
 
-from aioscrapy.utils.python import to_bytes
-from aioscrapy.utils.url import escape_ajax
-from aioscrapy.http.common import obsolete_setter
 from aioscrapy.utils.curl import curl_to_request_kwargs
+from aioscrapy.utils.url import escape_ajax
 
 
 class Request(object):
@@ -39,10 +37,6 @@ class Request(object):
             raise TypeError(f"Request priority not an integer: {priority!r}")
         self.priority = priority
 
-        if callback is not None and not callable(callback):
-            raise TypeError(f'callback must be a callable, got {type(callback).__name__}')
-        if errback is not None and not callable(errback):
-            raise TypeError(f'errback must be a callable, got {type(errback).__name__}')
         self.callback = callback
         self.errback = errback
 
@@ -83,18 +77,18 @@ class Request(object):
         ):
             raise ValueError(f'Missing scheme in request url: {self._url}')
 
-    url = property(_get_url, obsolete_setter(_set_url, 'url'))
+    url = property(_get_url, _set_url)
 
     def _get_body(self):
         return self._body
 
     def _set_body(self, body):
         if body is None:
-            self._body = b''
+            self._body = ''
         else:
-            self._body = to_bytes(body, self.encoding)
+            self._body = body
 
-    body = property(_get_body, obsolete_setter(_set_body, 'body'))
+    body = property(_get_body, _set_body)
 
     @property
     def encoding(self):
@@ -152,3 +146,7 @@ class Request(object):
         request_kwargs = curl_to_request_kwargs(curl_command, ignore_unknown_options)
         request_kwargs.update(kwargs)
         return cls(**request_kwargs)
+
+    def serialize(self, callback):
+        from aioscrapy.utils.reqser import request_to_dict
+        return callback(request_to_dict(self))

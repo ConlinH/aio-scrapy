@@ -145,7 +145,7 @@ RETRY_PRIORITY_ADJUST = -1
 
 SCHEDULER = 'aioscrapy.core.scheduler.Scheduler'
 SCHEDULER_QUEUE_CLASS = 'aioscrapy.queue.memory.SpiderPriorityQueue'
-SCHEDULER_SERIALIZER = 'aioscrapy.serializer.PickleSerializer'
+SCHEDULER_SERIALIZER = 'aioscrapy.serializer.JsonSerializer'
 
 SCRAPER_SLOT_MAX_ACTIVE_SIZE = 5000000
 

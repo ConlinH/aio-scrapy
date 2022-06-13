@@ -46,7 +46,7 @@ def request_from_dict(d, spider=None):
     If a spider is given, it will try to resolve the callbacks looking at the
     spider for methods with the same name.
     """
-    cb = d.get('callback', 'parse')
+    cb = d.get('callback') or 'parse'
     if cb and spider:
         cb = _get_method(spider, cb)
     eb = d.get('errback')

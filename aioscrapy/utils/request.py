@@ -96,7 +96,7 @@ def request_httprepr(request: Request) -> bytes:
     if request.headers:
         s += headers_dict_to_raw(request.headers) + b"\r\n"
     s += b"\r\n"
-    s += request.body
+    s += to_bytes(request.body)
     return s
 
 

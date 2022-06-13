@@ -26,8 +26,8 @@ class DemoRedisSpider(Spider):
         # SCHEDULER_SERIALIZER = 'aioscrapy.serializer.PickleSerializer'
 
         'SCHEDULER_QUEUE_CLASS': 'aioscrapy.queue.redis.SpiderPriorityQueue',
-        'DUPEFILTER_CLASS': 'aioscrapy.dupefilters.disk.RFPDupeFilter',
-        'SCHEDULER_SERIALIZER': 'aioscrapy.serializer.PickleSerializer',
+        'DUPEFILTER_CLASS': 'aioscrapy.dupefilters.redis.RFPDupeFilter',
+        'SCHEDULER_SERIALIZER': 'aioscrapy.serializer.JsonSerializer',
         'REDIS_ARGS': {
             'queue': {
                 'url': 'redis://192.168.234.128:6379/0',
@@ -60,9 +60,9 @@ class DemoRedisSpider(Spider):
                 'text': quote.css('span.text::text').get(),
             }
 
-        next_page = response.css('li.next a::attr("href")').get()
-        if next_page is not None:
-            yield response.follow(next_page, self.parse, dont_filter=False)
+        # next_page = response.css('li.next a::attr("href")').get()
+        # if next_page is not None:
+        #     yield response.follow(next_page, self.parse, dont_filter=False)
 
     async def process_item(self, item):
         print(item)

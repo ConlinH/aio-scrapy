@@ -65,6 +65,7 @@ class ExecutionEngine(object):
         self.scheduler = None
         self.running = False
         self.paused = False
+        self.closing = False
         self.scheduler_cls = load_object(self.settings['SCHEDULER'])
         downloader_cls = load_object(self.settings['DOWNLOADER'])
         self.downloader = downloader_cls(crawler)
@@ -189,6 +190,9 @@ class ExecutionEngine(object):
         await self.scraper.enqueue_scrape(result, request, spider)
 
     async def spider_is_idle(self, spider):
+        if self.closing:
+            return False
+
         if not self.scraper.slot.is_idle():
             # scraper is not idle
             return False
@@ -250,6 +254,9 @@ class ExecutionEngine(object):
 
     async def close_spider(self, spider, reason='cancelled'):
         """Close (cancel) spider and clear all its outstanding requests"""
+        if self.closing:
+            return
+        self.closing = True
 
         slot = self.slot
         if slot.closing:

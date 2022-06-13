@@ -9,7 +9,6 @@ from typing import Generator
 from urllib.parse import urljoin
 
 from aioscrapy.exceptions import NotSupported
-from aioscrapy.http.common import obsolete_setter
 from aioscrapy.http.request import Request
 from aioscrapy.link import Link
 
@@ -70,7 +69,7 @@ class Response(object):
             raise TypeError(f'{type(self).__name__} url must be str, '
                             f'got {type(url).__name__}')
 
-    url = property(_get_url, obsolete_setter(_set_url, 'url'))
+    url = property(_get_url, _set_url)
 
     def _get_body(self):
         return self._body
@@ -86,7 +85,7 @@ class Response(object):
         else:
             self._body = body
 
-    body = property(_get_body, obsolete_setter(_set_body, 'body'))
+    body = property(_get_body, _set_body)
 
     def __str__(self):
         return f"<{self.status} {self.url}>"

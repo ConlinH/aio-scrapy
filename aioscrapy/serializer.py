@@ -35,16 +35,5 @@ class JsonSerializer(AbsSerializer):
 
     @staticmethod
     def dumps(obj):
-        return json.dumps(_request_byte2str(obj))
+        return json.dumps(obj)
 
-
-def _request_byte2str(obj):
-    _encoding = obj.get('_encoding', 'utf-8')
-    obj.update({
-        'body': obj['body'].decode(_encoding),
-        # 'headers': {
-        #     to_unicode(k, encoding=_encoding): to_unicode(b','.join(v), encoding=_encoding)
-        #     for k, v in obj['headers'].items()
-        # }
-    })
-    return obj

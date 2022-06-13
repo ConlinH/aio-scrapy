@@ -13,6 +13,19 @@ class RedisQueueBase(AbsQueue, ABC):
     inc_key = 'scheduler/enqueued/redis'
 
     @classmethod
+    def from_dict(cls, data: dict) -> "AbsQueue":
+        alias = data.get("alias", 'queue')
+        server = db_manager.redis(alias)
+        spider_name = data["spider_name"]
+        serializer = data.get("serializer", "aioscrapy.serializer.JsonSerializer")
+        serializer: AbsSerializer = load_object(serializer)
+        return cls(
+            server,
+            key='%(spider)s:requests' % {'spider': spider_name},
+            serializer=serializer
+        )
+
+    @classmethod
     async def from_spider(cls, spider) -> "RedisQueueBase":
         settings = spider.settings
         alias = settings.get("SCHEDULER_QUEUE_ALIAS", 'queue')
@@ -64,9 +77,6 @@ class RedisPriorityQueue(RedisQueueBase):
         """Push a request"""
         data = self._encode_request(request)
         score = request.priority
-        # We don't use zadd method as the order of arguments change depending on
-        # whether the class is Redis or StrictRedis, and the option of using
-        # kwargs only accepts strings, not bytes.
         await self.container.zadd(self.key, {data: score})
 
     async def pop(self, timeout=0):

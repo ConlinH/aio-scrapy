@@ -7,7 +7,6 @@ Request and Response outside this module.
 
 from aioscrapy.http.request import Request
 from aioscrapy.http.request.form import FormRequest
-from aioscrapy.http.request.rpc import XmlRpcRequest
 from aioscrapy.http.request.json_request import JsonRequest
 
 from aioscrapy.http.response import Response
