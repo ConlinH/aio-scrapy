@@ -90,7 +90,7 @@ class DBPipelineBase:
         self.cache = ItemCache(db_type)
 
     async def open_spider(self, spider):
-        self.save_interval_task = asyncio.create_task(self.save_interval(self.save_cache_interval))
+        self.save_interval_task = asyncio.create_task(self.save_interval())
 
     async def process_item(self, item, spider):
         await self.save_item(item)
@@ -105,12 +105,12 @@ class DBPipelineBase:
             for cache_key, items in self.cache.item_cache.items():
                 items and await self._save(cache_key)
 
-    async def save_interval(self, interval=10):
-        await asyncio.sleep(interval)
+    async def save_interval(self):
+        await asyncio.sleep(self.save_cache_interval)
         async with self.lock:
             for cache_key, items in self.cache.item_cache.items():
                 items and await self._save(cache_key)
-        self.save_interval_task = asyncio.create_task(self.save_interval(interval))
+        self.save_interval_task = asyncio.create_task(self.save_interval())
 
     async def save_item(self, item: dict):
         async with self.lock:
