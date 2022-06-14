@@ -19,6 +19,7 @@ setup(
     version=version,
     url='https://github.com/conlin-huang/aio-scrapy.git',
     description='A high-level Web Crawling and Web Scraping framework based on Asyncio',
+    long_description_content_type="text/markdown",
     long_description=open('README.md', encoding='utf-8').read(),
     author='conlin',
     author_email="995018884@qq.com",
