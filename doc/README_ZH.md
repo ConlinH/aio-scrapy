@@ -14,7 +14,7 @@
 - aio-scrapy实现了对scrapyd的支持。
 - aio-scrapy实现了redis队列和rabbitmq队列。
 - aio-scrapy是一个快速的高级web爬行和web抓取框架，用于抓取网站并从其页面提取结构化数据。
-- 分布式爬行和抓取。
+- 分布式爬虫。
 ### 需求
 
 - Python 3.7+
