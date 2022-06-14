@@ -11,7 +11,7 @@
 ### 概述
 
 - aio-scrapy框架基于开源项目Scrapy & scrapy_redis，可以理解为scrapy-redis的asyncio版本。
-- aio-scrapy实现了对scrapyd的兼容。
+- aio-scrapy实现了对scrapyd的支持。
 - aio-scrapy实现了redis队列和rabbitmq队列。
 - aio-scrapy是一个快速的高级web爬行和web抓取框架，用于抓取网站并从其页面提取结构化数据。
 - 分布式爬行和抓取。
