@@ -36,7 +36,7 @@ async def push_rabbitmq_task():
 
     try:
         await db_manager.from_dict({
-            'rabbit': {
+            'rabbitmq': {
                 'queue': {
                     'url': "amqp://guest:guest@192.168.234.128:5673",
                     'connection_max_size': 2,

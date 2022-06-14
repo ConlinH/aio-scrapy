@@ -16,10 +16,10 @@ class DemoRabbitmqSpider(Spider):
         # 'RANDOMIZE_DOWNLOAD_DELAY': True,
         'CONCURRENT_REQUESTS': 2,
         "CLOSE_SPIDER_ON_IDLE": False,
-        'SCHEDULER_FLUSH_ON_START': True,
+        # 'SCHEDULER_FLUSH_ON_START': True,
 
         'SCHEDULER_QUEUE_CLASS': 'aioscrapy.queue.rabbitmq.SpiderPriorityQueue',
-        # 'DUPEFILTER_CLASS': 'aioscrapy.core.scheduler.dupefilter.RFPDupeFilter',
+        # DUPEFILTER_CLASS = 'aioscrapy.dupefilters.desk.RFPDupeFilter'
         'SCHEDULER_SERIALIZER': 'aioscrapy.serializer.PickleSerializer',
         'RABBITMQ_ARGS': {
             'queue': {
