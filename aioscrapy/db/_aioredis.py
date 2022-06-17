@@ -12,6 +12,7 @@ class AioRedisPoolManager(AbsDBPoolManager):
 
         params = params.copy()
         url = params.pop('url', None)
+        params.setdefault('socket_connect_timeout', 30)
         if url:
             connection_pool = BlockingConnectionPool.from_url(url, **params)
         else:

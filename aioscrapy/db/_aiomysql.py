@@ -18,11 +18,12 @@ class AioMysqlPoolManager(AbsDBPoolManager):
     async def create(self, alias: str, params: dict):
         if alias in self._clients:
             return self._clients[alias]
-        
+
+        params = params.copy()
         # 当host为域名形式时，将域名转换为ip形式
         # https://github.com/aio-libs/aiomysql/issues/641
         params.update({'host': socket.gethostbyname(params['host'])})
-
+        params.setdefault('connect_timeout', 30)
         mysql_pool = await create_pool(**params)
         return self._clients.setdefault(alias, mysql_pool)
 
