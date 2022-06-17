@@ -68,7 +68,9 @@ class Scheduler(object):
         await call_helper(self.queue.clear)
 
     async def enqueue_request(self, request):
-        if not request.dont_filter and self.df and await self.df.request_seen(request):
+        if not request.dont_filter \
+                and request.filter_mode == 'IN_QUEUE' \
+                and self.df and await self.df.request_seen(request):
             self.df.log(request, self.spider)
             return False
 
@@ -79,6 +81,12 @@ class Scheduler(object):
 
     async def next_request(self):
         request = await call_helper(self.queue.pop)
+        if request and not request.dont_filter \
+                and request.filter_mode == 'OUT_QUEUE' \
+                and self.df and await self.df.request_seen(request):
+            self.df.log(request, self.spider)
+            return None
+
         if request and self.stats:
             self.stats.inc_value(self.queue.inc_key, spider=self.spider)
         return request

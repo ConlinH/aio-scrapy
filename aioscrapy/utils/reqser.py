@@ -34,6 +34,7 @@ def request_to_dict(request, spider=None):
         'dont_filter': request.dont_filter,
         'flags': request.flags,
         'cb_kwargs': request.cb_kwargs,
+        'filter_mode': request.filter_mode,
     }
     if type(request) is not Request:
         d['_class'] = request.__module__ + '.' + request.__class__.__name__
@@ -67,6 +68,7 @@ def request_from_dict(d, spider=None):
         dont_filter=d.get('dont_filter', True),
         flags=d.get('flags'),
         cb_kwargs=d.get('cb_kwargs'),
+        filter_mode=d.get('filter_mode'),
     )
 
 

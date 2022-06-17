@@ -53,7 +53,7 @@ class HttpProxyMiddleware:
             creds, proxy_url = self._get_proxy(request.meta['proxy'], '')
             request.meta['proxy'] = proxy_url
             if creds and not request.headers.get('Proxy-Authorization'):
-                request.headers['Proxy-Authorization'] = b'Basic ' + creds
+                request.headers['Proxy-Authorization'] = 'Basic ' + creds
             return
         elif not self.proxies:
             return
@@ -72,4 +72,4 @@ class HttpProxyMiddleware:
         creds, proxy = self.proxies[scheme]
         request.meta['proxy'] = proxy
         if creds:
-            request.headers['Proxy-Authorization'] = b'Basic ' + creds
+            request.headers['Proxy-Authorization'] = 'Basic ' + creds

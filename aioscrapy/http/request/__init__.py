@@ -26,7 +26,8 @@ class Request(object):
             dont_filter=False,
             errback=None,
             flags=None,
-            cb_kwargs=None
+            cb_kwargs=None,
+            filter_mode=None,
     ):
 
         self._encoding = encoding  # this one has to be set first
@@ -43,6 +44,7 @@ class Request(object):
         self.cookies = cookies or {}
         self.headers = headers or {}
         self.dont_filter = dont_filter
+        self.filter_mode = filter_mode or "IN_QUEUE"    # IN_QUEUE, OUT_QUEUE
 
         self._meta = dict(meta) if meta else None
         self._cb_kwargs = dict(cb_kwargs) if cb_kwargs else None
