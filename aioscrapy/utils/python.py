@@ -9,42 +9,9 @@ import sys
 import warnings
 import weakref
 from functools import partial, wraps
-from itertools import chain
 
 from aioscrapy.exceptions import AioScrapyDeprecationWarning
 from aioscrapy.utils.decorators import deprecated
-
-
-def flatten(x):
-    """flatten(sequence) -> list
-
-    Returns a single, flat list which contains all elements retrieved
-    from the sequence and all recursively contained sub-sequences
-    (iterables).
-
-    Examples:
-    >>> [1, 2, [3,4], (5,6)]
-    [1, 2, [3, 4], (5, 6)]
-    >>> flatten([[[1,2,3], (42,None)], [4,5], [6], 7, (8,9,10)])
-    [1, 2, 3, 42, None, 4, 5, 6, 7, 8, 9, 10]
-    >>> flatten(["foo", "bar"])
-    ['foo', 'bar']
-    >>> flatten(["foo", ["baz", 42], "bar"])
-    ['foo', 'baz', 42, 'bar']
-    """
-    return list(iflatten(x))
-
-
-def iflatten(x):
-    """iflatten(sequence) -> iterator
-
-    Similar to ``.flatten()``, but returns iterator instead"""
-    for el in x:
-        if is_listlike(el):
-            for el_ in iflatten(el):
-                yield el_
-        else:
-            yield el
 
 
 def is_listlike(x):
@@ -69,19 +36,6 @@ def is_listlike(x):
     True
     """
     return hasattr(x, "__iter__") and not isinstance(x, (str, bytes))
-
-
-def unique(list_, key=lambda x: x):
-    """efficient function to uniquify a list preserving item order"""
-    seen = set()
-    result = []
-    for item in list_:
-        seenkey = key(item)
-        if seenkey in seen:
-            continue
-        seen.add(seenkey)
-        result.append(item)
-    return result
 
 
 def to_unicode(text, encoding=None, errors='strict'):
@@ -165,143 +119,6 @@ def memoizemethod_noargs(method):
     return new_method
 
 
-_BINARYCHARS = {to_bytes(chr(i)) for i in range(32)} - {b"\0", b"\t", b"\n", b"\r"}
-_BINARYCHARS |= {ord(ch) for ch in _BINARYCHARS}
-
-
-def binary_is_text(data):
-    """ Returns ``True`` if the given ``data`` argument (a ``bytes`` object)
-    does not contain unprintable control characters.
-    """
-    if not isinstance(data, bytes):
-        raise TypeError(f"data must be bytes, got '{type(data).__name__}'")
-    return all(c not in _BINARYCHARS for c in data)
-
-
-def _getargspec_py23(func):
-    """_getargspec_py23(function) -> named tuple ArgSpec(args, varargs, keywords,
-                                                        defaults)
-
-    Was identical to inspect.getargspec() in python2, but uses
-    inspect.getfullargspec() for python3 behind the scenes to avoid
-    DeprecationWarning.
-
-    >>> def f(a, b=2, *ar, **kw):
-    ...     pass
-
-    >>> _getargspec_py23(f)
-    ArgSpec(args=['a', 'b'], varargs='ar', keywords='kw', defaults=(2,))
-    """
-    return inspect.ArgSpec(*inspect.getfullargspec(func)[:4])
-
-
-def get_func_args(func, stripself=False):
-    """Return the argument name list of a callable"""
-    if inspect.isfunction(func):
-        spec = inspect.getfullargspec(func)
-        func_args = spec.args + spec.kwonlyargs
-    elif inspect.isclass(func):
-        return get_func_args(func.__init__, True)
-    elif inspect.ismethod(func):
-        return get_func_args(func.__func__, True)
-    elif inspect.ismethoddescriptor(func):
-        return []
-    elif isinstance(func, partial):
-        return [x for x in get_func_args(func.func)[len(func.args):]
-                if not (func.keywords and x in func.keywords)]
-    elif hasattr(func, '__call__'):
-        if inspect.isroutine(func):
-            return []
-        elif getattr(func, '__name__', None) == '__call__':
-            return []
-        else:
-            return get_func_args(func.__call__, True)
-    else:
-        raise TypeError(f'{type(func)} is not callable')
-    if stripself:
-        func_args.pop(0)
-    return func_args
-
-
-def get_spec(func):
-    """Returns (args, kwargs) tuple for a function
-    >>> import re
-    >>> get_spec(re.match)
-    (['pattern', 'string'], {'flags': 0})
-
-    >>> class Test:
-    ...     def __call__(self, val):
-    ...         pass
-    ...     def method(self, val, flags=0):
-    ...         pass
-
-    >>> get_spec(Test)
-    (['self', 'val'], {})
-
-    >>> get_spec(Test.method)
-    (['self', 'val'], {'flags': 0})
-
-    >>> get_spec(Test().method)
-    (['self', 'val'], {'flags': 0})
-    """
-
-    if inspect.isfunction(func) or inspect.ismethod(func):
-        spec = _getargspec_py23(func)
-    elif hasattr(func, '__call__'):
-        spec = _getargspec_py23(func.__call__)
-    else:
-        raise TypeError(f'{type(func)} is not callable')
-
-    defaults = spec.defaults or []
-
-    firstdefault = len(spec.args) - len(defaults)
-    args = spec.args[:firstdefault]
-    kwargs = dict(zip(spec.args[firstdefault:], defaults))
-    return args, kwargs
-
-
-def equal_attributes(obj1, obj2, attributes):
-    """Compare two objects attributes"""
-    # not attributes given return False by default
-    if not attributes:
-        return False
-
-    temp1, temp2 = object(), object()
-    for attr in attributes:
-        # support callables like itemgetter
-        if callable(attr):
-            if attr(obj1) != attr(obj2):
-                return False
-        elif getattr(obj1, attr, temp1) != getattr(obj2, attr, temp2):
-            return False
-    # all attributes equal
-    return True
-
-
-class WeakKeyCache:
-
-    def __init__(self, default_factory):
-        warnings.warn("The WeakKeyCache class is deprecated", category=AioScrapyDeprecationWarning, stacklevel=2)
-        self.default_factory = default_factory
-        self._weakdict = weakref.WeakKeyDictionary()
-
-    def __getitem__(self, key):
-        if key not in self._weakdict:
-            self._weakdict[key] = self.default_factory(key)
-        return self._weakdict[key]
-
-
-@deprecated
-def retry_on_eintr(function, *args, **kw):
-    """Run a function and retry it while getting EINTR errors"""
-    while True:
-        try:
-            return function(*args, **kw)
-        except IOError as e:
-            if e.errno != errno.EINTR:
-                raise
-
-
 def without_none_values(iterable):
     """Return a copy of ``iterable`` with all ``None`` entries removed.
 
@@ -318,9 +135,9 @@ def global_object_name(obj):
     """
     Return full name of a global object.
 
-    >>> from scrapy import Request
+    >>> from aioscrapy import Request
     >>> global_object_name(Request)
-    'scrapy.http.request.Request'
+    'aioscrapy.http.request.Request'
     """
     return f"{obj.__module__}.{obj.__name__}"
 
@@ -334,24 +151,3 @@ else:
     def garbage_collect():
         gc.collect()
 
-
-class MutableChain:
-    """
-    Thin wrapper around itertools.chain, allowing to add iterables "in-place"
-    """
-
-    def __init__(self, *args):
-        self.data = chain.from_iterable(args)
-
-    def extend(self, *iterables):
-        self.data = chain(self.data, chain.from_iterable(iterables))
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        return next(self.data)
-
-    @deprecated("scrapy.utils.python.MutableChain.__next__")
-    def next(self):
-        return self.__next__()
