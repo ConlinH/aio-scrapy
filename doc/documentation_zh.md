@@ -34,7 +34,7 @@ RABBITMQ_ARGS = {
 }
 ```
 
-### Dupefilters
+### 过滤重复请求
 `DUPEFILTER_CLASS`：配置url的去重类， 默认不配
 
 ##### disk
@@ -53,7 +53,7 @@ DUPEFILTER_CLASS = 'aioscrapy.dupefilters.redis.RFPDupeFilter'
 DUPEFILTER_CLASS = 'aioscrapy.dupefilters.redis.BloomDupeFilter'
 ```
 
-### Close Sipder
+### 关闭爬虫
 `CLOSE_SPIDER_ON_IDLE`: 当没有队列任务的时候是否关闭爬虫, 默认 `True`.
 
 
