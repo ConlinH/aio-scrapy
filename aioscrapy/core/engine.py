@@ -149,7 +149,7 @@ class ExecutionEngine(object):
                 logger.error('Error while obtaining start requests',
                              exc_info=True, extra={'spider': spider})
             else:
-                await self.crawl(request, spider)
+                request and await self.crawl(request, spider)
             finally:
                 slot.doing_start_requests = False
 
@@ -206,11 +206,15 @@ class ExecutionEngine(object):
             return False
 
         if self.slot.inprogress:
-            # not all start requests are handled
+            # not requests are handled
             return False
 
-        if await call_helper(self.slot.scheduler.has_pending_requests):
+        if await self.slot.scheduler.has_pending_requests():
             # scheduler has pending requests
+            return False
+
+        if self.downloader.active:
+            # downloader has pending requests
             return False
 
         return True
