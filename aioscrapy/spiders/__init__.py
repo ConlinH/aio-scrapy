@@ -78,7 +78,7 @@ class Spider(object_ref):
                 yield self.make_requests_from_url(url)
         else:
             for url in self.start_urls:
-                yield Request(url, dont_filter=True)
+                yield Request(url)
 
     def make_requests_from_url(self, url):
         """ This method is deprecated. """

@@ -65,7 +65,7 @@ def request_fingerprint(
         fp = hashlib.sha1()
         fp.update(to_bytes(request.method))
         fp.update(to_bytes(canonicalize_url(request.url, keep_fragments=keep_fragments)))
-        fp.update(request.body or b'')
+        fp.update(to_bytes(request.body) or b'')
         if headers:
             for hdr in headers:
                 if hdr in request.headers:

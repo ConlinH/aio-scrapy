@@ -138,9 +138,6 @@ class Downloader:
             slot.transferring.remove(request)
             slot.active.remove(request)
             self.active.remove(request)
-            await self.signals.send_catch_log(signal=signals.request_left_downloader,
-                                              request=request,
-                                              spider=spider)
             asyncio.create_task(self._process_queue(spider, slot))
             if isinstance(response, Response):
                 response.request = request
