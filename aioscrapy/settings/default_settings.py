@@ -52,8 +52,8 @@ DOWNLOAD_DELAY = 0
 
 DOWNLOAD_HANDLERS = {}
 DOWNLOAD_HANDLERS_BASE = {
-    'http': 'aioscrapy.core.downloader.handlers.http.AioHttpDownloadHandler',
-    'https': 'aioscrapy.core.downloader.handlers.http.AioHttpDownloadHandler',
+    'http': 'aioscrapy.core.downloader.handlers.aiohttp.AioHttpDownloadHandler',
+    'https': 'aioscrapy.core.downloader.handlers.aiohttp.AioHttpDownloadHandler',
 }
 
 DOWNLOAD_TIMEOUT = 180      # 3mins
