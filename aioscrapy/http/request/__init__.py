@@ -8,6 +8,7 @@ from w3lib.url import safe_url_string
 
 from aioscrapy.utils.curl import curl_to_request_kwargs
 from aioscrapy.utils.url import escape_ajax
+from aioscrapy.http.headers import Headers
 
 
 class Request(object):
@@ -42,7 +43,7 @@ class Request(object):
         self.errback = errback
 
         self.cookies = cookies or {}
-        self.headers = headers or {}
+        self.headers = Headers(headers or {})
         self.dont_filter = dont_filter
         self.filter_mode = filter_mode or "IN_QUEUE"    # IN_QUEUE, OUT_QUEUE
 

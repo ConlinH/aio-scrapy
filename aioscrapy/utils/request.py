@@ -94,7 +94,7 @@ def request_httprepr(request: Request) -> bytes:
     s = to_bytes(request.method) + b" " + to_bytes(path) + b" HTTP/1.1\r\n"
     s += b"Host: " + to_bytes(parsed.hostname or b'') + b"\r\n"
     if request.headers:
-        s += headers_dict_to_raw(request.headers) + b"\r\n"
+        s += headers_dict_to_raw({to_bytes(k): to_bytes(v) for k, v in request.headers.items()}) + b"\r\n"
     s += b"\r\n"
     s += to_bytes(request.body)
     return s
