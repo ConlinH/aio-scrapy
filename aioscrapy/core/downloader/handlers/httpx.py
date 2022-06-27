@@ -1,12 +1,14 @@
-import asyncio
 import logging
 import ssl
-
-import httpx
 
 from aioscrapy.http import HtmlResponse
 
 logger = logging.getLogger(__name__)
+
+try:
+    import httpx
+except ImportError:
+    logger.warning("Please run 'pip install httpx' when you want replace 'aiohttp' with 'httpx'")
 
 
 class HttpxDownloadHandler(object):
