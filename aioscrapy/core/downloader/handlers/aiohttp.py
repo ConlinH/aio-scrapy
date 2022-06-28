@@ -17,6 +17,7 @@ class AioHttpDownloadHandler:
         self.settings = settings
         self.aiohttp_client_session_args = settings.get('AIOHTTP_CLIENT_SESSION_ARGS', {})
         self.verify_ssl = self.settings.get("VERIFY_SSL")
+        self.ssl_protocol = self.settings.get("SSL_PROTOCOL")
 
     @classmethod
     def from_settings(cls, settings):
@@ -39,9 +40,14 @@ class AioHttpDownloadHandler:
         kwargs['headers'] = headers
 
         ssl_ciphers = request.meta.get('TLS_CIPHERS')
-        if ssl_ciphers:
-            context = ssl.create_default_context()
-            context.set_ciphers(ssl_ciphers)
+        ssl_protocol = request.meta.get('ssl_protocol', self.ssl_protocol)
+        if ssl_ciphers or ssl_protocol:
+            if ssl_protocol:
+                context = ssl.SSLContext(protocol=ssl_protocol)
+            else:
+                context = ssl.create_default_context()
+
+            ssl_ciphers and context.set_ciphers(ssl_ciphers)
             kwargs['ssl'] = context
 
         proxy = request.meta.get("proxy")

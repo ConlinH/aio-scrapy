@@ -19,6 +19,7 @@ class HttpxDownloadHandler(object):
         self.crawler = crawler
         self.httpx_client_session_args = settings.get('HTTPX_CLIENT_SESSION_ARGS', {})
         self.verify_ssl = self.settings.get("VERIFY_SSL")
+        self.ssl_protocol = self.settings.get("SSL_PROTOCOL")
 
     @classmethod
     def from_settings(cls, settings, crawler):
@@ -39,22 +40,27 @@ class HttpxDownloadHandler(object):
             'cookies': dict(request.cookies),
             'data': request.body or None
         }
-
         headers = request.headers or self.settings.get('DEFAULT_REQUEST_HEADERS')
         kwargs['headers'] = headers
 
+        session_args = self.httpx_client_session_args.copy()
         ssl_ciphers = request.meta.get('TLS_CIPHERS')
-        if ssl_ciphers:
-            context = ssl.create_default_context()
-            context.set_ciphers(ssl_ciphers)
-            kwargs['verify'] = context
+        ssl_protocol = request.meta.get('ssl_protocol', self.ssl_protocol)
+        if ssl_ciphers or ssl_protocol:
+            if ssl_protocol:
+                context = ssl.SSLContext(protocol=ssl_protocol)
+            else:
+                context = ssl.create_default_context()
+
+            ssl_ciphers and context.set_ciphers(ssl_ciphers)
+            session_args['verify'] = context
 
         proxy = request.meta.get("proxy")
         if proxy:
-            kwargs["proxy"] = proxy
+            session_args["proxies"] = proxy
             logger.debug(f"使用代理{proxy}抓取: {request.url}")
 
-        async with httpx.AsyncClient(**self.httpx_client_session_args) as session:
+        async with httpx.AsyncClient(**session_args) as session:
             response = await session.request(request.method, request.url, **kwargs)
             content = response.read()
 
