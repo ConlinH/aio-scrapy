@@ -17,20 +17,20 @@ NEWSPIDER_MODULE = '$project_name.spiders'
 
 # ITEM_PIPELINES = {
 #     '$project_name.pipelines.${ProjectName}Pipeline': 300,
-#     # 'aioscrapy.pipelines.db.MysqlPipeline': 100,
+#     # 'aioscrapy.pipelines.sink.MysqlPipeline': 100,
 # }
 
 # REDIS_ARGS = {
 #     # "default"为该链接池别名 (只从该redis获取任务队列)
 #     'default': {
-#         'url': 'redis://192.168.234.128:6379/1',
+#         'url': 'redis://127.0.0.1:6379/1',
 #         'max_connections': 4,
 #         'retry_on_timeout': True,
 #         'health_check_interval': 30,
 #     },
 #
 #     # 'proxy': {
-#     #     'url': 'redis://:password@192.168.234.128:6379/2',
+#     #     'url': 'redis://username:password@127.0.0.1:6379/2',
 #     #     'max_connections': 4,
 #     #     'retry_on_timeout': True,
 #     #     'health_check_interval': 30,
@@ -41,8 +41,8 @@ NEWSPIDER_MODULE = '$project_name.spiders'
 #     'default': {
 #         'db': 'test',
 #         'user': 'root',
-#         'password': '123456',
-#         'host': '192.168.234.128',
+#         'password': 'password',
+#         'host': '127.0.0.1',
 #         'port': 3306,
 #         'charset': 'utf8mb4',
 #     },
@@ -50,14 +50,14 @@ NEWSPIDER_MODULE = '$project_name.spiders'
 #     # 'mysql2': {
 #     #     'db': 'test2',
 #     #     'user': 'root',
-#     #     'password': 'root',
+#     #     'password': 'password',
 #     #     'host': '127.0.0.1',
 #     #     'port': 3306,
 #     #     'charset': 'utf8mb4',
 #     # }
 # }
-# SAVE_CACHE_NUM = 500        # 每500个item触发一次数据库写入， 将所有缓存的数据写入
-# SAVE_CACHE_INTERVAL = 10    # 每10秒触发一次数据库写入， 将所有缓存的数据写入
+# SAVE_CACHE_NUM = 1000        # Trigger mysql storage every 1000 item.
+# SAVE_CACHE_INTERVAL = 10    # Trigger mysql storage every 10 seconds.
 
 
 # CONCURRENT_REQUESTS = 32
