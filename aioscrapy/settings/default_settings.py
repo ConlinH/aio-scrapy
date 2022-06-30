@@ -69,8 +69,6 @@ DOWNLOADER_MIDDLEWARES_BASE = {
     'aioscrapy.libs.downloader.useragent.UserAgentMiddleware': 500,
     'aioscrapy.libs.downloader.retry.RetryMiddleware': 550,
     'aioscrapy.libs.downloader.redirect.MetaRefreshMiddleware': 580,
-    'aioscrapy.libs.downloader.redirect.RedirectMiddleware': 600,
-    'aioscrapy.libs.downloader.httpproxy.HttpProxyMiddleware': 750,
     'aioscrapy.libs.downloader.stats.DownloaderStats': 850,
     'aioscrapy.libs.downloader.ja3fingerprint.TLSCiphersMiddleware': 950,
     # Downloader side
@@ -132,8 +130,7 @@ NEWSPIDER_MODULE = ''
 RANDOMIZE_DOWNLOAD_DELAY = True
 
 REDIRECT_ENABLED = True
-REDIRECT_MAX_TIMES = 20  # uses Firefox default setting
-REDIRECT_PRIORITY_ADJUST = +2
+REDIRECT_MAX_TIMES = 20
 
 REFERER_ENABLED = True
 REFERRER_POLICY = 'aioscrapy.libs.spider.referer.DefaultReferrerPolicy'

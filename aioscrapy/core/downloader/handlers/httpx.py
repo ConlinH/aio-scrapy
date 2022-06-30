@@ -12,7 +12,6 @@ except ImportError:
 
 
 class HttpxDownloadHandler(object):
-    session = None
 
     def __init__(self, settings, crawler):
         self.settings = settings
@@ -29,11 +28,6 @@ class HttpxDownloadHandler(object):
     def from_crawler(cls, crawler):
         return cls.from_settings(crawler.settings, crawler)
 
-    def get_session(self, *args, **kwargs):
-        if self.session is None:
-            self.session = httpx.AsyncClient()
-        return self.session
-
     async def download_request(self, request, spider):
         kwargs = {
             'timeout': self.settings.get('DOWNLOAD_TIMEOUT'),
@@ -44,6 +38,11 @@ class HttpxDownloadHandler(object):
         kwargs['headers'] = headers
 
         session_args = self.httpx_client_session_args.copy()
+        session_args.update({
+            'follow_redirects': self.settings.getbool('REDIRECT_ENABLED', True) if request.meta.get(
+                'dont_redirect') is None else request.meta.get('dont_redirect'),
+            'max_redirects': self.settings.getint('REDIRECT_MAX_TIMES', 10),
+        })
         ssl_ciphers = request.meta.get('TLS_CIPHERS')
         ssl_protocol = request.meta.get('ssl_protocol', self.ssl_protocol)
         if ssl_ciphers or ssl_protocol:
@@ -72,7 +71,3 @@ class HttpxDownloadHandler(object):
             cookies=dict(response.cookies),
             encoding=response.encoding
         )
-
-    async def close(self):
-        if self.session is not None:
-            await self.session.close()

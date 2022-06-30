@@ -33,7 +33,9 @@ class AioHttpDownloadHandler:
             'verify_ssl': request.meta.get('verify_ssl', self.verify_ssl),
             'timeout': request.meta.get('download_timeout', 180),
             'cookies': dict(request.cookies),
-            'data': request.body or None
+            'data': request.body or None,
+            'allow_redirects': self.settings.getbool('REDIRECT_ENABLED', True) if request.meta.get('dont_redirect') is None else request.meta.get('dont_redirect'),
+            'max_redirects': self.settings.getint('REDIRECT_MAX_TIMES', 10),
         }
 
         headers = request.headers or self.settings.get('DEFAULT_REQUEST_HEADERS')
@@ -65,18 +67,18 @@ class AioHttpDownloadHandler:
             async with session.request(request.method, request.url, **kwargs) as response:
                 content = await response.read()
 
-        response_cookies = response.cookies.output() or None
-        if response_cookies:
-            response_cookies = {
-                    cookie[0]: cookie[1] for cookie in re.findall(r'Set-Cookie: (.*?)=(.*?); Domain', response_cookies, re.S)
-                }
+        r_cookies = response.cookies.output() or None
+        if r_cookies:
+            r_cookies = {
+                cookie[0]: cookie[1] for cookie in re.findall(r'Set-Cookie: (.*?)=(.*?); Domain', r_cookies, re.S)
+            }
 
         return HtmlResponse(
             str(response.url),
             status=response.status,
             headers=response.headers,
             body=content,
-            cookies=response_cookies,
+            cookies=r_cookies,
             encoding=response.charset
         )
 
