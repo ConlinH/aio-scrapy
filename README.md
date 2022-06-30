@@ -1,7 +1,6 @@
-
-
+<!--
 ![aio-scrapy](./doc/images/aio-scrapy.png)
-
+-->
 ### aio-scrapy
 
 An asyncio + aiolibs crawler  imitate scrapy framework
