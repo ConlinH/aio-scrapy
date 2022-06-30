@@ -1,7 +1,7 @@
 
-
+<!--
 ![aio-scrapy](./images/aio-scrapy.png)
-
+-->
 ### aio-scrapy
 
 基于asyncio及aio全家桶, 使用scrapy框架流程及标准的一个异步爬虫框架
