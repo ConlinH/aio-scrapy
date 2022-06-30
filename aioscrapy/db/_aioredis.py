@@ -3,6 +3,17 @@ from redis.asyncio import BlockingConnectionPool, Redis
 from aioscrapy.db.absmanager import AbsDBPoolManager
 
 
+class RedisExecutor:
+
+    def __init__(self, alias: str, pool_manager: "AioRedisPoolManager"):
+        self.alias = alias
+        self.pool_manager = pool_manager
+
+    def __getattr__(self, command):
+        redis_pool: Redis = self.pool_manager.get_pool(self.alias)
+        return getattr(redis_pool, command)
+
+
 class AioRedisPoolManager(AbsDBPoolManager):
     _clients = {}
 
@@ -26,7 +37,7 @@ class AioRedisPoolManager(AbsDBPoolManager):
         assert redis_pool is not None, f"redis没有创建该连接池： {alias}"
         return redis_pool
 
-    def executor(self, alias: str):
+    def executor(self, alias: str) -> RedisExecutor:
         return RedisExecutor(alias, self)
 
     async def close(self, alias: str):
@@ -52,19 +63,9 @@ class AioRedisPoolManager(AbsDBPoolManager):
 redis_manager = AioRedisPoolManager()
 
 
-class RedisExecutor:
-
-    def __init__(self, alias: str, pool_manager: AioRedisPoolManager):
-        self.alias = alias
-        self.pool_manager = pool_manager
-
-    def __getattr__(self, command):
-        redis_pool: Redis = self.pool_manager.get_pool(self.alias)
-        return getattr(redis_pool, command)
-
-
 if __name__ == '__main__':
     import asyncio
+
 
     async def test():
         await redis_manager.create('default', {
@@ -82,6 +83,7 @@ if __name__ == '__main__':
 
         print(results)
         await redis_manager.close_all()
+
 
     # asyncio.run(test())
     asyncio.get_event_loop().run_until_complete(test())

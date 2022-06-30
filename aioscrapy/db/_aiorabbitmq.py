@@ -13,73 +13,8 @@ except ImportError:
 from aioscrapy.db.absmanager import AbsDBPoolManager
 
 
-class AioRabbitmqManager(AbsDBPoolManager):
-    _clients = {}
-
-    @staticmethod
-    async def get_channel(connection_pool):
-        async with connection_pool.acquire() as connection:
-            return await connection.channel()
-
-    async def create(self, alias: str, params: dict):
-        if alias in self._clients:
-            return self._clients[alias]
-
-        params = params.copy()
-        url = params.pop('url', None)
-        assert url, "Must args url"
-        connection_max_size = params.pop('connection_max_size', None)
-        channel_max_size = params.pop('channel_max_size', None)
-
-        connection_pool: Pool = Pool(aio_pika.connect_robust, url, max_size=connection_max_size)
-        channel_pool: Pool = Pool(self.get_channel, connection_pool, max_size=channel_max_size)
-
-        return self._clients.setdefault(alias, (connection_pool, channel_pool))
-
-    def get_pool(self, alias: str):
-        connection_pool, channel_pool = self._clients.get(alias)
-        assert channel_pool is not None, f"rabbitmq没有创建该连接池： {alias}"
-        assert connection_pool is not None, f"rabbitmq没有创建该连接池： {alias}"
-        return connection_pool, channel_pool
-
-    @asynccontextmanager
-    async def get(self, alias: str):
-        connection_pool, channel_pool = self.get_pool(alias)
-        async with channel_pool.acquire() as channel:
-            yield channel
-
-    def executor(self, alias: str):
-        return RabbitmqExecutor(alias, self)
-
-    async def close(self, alias: str):
-        """关闭指定pool"""
-        connection_pool, channel_pool = self._clients.pop(alias, (None, None))
-        connection_pool: Pool
-        channel_pool: Pool
-        if channel_pool:
-            await channel_pool.close()
-
-        if connection_pool:
-            await connection_pool.close()
-
-    async def close_all(self):
-        for alias in list(self._clients.keys()):
-            await self.close(alias)
-
-    async def from_dict(self, db_args: dict):
-        for alias, rabbitmq_args in db_args.items():
-            await self.create(alias, rabbitmq_args)
-
-    async def from_settings(self, settings: "aioscrapy.settings.Setting"):
-        for alias, rabbitmq_args in settings.getdict('RABBITMQ_ARGS').items():
-            await self.create(alias, rabbitmq_args)
-
-
-rabbitmq_manager = AioRabbitmqManager()
-
-
 class RabbitmqExecutor:
-    def __init__(self, alias: str, pool_manager: AioRabbitmqManager):
+    def __init__(self, alias: str, pool_manager: "AioRabbitmqManager"):
         self.alias = alias
         self.pool_manager = pool_manager
 
@@ -144,6 +79,70 @@ class RabbitmqExecutor:
                 timeout=timeout
             )
 
+
+class AioRabbitmqManager(AbsDBPoolManager):
+    _clients = {}
+
+    @staticmethod
+    async def get_channel(connection_pool):
+        async with connection_pool.acquire() as connection:
+            return await connection.channel()
+
+    async def create(self, alias: str, params: dict):
+        if alias in self._clients:
+            return self._clients[alias]
+
+        params = params.copy()
+        url = params.pop('url', None)
+        assert url, "Must args url"
+        connection_max_size = params.pop('connection_max_size', None)
+        channel_max_size = params.pop('channel_max_size', None)
+
+        connection_pool: Pool = Pool(aio_pika.connect_robust, url, max_size=connection_max_size)
+        channel_pool: Pool = Pool(self.get_channel, connection_pool, max_size=channel_max_size)
+
+        return self._clients.setdefault(alias, (connection_pool, channel_pool))
+
+    def get_pool(self, alias: str):
+        connection_pool, channel_pool = self._clients.get(alias)
+        assert channel_pool is not None, f"rabbitmq没有创建该连接池： {alias}"
+        assert connection_pool is not None, f"rabbitmq没有创建该连接池： {alias}"
+        return connection_pool, channel_pool
+
+    @asynccontextmanager
+    async def get(self, alias: str):
+        connection_pool, channel_pool = self.get_pool(alias)
+        async with channel_pool.acquire() as channel:
+            yield channel
+
+    def executor(self, alias: str) -> RabbitmqExecutor:
+        return RabbitmqExecutor(alias, self)
+
+    async def close(self, alias: str):
+        """关闭指定pool"""
+        connection_pool, channel_pool = self._clients.pop(alias, (None, None))
+        connection_pool: Pool
+        channel_pool: Pool
+        if channel_pool:
+            await channel_pool.close()
+
+        if connection_pool:
+            await connection_pool.close()
+
+    async def close_all(self):
+        for alias in list(self._clients.keys()):
+            await self.close(alias)
+
+    async def from_dict(self, db_args: dict):
+        for alias, rabbitmq_args in db_args.items():
+            await self.create(alias, rabbitmq_args)
+
+    async def from_settings(self, settings: "aioscrapy.settings.Setting"):
+        for alias, rabbitmq_args in settings.getdict('RABBITMQ_ARGS').items():
+            await self.create(alias, rabbitmq_args)
+
+
+rabbitmq_manager = AioRabbitmqManager()
 
 if __name__ == '__main__':
     import asyncio
