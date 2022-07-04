@@ -6,11 +6,12 @@ with open(join(dirname(__file__), 'aioscrapy/VERSION'), 'rb') as f:
 
 install_requires = [
     "aiohttp",
-    "w3lib",
-    "parsel",
-    "PyDispatcher",
-    'zope.interface>=4.1.3'
+    "w3lib>=1.17.0",
+    "parsel>=1.5.0",
+    "PyDispatcher>=2.0.5",
+    'zope.interface>=5.1.0'
     "redis>=4.3.1",
+    "itemadapter>=0.1.0",
 ]
 extras_require = {}
 

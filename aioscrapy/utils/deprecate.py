@@ -10,7 +10,7 @@ def attribute(obj, oldattr, newattr, version='0.12'):
     cname = obj.__class__.__name__
     warnings.warn(
         f"{cname}.{oldattr} attribute is deprecated and will be no longer supported "
-        f"in Scrapy {version}, use {cname}.{newattr} attribute instead",
+        f"in Aioscrapy {version}, use {cname}.{newattr} attribute instead",
         AioScrapyDeprecationWarning,
         stacklevel=3)
 
@@ -127,9 +127,7 @@ def _clspath(cls, forced=None):
     return f'{cls.__module__}.{cls.__name__}'
 
 
-DEPRECATION_RULES = [
-    ('scrapy.telnet.', 'scrapy.extensions.telnet.'),
-]
+DEPRECATION_RULES = []
 
 
 def update_classpath(path):
