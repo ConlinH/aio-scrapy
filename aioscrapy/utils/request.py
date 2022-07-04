@@ -1,6 +1,6 @@
 """
 This module provides some useful functions for working with
-scrapy.http.Request objects
+aioscrapy.http.Request objects
 """
 
 import hashlib

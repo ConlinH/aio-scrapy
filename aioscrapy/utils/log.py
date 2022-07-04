@@ -16,7 +16,7 @@ class TopLevelFormatter(logging.Filter):
     """Keep only top level loggers's name (direct children from root) from
     records.
 
-    This filter will replace Scrapy loggers' names with 'scrapy'. This mimics
+    This filter will replace aioscrapy loggers' names with 'aioscrapy'. This mimics
     the old Scrapy log behaviour and helps shortening long names.
 
     Since it can't be set for just one logger (it won't propagate for its
