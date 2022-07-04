@@ -68,7 +68,6 @@ DOWNLOADER_MIDDLEWARES_BASE = {
     'aioscrapy.libs.downloader.defaultheaders.DefaultHeadersMiddleware': 400,
     'aioscrapy.libs.downloader.useragent.UserAgentMiddleware': 500,
     'aioscrapy.libs.downloader.retry.RetryMiddleware': 550,
-    'aioscrapy.libs.downloader.redirect.MetaRefreshMiddleware': 580,
     'aioscrapy.libs.downloader.stats.DownloaderStats': 850,
     'aioscrapy.libs.downloader.ja3fingerprint.TLSCiphersMiddleware': 950,
     # Downloader side
