@@ -16,26 +16,38 @@ try:
     from asyncio.exceptions import TimeoutError
 except:
     from concurrent.futures._base import TimeoutError
-from aiohttp.client_exceptions import ClientError
+
+NEED_RETRY_ERROR = (TimeoutError, ConnectionRefusedError, IOError)
+
+try:
+    from aiohttp.client_exceptions import ClientError
+    NEED_RETRY_ERROR += (ClientError, )
+except ImportError:
+    pass
+
+try:
+    from httpx import HTTPError as HttpxError
+    NEED_RETRY_ERROR += (HttpxError, )
+except ImportError:
+    pass
 
 from aioscrapy.exceptions import NotConfigured
 from aioscrapy.http.request import Request
 from aioscrapy.spiders import Spider
 from aioscrapy.utils.python import global_object_name
 
-
 retry_logger = getLogger(__name__)
 
 
 def get_retry_request(
-    request: Request,
-    *,
-    spider: Spider,
-    reason: Union[str, Exception] = 'unspecified',
-    max_retry_times: Optional[int] = None,
-    priority_adjust: Optional[int] = None,
-    logger: Logger = retry_logger,
-    stats_base_key: str = 'retry',
+        request: Request,
+        *,
+        spider: Spider,
+        reason: Union[str, Exception] = 'unspecified',
+        max_retry_times: Optional[int] = None,
+        priority_adjust: Optional[int] = None,
+        logger: Logger = retry_logger,
+        stats_base_key: str = 'retry',
 ):
     """
     使用了scrapy的retry，将日志等级改为info
@@ -80,8 +92,7 @@ def get_retry_request(
 
 
 class RetryMiddleware:
-
-    EXCEPTIONS_TO_RETRY = (ClientError, TimeoutError, ConnectionRefusedError, IOError)
+    EXCEPTIONS_TO_RETRY = NEED_RETRY_ERROR
 
     def __init__(self, settings):
         if not settings.getbool('RETRY_ENABLED'):
@@ -104,8 +115,8 @@ class RetryMiddleware:
 
     def process_exception(self, request, exception, spider):
         if (
-            isinstance(exception, self.EXCEPTIONS_TO_RETRY)
-            and not request.meta.get('dont_retry', False)
+                isinstance(exception, self.EXCEPTIONS_TO_RETRY)
+                and not request.meta.get('dont_retry', False)
         ):
             return self._retry(request, exception, spider)
 
