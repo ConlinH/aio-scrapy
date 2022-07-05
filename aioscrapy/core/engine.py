@@ -250,7 +250,7 @@ class ExecutionEngine(object):
         await call_helper(self.crawler.stats.open_spider, spider)
         await self.signals.send_catch_log_deferred(signals.spider_opened, spider=spider)
         asyncio.create_task(self._next_request(spider))
-        self.slot.heartbeat = asyncio.create_task(self.heart_beat(1, spider, self.slot))
+        self.slot.heartbeat = asyncio.create_task(self.heart_beat(0.2, spider, self.slot))
 
     async def _close_all_spiders(self):
         dfds = [self.close_spider(s, reason='shutdown') for s in self.open_spiders]
