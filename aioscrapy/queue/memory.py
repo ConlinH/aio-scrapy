@@ -46,12 +46,13 @@ class MemoryQueueBase(AbsQueue):
         data = self._encode_request(request)
         await self.container.put(data)
 
-    async def pop(self, timeout: int = 0):
-        try:
-            data = self.container.get_nowait()
-        except QueueEmpty:
-            return
-        return self._decode_request(data)
+    async def pop(self, count: int = 1):
+        for _ in range(count):
+            try:
+                data = self.container.get_nowait()
+            except QueueEmpty:
+                break
+            yield self._decode_request(data)
 
     async def clear(self, timeout: int = 0):
         self.container = self.get_queue(self.max_size)
@@ -80,12 +81,13 @@ class MemoryPriorityQueue(MemoryFifoQueue):
         score = request.priority
         await self.container.put((score, data))
 
-    async def pop(self, timeout: int = 0):
-        try:
-            score, data = self.container.get_nowait()
-        except QueueEmpty:
-            return
-        return self._decode_request(data)
+    async def pop(self, count: int = 1):
+        for _ in range(count):
+            try:
+                score, data = self.container.get_nowait()
+            except QueueEmpty:
+                break
+            yield self._decode_request(data)
 
 
 SpiderQueue = MemoryFifoQueue

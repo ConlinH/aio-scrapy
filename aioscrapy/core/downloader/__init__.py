@@ -91,13 +91,12 @@ class Downloader:
                                           request=request,
                                           spider=spider)
         slot.queue.append((request, _handle_downloader_output))
-        asyncio.create_task(self._process_queue(spider, slot))
+        await self._process_queue(spider, slot)
 
     async def _process_queue(self, spider, slot):
         if slot.delay_run:
             return
 
-        # Delay queue processing if a download_delay is configured
         now = time()
         delay = slot.download_delay()
         if delay:
@@ -109,18 +108,15 @@ class Downloader:
                 asyncio.create_task(self._process_queue(spider, slot))
                 return
 
-        # Process enqueued requests if there are free slots to transfer for this slot
         while slot.queue and slot.free_transfer_slots() > 0:
             slot.lastseen = now
             request, _handle_downloader_output = slot.queue.popleft()
+            slot.transferring.add(request)
             asyncio.create_task(self._download(slot, request, spider, _handle_downloader_output))
-            # prevent burst if inter-request delays were configured
             if delay:
-                asyncio.create_task(self._process_queue(spider, slot))
                 break
 
     async def _download(self, slot, request, spider, _handle_downloader_output):
-        slot.transferring.add(request)
         response = None
         try:
             response = await self.middleware.process_request(spider, request)
@@ -138,14 +134,14 @@ class Downloader:
             slot.transferring.remove(request)
             slot.active.remove(request)
             self.active.remove(request)
-            asyncio.create_task(self._process_queue(spider, slot))
+            await self._process_queue(spider, slot)
             if isinstance(response, Response):
                 response.request = request
                 await self.signals.send_catch_log(signal=signals.response_downloaded,
                                                   response=response,
                                                   request=request,
                                                   spider=spider)
-            asyncio.create_task(_handle_downloader_output(response, request, spider))
+            await _handle_downloader_output(response, request, spider)
 
     def close(self):
         self._slot_gc_loop = False
@@ -153,9 +149,8 @@ class Downloader:
             slot.close()
 
     async def _slot_gc(self, age=60):
-        mintime = time() - age
         for key, slot in list(self.slots.items()):
-            if not slot.active and slot.lastseen + slot.delay < mintime:
+            if not slot.active and slot.lastseen + slot.delay < (time() - age):
                 self.slots.pop(key).close()
         await asyncio.sleep(age)
         if self._slot_gc_loop:

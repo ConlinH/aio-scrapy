@@ -47,10 +47,10 @@ class RabbitMqPriorityQueue(AbsQueue):
             priority=score
         )
 
-    async def pop(self, timeout=0):
+    async def pop(self, count: int = 1):
         result = await self.container.get_message(self.key)
         if result:
-            return self._decode_request(result)
+            yield self._decode_request(result)
 
     async def clear(self):
         return await self.container.clean_message_queue(self.key)

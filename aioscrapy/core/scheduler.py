@@ -79,17 +79,17 @@ class Scheduler(object):
             self.stats.inc_value(self.queue.inc_key, spider=self.spider)
         return True
 
-    async def next_request(self):
-        request = await call_helper(self.queue.pop)
-        if request and not request.dont_filter \
-                and request.filter_mode == 'OUT_QUEUE' \
-                and self.df and await self.df.request_seen(request):
-            self.df.log(request, self.spider)
-            return None
+    async def next_request(self, count=1):
+        async for request in await call_helper(self.queue.pop, count):
+            if request and not request.dont_filter \
+                    and request.filter_mode == 'OUT_QUEUE' \
+                    and self.df and await self.df.request_seen(request):
+                self.df.log(request, self.spider)
+                continue
 
-        if request and self.stats:
-            self.stats.inc_value(self.queue.inc_key, spider=self.spider)
-        return request
+            if request and self.stats:
+                self.stats.inc_value(self.queue.inc_key, spider=self.spider)
+            yield request
 
     async def has_pending_requests(self):
         return await call_helper(self.queue.len) > 0

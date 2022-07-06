@@ -55,16 +55,15 @@ class RedisFifoQueue(RedisQueueBase):
         """Push a request"""
         await self.container.lpush(self.key, self._encode_request(request))
 
-    async def pop(self, timeout=0):
+    async def pop(self, count: int = 1):
         """Pop a request"""
-        if timeout > 0:
-            data = await self.container.brpop(self.key, timeout)
-            if isinstance(data, tuple):
-                data = data[1]
-        else:
-            data = await self.container.rpop(self.key)
-        if data:
-            return self._decode_request(data)
+        async with self.container.pipeline(transaction=True) as pipe:
+            for _ in range(count):
+                pipe.rpop(self.key)
+            results = await pipe.execute()
+        for result in results:
+            if result:
+                yield self._decode_request(result)
 
 
 class RedisPriorityQueue(RedisQueueBase):
@@ -79,20 +78,16 @@ class RedisPriorityQueue(RedisQueueBase):
         score = request.priority
         await self.container.zadd(self.key, {data: score})
 
-    async def pop(self, timeout=0):
-        """
-        Pop a request
-        timeout not support in this queue class
-        """
-        # use atomic range/remove using multi/exec
+    async def pop(self, count: int = 1):
         async with self.container.pipeline(transaction=True) as pipe:
-            results, count = await (
-                pipe.zrange(self.key, 0, 0)
-                    .zremrangebyrank(self.key, 0, 0)
+            stop = count - 1 if count - 1 > 0 else 0
+            results, _ = await (
+                pipe.zrange(self.key, 0, stop)
+                    .zremrangebyrank(self.key, 0, stop)
                     .execute()
             )
-        if results:
-            return self._decode_request(results[0])
+        for result in results:
+            yield self._decode_request(result)
 
 
 class RedisLifoQueue(RedisQueueBase):
@@ -105,17 +100,15 @@ class RedisLifoQueue(RedisQueueBase):
         """Push a request"""
         await self.container.lpush(self.key, self._encode_request(request))
 
-    async def pop(self, timeout=0):
+    async def pop(self, count: int = 1):
         """Pop a request"""
-        if timeout > 0:
-            data = await self.container.blpop(self.key, timeout)
-            if isinstance(data, tuple):
-                data = data[1]
-        else:
-            data = await self.container.lpop(self.key)
-
-        if data:
-            return self._decode_request(data)
+        async with self.container.pipeline(transaction=True) as pipe:
+            for _ in range(count):
+                pipe.lpop(self.key)
+            results = await pipe.execute()
+        for result in results:
+            if result:
+                yield self._decode_request(result)
 
 
 # TODO: Deprecate the use of these names.
