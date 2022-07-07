@@ -1,10 +1,8 @@
 from abc import ABCMeta, abstractmethod
 from typing import Optional
 
-from aioscrapy.utils.reqser import request_to_dict, request_from_dict
 from aioscrapy.serializer import AbsSerializer
-from aioscrapy.utils.misc import load_object
-from aioscrapy.db import db_manager
+from aioscrapy.utils.reqser import request_to_dict, request_from_dict
 
 
 class AbsQueue(object, metaclass=ABCMeta):

@@ -1,14 +1,16 @@
 import asyncio
 import random
+import re
 from collections import deque
 from datetime import datetime
 from time import time
+from typing import Optional
 
 from aioscrapy import signals, Request
 from aioscrapy.core.downloader.handlers import DownloadHandlers
-from aioscrapy.middleware import DownloaderMiddlewareManager
 from aioscrapy.http import Response
-from aioscrapy.utils.datatypes import dnscache
+from aioscrapy.middleware import DownloaderMiddlewareManager
+from aioscrapy.proxy import AbsProxy
 from aioscrapy.utils.httpobj import urlparse_cached
 
 
@@ -72,6 +74,7 @@ class Downloader:
         self.signals = crawler.signals
         self.slots = {}
         self.active = set()
+        self.proxy: Optional[AbsProxy] = None
         self.handlers = DownloadHandlers(crawler)
         self.total_concurrency = self.settings.getint('CONCURRENT_REQUESTS')
         self.domain_concurrency = self.settings.getint('CONCURRENT_REQUESTS_PER_DOMAIN')
@@ -83,6 +86,8 @@ class Downloader:
 
     async def fetch(self, request, spider, _handle_downloader_output):
         self.active.add(request)
+        if self.proxy:
+            request = await self.proxy.add_proxy(request)
         key, slot = self._get_slot(request, spider)
         request.meta[self.DOWNLOAD_SLOT] = key
 
@@ -123,12 +128,14 @@ class Downloader:
             if response is None or isinstance(response, Request):
                 request = response or request
                 response = await self.handlers.download_request(request, spider)
-        except (Exception, BaseException) as exc:
+        except BaseException as exc:
+            self.proxy and self.proxy.check(request, exception=exc)
             response = await self.middleware.process_exception(spider, request, exc)
         else:
             try:
+                self.proxy and self.proxy.check(request, response=response)
                 response = await self.middleware.process_response(spider, request, response)
-            except (Exception, BaseException) as exc:
+            except BaseException as exc:
                 response = exc
         finally:
             slot.transferring.remove(request)
@@ -165,15 +172,13 @@ class Downloader:
             conc = self.ip_concurrency if self.ip_concurrency else self.domain_concurrency
             conc, delay = _get_concurrency_delay(conc, spider, self.settings)
             self.slots[key] = Slot(conc, delay, self.randomize_delay)
-
         return key, self.slots[key]
 
     def _get_slot_key(self, request, spider):
         if self.DOWNLOAD_SLOT in request.meta:
             return request.meta[self.DOWNLOAD_SLOT]
 
-        key = urlparse_cached(request).hostname or ''
         if self.ip_concurrency:
-            key = dnscache.get(key, key)
-
-        return key
+            return ''.join(re.findall(r'[\w]+', request.meta.get("proxy", '')))
+        else:
+            return urlparse_cached(request).hostname or ''

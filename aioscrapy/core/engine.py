@@ -243,6 +243,11 @@ class ExecutionEngine(object):
         start_requests = await call_helper(self.scraper.spidermw.process_start_requests, start_requests, spider)
         self.slot = Slot(start_requests, close_if_idle, scheduler)
         self.spider = spider
+
+        proxy_module_path = self.settings.get("PROXY_HANDLER")
+        if proxy_module_path:
+            self.downloader.proxy = await call_helper(load_object(proxy_module_path).from_spider, spider)
+
         await call_helper(scheduler.open, spider)
         await call_helper(self.scraper.open_spider, spider)
         await call_helper(self.crawler.stats.open_spider, spider)
