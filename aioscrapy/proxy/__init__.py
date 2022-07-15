@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import random
 import time
 from abc import ABCMeta, abstractmethod
 from typing import Optional
@@ -47,7 +46,7 @@ class AbsProxy(metaclass=ABCMeta):
 
     @classmethod
     @abstractmethod
-    async def from_spider(cls, spider) -> "AbsProxy":
+    async def from_crawler(cls, crawler) -> "AbsProxy":
         """get proxy instance from spider"""
 
     @abstractmethod
@@ -68,8 +67,8 @@ class RedisProxy(AbsProxy):
         self.lock = asyncio.Lock()
 
     @classmethod
-    async def from_spider(cls, spider) -> "RedisProxy":
-        settings = spider.settings
+    async def from_crawler(cls, crawler) -> "RedisProxy":
+        settings = crawler.settings
         proxy_key = settings.get('PROXY_KEY')
         assert proxy_key is not None, f"未配置代理得key值：'ROXY_KEY'"
         alias = settings.get("PROXY_QUEUE_ALIAS", 'proxy')
@@ -80,7 +79,7 @@ class RedisProxy(AbsProxy):
             proxy_key=proxy_key
         )
 
-    async def fill_proxy(self, redis_key, count):
+    async def fill_proxy(self, redis_key: str, count: int) -> None:
         script = f"""
             local redis_key = KEYS[1]
             local min_score = ARGV[1]
@@ -101,8 +100,10 @@ class RedisProxy(AbsProxy):
         self.cache.extend(proxies)
         logger.info(f'Get proxy from redis: {proxies}')
 
-    async def get(self):
-        async with self.lock:
-            if len(self.cache) < self.min_count:
-                await self.fill_proxy(self.proxy_key, self.max_count - len(self.cache))
-        return random.choice(self.cache)
+    async def get(self) -> str:
+        if len(self.cache) < self.min_count:
+            async with self.lock:
+                len(self.cache) < self.min_count and await self.fill_proxy(self.proxy_key, self.max_count - len(self.cache))
+        proxy = self.cache.pop(0)
+        self.cache.append(proxy)
+        return proxy

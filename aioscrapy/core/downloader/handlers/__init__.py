@@ -1,32 +1,45 @@
 """Download handlers for different schemes"""
 
 import logging
+from abc import abstractmethod
+from typing import Optional
 
-from aioscrapy import signals
+from aioscrapy import signals, Request, Spider
 from aioscrapy.exceptions import NotConfigured, NotSupported
+from aioscrapy.http import HtmlResponse
 from aioscrapy.utils.httpobj import urlparse_cached
-from aioscrapy.utils.misc import create_instance, load_object
+from aioscrapy.utils.misc import load_instance
 from aioscrapy.utils.python import without_none_values
 
 logger = logging.getLogger(__name__)
 
 
-class DownloadHandlers:
+class BaseDownloadHandler:
+    @abstractmethod
+    async def download_request(self, requests: Request, spider: Spider):
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def close(self):
+        pass
+
+
+class DownloadHandlerManager:
 
     def __init__(self, crawler):
         self._crawler = crawler
-        self._schemes = {}  # stores acceptable schemes on instancing
-        self._handlers = {}  # stores instanced handlers for schemes
-        self._notconfigured = {}  # remembers failed handlers
-        handlers = without_none_values(
-            crawler.settings.getwithbase('DOWNLOAD_HANDLERS'))
-        for scheme, clspath in handlers.items():
-            self._schemes[scheme] = clspath
-            self._load_handler(scheme, skip_lazy=True)
 
+        # stores acceptable schemes on instancing
+        self._schemes: dict = without_none_values(crawler.settings.getwithbase('DOWNLOAD_HANDLERS')) or {}
+        self._handlers: dict = {}  # stores instanced handlers for schemes
+        self._notconfigured: dict = {}  # remembers failed handlers
         crawler.signals.connect(self._close, signals.engine_stopped)
 
-    def _get_handler(self, scheme):
+    @classmethod
+    def for_crawler(cls, crawler) -> "DownloadHandlerManager":
+        return cls(crawler)
+
+    async def _get_handler(self, scheme: str) -> Optional[BaseDownloadHandler]:
         """Lazy-load the downloadhandler for a scheme
         only on the first request for that scheme.
         """
@@ -38,18 +51,14 @@ class DownloadHandlers:
             self._notconfigured[scheme] = 'no handler available for that scheme'
             return None
 
-        return self._load_handler(scheme)
+        return await self._load_handler(scheme)
 
-    def _load_handler(self, scheme, skip_lazy=False):
-        path = self._schemes[scheme]
+    async def _load_handler(self, scheme: str) -> Optional[BaseDownloadHandler]:
+        path: str = self._schemes[scheme]
         try:
-            dhcls = load_object(path)
-            if skip_lazy and getattr(dhcls, 'lazy', True):
-                return None
-            dh = create_instance(
-                objcls=dhcls,
+            dh: BaseDownloadHandler = await load_instance(
+                path,
                 settings=self._crawler.settings,
-                crawler=self._crawler,
             )
         except NotConfigured as ex:
             self._notconfigured[scheme] = str(ex)
@@ -64,15 +73,14 @@ class DownloadHandlers:
             self._handlers[scheme] = dh
             return dh
 
-    async def download_request(self, request, spider):
+    async def download_request(self, request: Request, spider: Spider) -> HtmlResponse:
         scheme = urlparse_cached(request).scheme
-        handler = self._get_handler(scheme)
+        handler: BaseDownloadHandler = await self._get_handler(scheme)
         if not handler:
             raise NotSupported("Unsupported URL scheme '%s': %s" %
                                (scheme, self._notconfigured[scheme]))
         return await handler.download_request(request, spider)
 
-    async def _close(self, *_a, **_kw):
+    async def _close(self, *_a, **_kw) -> None:
         for dh in self._handlers.values():
-            if hasattr(dh, 'close'):
-                await dh.close()
+            await dh.close()

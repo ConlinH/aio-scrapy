@@ -59,11 +59,11 @@ class SpiderMiddlewareManager(AbsMiddlewareManager):
                 except _InvalidOutput:
                     raise
                 except Exception as exception:
-                    iterable_or_exception = await call_helper(scrape_func, exception, request, spider)
+                    iterable_or_exception = await call_helper(scrape_func, exception, request)
                     if iterable_or_exception is exception:
                         raise iterable_or_exception
                     return iterable_or_exception
-            return await call_helper(scrape_func, response, request, spider)
+            return await call_helper(scrape_func, response, request)
 
         async def _evaluate_iterable(maybe_async_gen, exception_processor_index):
             try:

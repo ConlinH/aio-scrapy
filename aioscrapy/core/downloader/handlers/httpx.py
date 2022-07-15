@@ -2,6 +2,14 @@ import logging
 import ssl
 
 from aioscrapy.http import HtmlResponse
+from aioscrapy.core.downloader.handlers import BaseDownloadHandler
+
+from typing import Optional
+
+from aioscrapy import Request
+from aioscrapy.core.downloader.handlers import BaseDownloadHandler
+from aioscrapy.http import HtmlResponse
+from aioscrapy.settings import Settings
 
 logger = logging.getLogger(__name__)
 
@@ -11,24 +19,19 @@ except ImportError:
     logger.warning("Please run 'pip install httpx' when you want replace 'aiohttp' with 'httpx'")
 
 
-class HttpxDownloadHandler(object):
+class HttpxDownloadHandler(BaseDownloadHandler):
 
-    def __init__(self, settings, crawler):
-        self.settings = settings
-        self.crawler = crawler
-        self.httpx_client_session_args = settings.get('HTTPX_CLIENT_SESSION_ARGS', {})
-        self.verify_ssl = self.settings.get("VERIFY_SSL")
-        self.ssl_protocol = self.settings.get("SSL_PROTOCOL")
-
-    @classmethod
-    def from_settings(cls, settings, crawler):
-        return cls(settings, crawler)
+    def __init__(self, settings):
+        self.settings: Settings = settings
+        self.httpx_client_session_args: dict = self.settings.get('HTTPX_CLIENT_SESSION_ARGS', {})
+        self.verify_ssl: bool = self.settings.get("VERIFY_SSL")
+        self.ssl_protocol = self.settings.get("SSL_PROTOCOL")  # ssl.PROTOCOL_TLSv1_2
 
     @classmethod
-    def from_crawler(cls, crawler):
-        return cls.from_settings(crawler.settings, crawler)
+    def from_settings(cls, settings: Settings):
+        return cls(settings)
 
-    async def download_request(self, request, spider):
+    async def download_request(self, request: Request, _) -> HtmlResponse:
         kwargs = {
             'timeout': self.settings.get('DOWNLOAD_TIMEOUT'),
             'cookies': dict(request.cookies),
@@ -71,3 +74,6 @@ class HttpxDownloadHandler(object):
             cookies=dict(response.cookies),
             encoding=response.encoding
         )
+
+    async def close(self):
+        pass

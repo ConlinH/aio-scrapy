@@ -2,6 +2,7 @@
 
 from importlib import import_module
 from pkgutil import iter_modules
+from .tools import call_helper
 
 
 def walk_modules(path):
@@ -26,23 +27,12 @@ def walk_modules(path):
     return mods
 
 
-def load_object(path) -> object:
+def load_object(path: str):
     """Load an object given its absolute object path, and return it.
 
     The object can be the import path of a class, function, variable or an
-    instance, e.g. 'aioscrapy.libs.downloader.redirect.RedirectMiddleware'.
-
-    If ``path`` is not a string, but is a callable object, such as a class or
-    a function, then return it as is.
+    instance, e.g. 'aioscrapy.libs.downloader.redirect.RedirectMiddleware'..
     """
-
-    if not isinstance(path, str):
-        if callable(path):
-            return path
-        else:
-            raise TypeError("Unexpected argument type, expected string "
-                            "or object, got: %s" % type(path))
-
     try:
         dot = path.rindex('.')
     except ValueError:
@@ -59,7 +49,7 @@ def load_object(path) -> object:
     return obj
 
 
-def create_instance(objcls, settings, crawler, *args, **kwargs):
+async def create_instance(objcls, settings, crawler, *args, spider=None, **kwargs):
     """Construct a class instance using its ``from_crawler`` or
     ``from_settings`` constructors, if available.
 
@@ -77,14 +67,20 @@ def create_instance(objcls, settings, crawler, *args, **kwargs):
        extension has not been implemented correctly).
     """
     if settings is None:
-        if crawler is None:
-            raise ValueError("Specify at least one of settings and crawler.")
-        settings = crawler.settings
+        if crawler is None and spider is None:
+            raise ValueError("Specify at least one of settings, crawler and spider.")
+
+        settings = crawler and crawler.settings or spider and spider.settings
+        spider = spider or crawler and crawler.spider
+
     if crawler and hasattr(objcls, 'from_crawler'):
-        instance = objcls.from_crawler(crawler, *args, **kwargs)
+        instance = await call_helper(objcls.from_crawler, crawler, *args, **kwargs)
         method_name = 'from_crawler'
+    elif spider and hasattr(objcls, 'from_spider'):
+        instance = await call_helper(objcls.from_spider, spider, *args, **kwargs)
+        method_name = 'from_spider'
     elif hasattr(objcls, 'from_settings'):
-        instance = objcls.from_settings(settings, *args, **kwargs)
+        instance = await call_helper(objcls.from_settings, settings, *args, **kwargs)
         method_name = 'from_settings'
     else:
         instance = objcls(*args, **kwargs)
@@ -92,3 +88,14 @@ def create_instance(objcls, settings, crawler, *args, **kwargs):
     if instance is None:
         raise TypeError(f"{objcls.__qualname__}.{method_name} returned None")
     return instance
+
+
+async def load_instance(clspath: str, *args, settings=None, spider=None, crawler=None, **kwargs):
+    return await create_instance(
+        load_object(clspath),
+        settings,
+        crawler,
+        *args,
+        spider=spider,
+        **kwargs
+    )

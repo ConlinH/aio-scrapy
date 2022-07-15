@@ -9,14 +9,13 @@ from typing import Optional
 
 from aioscrapy import signals
 from aioscrapy.http.request import Request
-from aioscrapy.utils.trackref import object_ref
 from aioscrapy.utils.url import url_is_from_spider
 from aioscrapy.utils.deprecate import method_is_overridden
 from aioscrapy.exceptions import DontCloseSpider
 from aioscrapy.utils.tools import call_helper
 
 
-class Spider(object_ref):
+class Spider(object):
     """Base class for scrapy spiders. All spiders must inherit from this
     class.
     """
@@ -48,7 +47,7 @@ class Spider(object_ref):
         self.logger.log(level, message, **kw)
 
     @classmethod
-    def from_crawler(cls, crawler, *args, **kwargs):
+    async def from_crawler(cls, crawler, *args, **kwargs):
         spider = cls(*args, **kwargs)
         spider._set_crawler(crawler)
         return spider

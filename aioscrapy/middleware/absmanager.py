@@ -1,11 +1,10 @@
 import logging
 import pprint
 from abc import ABCMeta, abstractmethod
-from asyncio import iscoroutinefunction
 from collections import defaultdict, deque
 
 from aioscrapy.exceptions import NotConfigured
-from aioscrapy.utils.misc import create_instance, load_object
+from aioscrapy.utils.misc import load_instance
 from aioscrapy.utils.tools import call_helper
 
 logger = logging.getLogger(__name__)
@@ -28,15 +27,13 @@ class AbsMiddlewareManager(object, metaclass=ABCMeta):
         """get middleware list from settings"""
 
     @classmethod
-    def from_settings(cls, settings, crawler=None):
+    async def from_settings(cls, settings, crawler=None):
         mwlist = cls._get_mwlist_from_settings(settings)
         middlewares = []
         enabled = []
         for clspath in mwlist:
             try:
-                mwcls = load_object(clspath)
-                mw = create_instance(mwcls, settings, crawler)
-                middlewares.append(mw)
+                middlewares.append(await load_instance(clspath, settings=settings, crawler=crawler))
                 enabled.append(clspath)
             except NotConfigured as e:
                 if e.args:
@@ -52,8 +49,8 @@ class AbsMiddlewareManager(object, metaclass=ABCMeta):
         return cls(*middlewares)
 
     @classmethod
-    def from_crawler(cls, crawler):
-        return cls.from_settings(crawler.settings, crawler)
+    async def from_crawler(cls, crawler):
+        return await cls.from_settings(crawler.settings, crawler)
 
     def _add_middleware(self, mw):
         if hasattr(mw, 'open_spider'):

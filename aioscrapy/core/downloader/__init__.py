@@ -1,42 +1,79 @@
 import asyncio
 import random
-import re
+from abc import abstractmethod
 from collections import deque
 from datetime import datetime
 from time import time
-from typing import Optional
+from typing import Optional, Set, Deque, Tuple, Callable, TypeVar
 
-from aioscrapy import signals, Request
-from aioscrapy.core.downloader.handlers import DownloadHandlers
+from aioscrapy import signals, Request, Spider
+from aioscrapy.core.downloader.handlers import DownloadHandlerManager
 from aioscrapy.http import Response
 from aioscrapy.middleware import DownloaderMiddlewareManager
 from aioscrapy.proxy import AbsProxy
+from aioscrapy.settings import Settings
+from aioscrapy.signalmanager import SignalManager
 from aioscrapy.utils.httpobj import urlparse_cached
+from aioscrapy.utils.misc import load_instance
+from aioscrapy.utils.tools import call_helper
+
+
+class BaseDownloaderMeta(type):
+
+    def __instancecheck__(cls, instance):
+        return cls.__subclasscheck__(type(instance))
+
+    def __subclasscheck__(cls, subclass):
+        return (
+                hasattr(subclass, "fetch") and callable(subclass.fetch)
+                and hasattr(subclass, "needs_backout") and callable(subclass.needs_backout)
+        )
+
+
+class BaseDownloader(metaclass=BaseDownloaderMeta):
+
+    @classmethod
+    async def from_crawler(cls, crawler) -> "BaseDownloader":
+        return cls()
+
+    async def close(self) -> None:
+        pass
+
+    @abstractmethod
+    async def fetch(self, request: Request, _handle_downloader_output: Callable) -> bool:
+        raise NotImplementedError()
+
+    @abstractmethod
+    def needs_backout(self) -> bool:
+        raise NotImplementedError()
+
+
+DownloaderTV = TypeVar("DownloaderTV", bound="Downloader")
 
 
 class Slot:
     """Downloader slot"""
 
-    def __init__(self, concurrency, delay, randomize_delay):
+    def __init__(self, concurrency: int, delay: float, randomize_delay: bool) -> None:
         self.concurrency = concurrency
         self.delay = delay
         self.randomize_delay = randomize_delay
 
-        self.active = set()
-        self.queue = deque()
-        self.transferring = set()
-        self.lastseen = 0
-        self.delay_run = False
+        self.active: Set[Request] = set()
+        self.transferring: Set[Request] = set()
+        self.queue: Deque[Tuple[Request, Callable]] = deque()
+        self.lastseen: float = 0
+        self.delay_run: bool = False
 
     def free_transfer_slots(self):
         return self.concurrency - len(self.transferring)
 
-    def download_delay(self):
+    def download_delay(self) -> float:
         if self.randomize_delay:
             return random.uniform(0.5 * self.delay, 1.5 * self.delay)
         return self.delay
 
-    def close(self):
+    def close(self) -> None:
         self.delay_run = True
 
     def __repr__(self):
@@ -55,7 +92,7 @@ class Slot:
         )
 
 
-def _get_concurrency_delay(concurrency, spider, settings):
+def _get_concurrency_delay(concurrency: int, spider: Spider, settings: Settings) -> Tuple[int, float]:
     delay = settings.getfloat('DOWNLOAD_DELAY')
     if hasattr(spider, 'download_delay'):
         delay = spider.download_delay
@@ -66,39 +103,57 @@ def _get_concurrency_delay(concurrency, spider, settings):
     return concurrency, delay
 
 
-class Downloader:
-    DOWNLOAD_SLOT = 'download_slot'
+class Downloader(BaseDownloader):
+    DOWNLOAD_SLOT: str = 'download_slot'
 
-    def __init__(self, crawler):
-        self.settings = crawler.settings
-        self.signals = crawler.signals
-        self.slots = {}
-        self.active = set()
-        self.proxy: Optional[AbsProxy] = None
-        self.handlers = DownloadHandlers(crawler)
-        self.total_concurrency = self.settings.getint('CONCURRENT_REQUESTS')
-        self.domain_concurrency = self.settings.getint('CONCURRENT_REQUESTS_PER_DOMAIN')
-        self.ip_concurrency = self.settings.getint('CONCURRENT_REQUESTS_PER_IP')
-        self.randomize_delay = self.settings.getbool('RANDOMIZE_DOWNLOAD_DELAY')
-        self.middleware = DownloaderMiddlewareManager.from_crawler(crawler)
-        self._slot_gc_loop = True
+    def __init__(
+            self,
+            crawler,
+            handler: DownloadHandlerManager,
+            middleware: DownloaderMiddlewareManager,
+            *,
+            proxy: Optional[AbsProxy] = None,
+    ):
+        self.settings: Settings = crawler.settings
+        self.signals: SignalManager = crawler.signals
+        self.spider: Spider = crawler.spider
+
+        self.middleware = middleware
+        self.handler = handler
+        self.proxy = proxy
+
+        self.total_concurrency: int = self.settings.getint('CONCURRENT_REQUESTS')
+        self.domain_concurrency: int = self.settings.getint('CONCURRENT_REQUESTS_PER_DOMAIN')
+        self.ip_concurrency: int = self.settings.getint('CONCURRENT_REQUESTS_PER_IP')
+        self.randomize_delay: bool = self.settings.getbool('RANDOMIZE_DOWNLOAD_DELAY')
+
+        self.active: Set[Request] = set()
+        self.slots: dict = {}
+        self._slot_gc_loop: bool = True
         asyncio.create_task(self._slot_gc(60))
 
-    async def fetch(self, request, spider, _handle_downloader_output):
+    @classmethod
+    async def from_crawler(cls, crawler) -> "Downloader":
+        settings = crawler.settings
+        return cls(
+            crawler,
+            await call_helper(DownloadHandlerManager.for_crawler, crawler),
+            await call_helper(DownloaderMiddlewareManager.from_crawler, crawler),
+            proxy=settings.get("PROXY_HANDLER") and await load_instance(settings["PROXY_HANDLER"], crawler=crawler)
+        )
+
+    async def fetch(self, request: Request, _handle_downloader_output: Callable) -> None:
         self.active.add(request)
         if self.proxy:
             request = await self.proxy.add_proxy(request)
-        key, slot = self._get_slot(request, spider)
+        key, slot = self._get_slot(request, self.spider)
         request.meta[self.DOWNLOAD_SLOT] = key
 
         slot.active.add(request)
-        await self.signals.send_catch_log(signal=signals.request_reached_downloader,
-                                          request=request,
-                                          spider=spider)
         slot.queue.append((request, _handle_downloader_output))
-        await self._process_queue(spider, slot)
+        await self._process_queue(slot)
 
-    async def _process_queue(self, spider, slot):
+    async def _process_queue(self, slot: Slot) -> None:
         if slot.delay_run:
             return
 
@@ -110,47 +165,47 @@ class Downloader:
                 slot.delay_run = True
                 await asyncio.sleep(penalty)
                 slot.delay_run = False
-                asyncio.create_task(self._process_queue(spider, slot))
+                asyncio.create_task(self._process_queue(slot))
                 return
 
         while slot.queue and slot.free_transfer_slots() > 0:
             slot.lastseen = now
             request, _handle_downloader_output = slot.queue.popleft()
             slot.transferring.add(request)
-            asyncio.create_task(self._download(slot, request, spider, _handle_downloader_output))
+            asyncio.create_task(self._download(slot, request, _handle_downloader_output))
             if delay:
                 break
 
-    async def _download(self, slot, request, spider, _handle_downloader_output):
+    async def _download(self, slot: Slot, request: Request, _handle_downloader_output: Callable) -> None:
         response = None
         try:
-            response = await self.middleware.process_request(spider, request)
+            response = await self.middleware.process_request(self.spider, request)
             if response is None or isinstance(response, Request):
                 request = response or request
-                response = await self.handlers.download_request(request, spider)
+                response = await self.handler.download_request(request, self.spider)
         except BaseException as exc:
             self.proxy and self.proxy.check(request, exception=exc)
-            response = await self.middleware.process_exception(spider, request, exc)
+            response = await self.middleware.process_exception(self.spider, request, exc)
         else:
             try:
                 self.proxy and self.proxy.check(request, response=response)
-                response = await self.middleware.process_response(spider, request, response)
+                response = await self.middleware.process_response(self.spider, request, response)
             except BaseException as exc:
                 response = exc
         finally:
             slot.transferring.remove(request)
             slot.active.remove(request)
             self.active.remove(request)
-            await self._process_queue(spider, slot)
+            await self._process_queue(slot)
             if isinstance(response, Response):
                 response.request = request
                 await self.signals.send_catch_log(signal=signals.response_downloaded,
                                                   response=response,
                                                   request=request,
-                                                  spider=spider)
-            await _handle_downloader_output(response, request, spider)
+                                                  spider=self.spider)
+            asyncio.create_task(_handle_downloader_output(response, request))
 
-    def close(self):
+    def close(self) -> None:
         self._slot_gc_loop = False
         for slot in self.slots.values():
             slot.close()
@@ -179,6 +234,6 @@ class Downloader:
             return request.meta[self.DOWNLOAD_SLOT]
 
         if self.ip_concurrency:
-            return ''.join(re.findall(r'[\w]+', request.meta.get("proxy", '')))
+            return request.meta.get("proxy", '')
         else:
             return urlparse_cached(request).hostname or ''
