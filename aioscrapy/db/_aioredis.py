@@ -1,5 +1,3 @@
-import time
-
 from redis.asyncio import BlockingConnectionPool, Redis
 
 from aioscrapy.db.absmanager import AbsDBPoolManager
@@ -64,59 +62,26 @@ class AioRedisPoolManager(AbsDBPoolManager):
 
 redis_manager = AioRedisPoolManager()
 
+
 if __name__ == '__main__':
     import asyncio
 
 
     async def test():
         await redis_manager.create('default', {
-            'url': 'redis://r-wz99xy34wqnyogyg6y.redis.rds.aliyuncs.com:6379/2',  # 内网地址
-            # 'url': 'redis://sw:7X6fh88GK8Bi2p@r-wz99xy34wqnyogyg6ypd.redis.rds.aliyuncs.com:16379/2',
-            'max_connections': 4,  # redis连接池数量限制
-            'timeout': None,
-            'retry_on_timeout': True,
-            'health_check_interval': 30,
+            'url': 'redis://@192.168.234.128:6379/9',
         })
         redis = redis_manager.executor('default')
-        # print(await redis.zadd('key1', {'value': 2}))
-        #
-        # async with redis.pipeline(transaction=True) as pipe:
-        #     results, count = await (
-        #         pipe.zrange('key1', 0, 0)
-        #             .zremrangebyrank('key1', 0, 0)
-        #             .execute()
-        #     )
-        #
-        # print(results)
+        print(await redis.zadd('key1', {'value': 2}))
 
-        redis_key = 'proxies:test'
-        count = 20
-        #                 return redis.call('ZRANGEBYSCORE', '{redis_key}', 100, 100, 'LIMIT', start, {count})
+        async with redis.pipeline(transaction=True) as pipe:
+            results, count = await (
+                pipe.zrange('key1', 0, 0)
+                    .zremrangebyrank('key1', 0, 0)
+                    .execute()
+            )
 
-        for _ in range(5):
-            script = f"""
-                        local redis_key = KEYS[1]
-                        local min_score = ARGV[1]
-                        local max_score = ARGV[2]
-                        local num = redis.call('ZCOUNT', redis_key, min_score, max_score)
-                        local start = 0
-                        if num>{count} then
-                            math.randomseed({time.time() * 1000})
-                            start = math.random(0, num-{count})
-                        end
-                        return redis.call('ZRANGEBYSCORE', redis_key, min_score, max_score, 'LIMIT', start, {count})
-                    """
-            cmd_script = redis.register_script(script)
-            result = await cmd_script(keys=[redis_key], args=[100, 100])
-            print(result)
-            # print(result)
-            # proxies = [f'http://{ip.decode()}' for ip in result]
-            # print(proxies)
-            # if not result:
-            #     result = await cmd_script(keys=[redis_key], args=[0, 100])
-            # print(await redis.register_script(script)())
-
-
+        print(results)
         await redis_manager.close_all()
 
 
