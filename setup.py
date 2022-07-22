@@ -11,7 +11,6 @@ install_requires = [
     "PyDispatcher>=2.0.5",
     'zope.interface>=5.1.0'
     "redis>=4.3.1",
-    "itemadapter>=0.1.0",
 ]
 extras_require = {}
 

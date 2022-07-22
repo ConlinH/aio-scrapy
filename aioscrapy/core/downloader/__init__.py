@@ -40,7 +40,7 @@ class BaseDownloader(metaclass=BaseDownloaderMeta):
         pass
 
     @abstractmethod
-    async def fetch(self, request: Request, _handle_downloader_output: Callable) -> bool:
+    async def fetch(self, request: Request) -> None:
         raise NotImplementedError()
 
     @abstractmethod
@@ -61,7 +61,7 @@ class Slot:
 
         self.active: Set[Request] = set()
         self.transferring: Set[Request] = set()
-        self.queue: Deque[Tuple[Request, Callable]] = deque()
+        self.queue: Deque[Request] = deque()
         self.lastseen: float = 0
         self.delay_run: bool = False
 
@@ -117,6 +117,7 @@ class Downloader(BaseDownloader):
         self.settings: Settings = crawler.settings
         self.signals: SignalManager = crawler.signals
         self.spider: Spider = crawler.spider
+        self._call_engine: Callable = crawler.engine.handle_downloader_output
 
         self.middleware = middleware
         self.handler = handler
@@ -142,7 +143,7 @@ class Downloader(BaseDownloader):
             proxy=settings.get("PROXY_HANDLER") and await load_instance(settings["PROXY_HANDLER"], crawler=crawler)
         )
 
-    async def fetch(self, request: Request, _handle_downloader_output: Callable) -> None:
+    async def fetch(self, request: Request) -> None:
         self.active.add(request)
         if self.proxy:
             request = await self.proxy.add_proxy(request)
@@ -150,7 +151,7 @@ class Downloader(BaseDownloader):
         request.meta[self.DOWNLOAD_SLOT] = key
 
         slot.active.add(request)
-        slot.queue.append((request, _handle_downloader_output))
+        slot.queue.append(request)
         await self._process_queue(slot)
 
     async def _process_queue(self, slot: Slot) -> None:
@@ -170,13 +171,13 @@ class Downloader(BaseDownloader):
 
         while slot.queue and slot.free_transfer_slots() > 0:
             slot.lastseen = now
-            request, _handle_downloader_output = slot.queue.popleft()
+            request = slot.queue.popleft()
             slot.transferring.add(request)
-            asyncio.create_task(self._download(slot, request, _handle_downloader_output))
+            asyncio.create_task(self._download(slot, request))
             if delay:
                 break
 
-    async def _download(self, slot: Slot, request: Request, _handle_downloader_output: Callable) -> None:
+    async def _download(self, slot: Slot, request: Request) -> None:
         response = None
         try:
             response = await self.middleware.process_request(self.spider, request)
@@ -196,14 +197,13 @@ class Downloader(BaseDownloader):
             slot.transferring.remove(request)
             slot.active.remove(request)
             self.active.remove(request)
-            await self._process_queue(slot)
             if isinstance(response, Response):
-                response.request = request
                 await self.signals.send_catch_log(signal=signals.response_downloaded,
                                                   response=response,
                                                   request=request,
                                                   spider=self.spider)
-            asyncio.create_task(_handle_downloader_output(response, request))
+            asyncio.create_task(self._call_engine(response, request))
+            await self._process_queue(slot)
 
     def close(self) -> None:
         self._slot_gc_loop = False

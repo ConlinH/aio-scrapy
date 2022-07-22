@@ -22,6 +22,8 @@ class AbsProxy(metaclass=ABCMeta):
         """add proxy for request"""
         if self.use_proxy:
             request.meta['proxy'] = await self.get()
+        else:
+            request.meta.pop('proxy', None)
         return request
 
     def remove(self, proxy, reason=None):

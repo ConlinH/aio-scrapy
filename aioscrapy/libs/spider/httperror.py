@@ -31,11 +31,10 @@ class HttpErrorMiddleware:
     def process_spider_input(self, response, spider):
         if 200 <= response.status < 300:  # common case
             return
-        meta = response.meta
-        if meta.get('handle_httpstatus_all', False):
+        if response.meta.get('handle_httpstatus_all', False):
             return
-        if 'handle_httpstatus_list' in meta:
-            allowed_statuses = meta['handle_httpstatus_list']
+        if 'handle_httpstatus_list' in response.meta:
+            allowed_statuses = response.meta['handle_httpstatus_list']
         elif self.handle_httpstatus_all:
             return
         else:

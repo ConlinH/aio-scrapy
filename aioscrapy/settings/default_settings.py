@@ -32,7 +32,7 @@ CLOSESPIDER_ERRORCOUNT = 0
 
 COMMANDS_MODULE = ''
 
-CONCURRENT_ITEMS = 100
+CONCURRENT_PARSER = 4
 
 CONCURRENT_REQUESTS = 16
 CONCURRENT_REQUESTS_PER_DOMAIN = 8
@@ -150,13 +150,11 @@ SPIDER_LOADER_WARN_ONLY = False
 
 SPIDER_MIDDLEWARES = {}
 SPIDER_MIDDLEWARES_BASE = {
-    # Engine side
     'aioscrapy.libs.spider.httperror.HttpErrorMiddleware': 50,
     'aioscrapy.libs.spider.offsite.OffsiteMiddleware': 500,
     'aioscrapy.libs.spider.referer.RefererMiddleware': 700,
     'aioscrapy.libs.spider.urllength.UrlLengthMiddleware': 800,
     'aioscrapy.libs.spider.depth.DepthMiddleware': 900,
-    # Spider side
 }
 
 SPIDER_MODULES = []

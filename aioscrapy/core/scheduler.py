@@ -2,8 +2,8 @@ from abc import abstractmethod
 from typing import Optional, Type, TypeVar
 
 from aioscrapy import Spider
-from aioscrapy.http.request import Request
 from aioscrapy.dupefilters import AbsDupeFilterBase
+from aioscrapy.http.request import Request
 from aioscrapy.queue import AbsQueue
 from aioscrapy.statscollectors import StatsCollector
 from aioscrapy.utils.misc import load_instance
@@ -140,7 +140,7 @@ class Scheduler(BaseScheduler):
         return True
 
     async def next_request(self, count: int = 1) -> Optional[Request]:
-        async for request in await call_helper(self.queue.pop, count):
+        async for request in self.queue.pop(count):
             if request and not request.dont_filter \
                     and request.filter_mode == 'OUT_QUEUE' \
                     and self.df and await self.df.request_seen(request):

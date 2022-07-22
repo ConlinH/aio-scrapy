@@ -22,12 +22,3 @@ bytes_received = object()
 item_scraped = object()
 item_dropped = object()
 item_error = object()
-
-# for backward compatibility
-stats_spider_opened = spider_opened
-stats_spider_closing = spider_closed
-stats_spider_closed = spider_closed
-
-item_passed = item_scraped
-
-request_received = request_scheduled

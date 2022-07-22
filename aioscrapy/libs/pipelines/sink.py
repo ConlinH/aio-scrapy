@@ -85,32 +85,30 @@ class DBPipelineBase:
         self.cache_num = settings.getint('SAVE_CACHE_NUM', 500)
         self.save_cache_interval = settings.getint('SAVE_CACHE_INTERVAL', 10)
         self.db_type = db_type
-        self.save_interval_task = None
         self.lock = asyncio.Lock()
+        self.running: bool = True
         self.cache = ItemCache(db_type)
 
     async def open_spider(self, spider):
-        self.save_interval_task = asyncio.create_task(self.save_interval())
+        asyncio.create_task(self.save_heartbeat())
+
+    async def save_heartbeat(self):
+        while self.running:
+            await asyncio.sleep(self.save_cache_interval)
+            asyncio.create_task(self.save_all())
 
     async def process_item(self, item, spider):
         await self.save_item(item)
         return item
 
     async def close_spider(self, spider):
-        self.save_interval_task and self.save_interval_task.cancel()
-        await self.close()
+        self.running = False
+        await self.save_all()
 
-    async def close(self, *args, **kwargs):
+    async def save_all(self):
         async with self.lock:
             for cache_key, items in self.cache.item_cache.items():
                 items and await self._save(cache_key)
-
-    async def save_interval(self):
-        await asyncio.sleep(self.save_cache_interval)
-        async with self.lock:
-            for cache_key, items in self.cache.item_cache.items():
-                items and await self._save(cache_key)
-        self.save_interval_task = asyncio.create_task(self.save_interval())
 
     async def save_item(self, item: dict):
         async with self.lock:

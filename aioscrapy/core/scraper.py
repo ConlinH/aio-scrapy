@@ -5,8 +5,6 @@ import logging
 from collections import deque
 from typing import Any, Deque, AsyncGenerator, Set, Tuple, Union, Optional
 
-from itemadapter import is_item
-
 from aioscrapy import signals, Spider
 from aioscrapy.exceptions import CloseSpider, DropItem, IgnoreRequest
 from aioscrapy.http import Request, Response
@@ -51,6 +49,7 @@ class Slot:
         self.active.remove(request)
         if isinstance(result, Response):
             self.active_size -= max(len(result.body), self.MIN_RESPONSE_SIZE)
+            result._cached_selector = None
         else:
             self.active_size -= self.MIN_RESPONSE_SIZE
 
@@ -80,6 +79,7 @@ class Scraper:
         self.itemproc = itemproc
 
         self.finish: bool = False
+        self.concurrent_parser = asyncio.Semaphore(crawler.settings.getint('CONCURRENT_PARSER', 4))
 
     @classmethod
     async def from_crawler(cls, crawler):
@@ -90,26 +90,7 @@ class Scraper:
             await call_helper(load_object(crawler.settings['ITEM_PROCESSOR']).from_crawler, crawler)
         )
         await instance.itemproc.open_spider(crawler.spider)
-        asyncio.create_task(instance.consume_queue())
         return instance
-
-    async def consume_queue(self) -> None:
-        while not self.finish:
-            if not self.slot.queue:
-                await asyncio.sleep(0.2)
-                continue
-
-            result, request = self.slot.next_response_request()
-            try:
-                await self._scrape(result, request)
-            except BaseException as e:
-                logger.error('Scraper bug processing %(request)s',
-                             {'request': request},
-                             exc_info=e,
-                             extra={'spider': self.spider})
-            finally:
-                # 将slot中的缓存结果删除
-                self.slot.finish_response(result, request)
 
     async def close(self) -> None:
         """Close a spider being scraped and release its resources"""
@@ -123,9 +104,24 @@ class Scraper:
     def needs_backout(self) -> bool:
         return self.slot.needs_backout()
 
+    async def consume_queue(self) -> None:
+        async with self.concurrent_parser:
+            result, request = self.slot.next_response_request()
+            try:
+                await self._scrape(result, request)
+            except BaseException as e:
+                logger.error('Scraper bug processing %(request)s',
+                             {'request': request},
+                             exc_info=e,
+                             extra={'spider': self.spider})
+            finally:
+                # 将slot中的缓存结果删除
+                self.slot.finish_response(result, request)
+
     async def enqueue_scrape(self, result: Union[Response, BaseException], request: Request) -> None:
         # 将结果缓存到slot中
         self.slot.add_response_request(result, request)
+        asyncio.create_task(self.consume_queue())
 
     async def _scrape(self, result: Union[Response, BaseException], request: Request) -> None:
         """
@@ -154,11 +150,10 @@ class Scraper:
             except BaseException as e:
                 await self._log_download_errors(e, result, request)
 
-    async def call_spider(self, result: Union[Response, BaseException], request: Request) -> None:
+    async def call_spider(self, result: Union[Response, BaseException], request: Request) -> Optional[AsyncGenerator]:
         if isinstance(result, Response):
             # 将Response丢给spider的解析函数
             callback = request.callback or self.spider._parse
-            result.request = request
             # 将parse解析出的结果,变成可迭代对象
             return await call_helper(callback, result, **result.request.cb_kwargs)
         else:
@@ -207,7 +202,7 @@ class Scraper:
         """
         if isinstance(output, Request):
             await self.crawler.engine.crawl(request=output)
-        elif is_item(output):
+        elif isinstance(output, dict):
             self.slot.itemproc_size += 1
             item = await self.itemproc.process_item(output, self.spider)
             process_item_method = getattr(self.spider, 'process_item', None)

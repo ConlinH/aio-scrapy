@@ -4,7 +4,6 @@ responses in aioscrapy.
 
 See documentation in docs/topics/request-response.rst
 """
-import re
 from typing import Generator
 from urllib.parse import urljoin
 

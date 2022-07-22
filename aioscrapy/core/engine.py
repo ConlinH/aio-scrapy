@@ -119,10 +119,10 @@ class ExecutionEngine(object):
         while self.unlock and not self._needs_backout() and self.unlock:
             self.unlock = False
             try:
-                async for request in await call_helper(self.scheduler.next_request, self.downloader.total_concurrency):
+                async for request in self.scheduler.next_request(self.downloader.total_concurrency):
                     if request:
                         self.slot.add_request(request)
-                        await self.downloader.fetch(request, self._handle_downloader_output)
+                        await self.downloader.fetch(request)
                 break
             finally:
                 self.unlock = True
@@ -151,7 +151,7 @@ class ExecutionEngine(object):
                 or self.scraper.needs_backout()
         )
 
-    async def _handle_downloader_output(
+    async def handle_downloader_output(
             self, result: Union[Request, Response, BaseException], request: Request
     ) -> None:
         try:
