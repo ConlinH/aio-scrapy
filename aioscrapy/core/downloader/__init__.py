@@ -83,7 +83,7 @@ class Slot:
 
     def __str__(self):
         return (
-                "pages<downloader.Slot concurrency=%r delay=%0.2f randomize_delay=%r "
+                "<downloader.Slot concurrency=%r delay=%0.2f randomize_delay=%r "
                 "len(active)=%d len(queue)=%d len(transferring)=%d lastseen=%s>" % (
                     self.concurrency, self.delay, self.randomize_delay,
                     len(self.active), len(self.queue), len(self.transferring),
@@ -212,7 +212,7 @@ class Downloader(BaseDownloader):
         while self.running:
             await asyncio.sleep(age)
             for key, slot in list(self.slots.items()):
-                logger.info(slot)
+                logger.debug(slot)
                 if not slot.active and slot.lastseen + slot.delay < (time() - age):
                     self.slots.pop(key)
 
