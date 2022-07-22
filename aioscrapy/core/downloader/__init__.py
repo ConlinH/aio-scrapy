@@ -16,6 +16,9 @@ from aioscrapy.signalmanager import SignalManager
 from aioscrapy.utils.httpobj import urlparse_cached
 from aioscrapy.utils.misc import load_instance
 from aioscrapy.utils.tools import call_helper
+import logging
+
+logger = logging.getLogger('aioscrapy.downloader')
 
 
 class BaseDownloaderMeta(type):
@@ -63,7 +66,7 @@ class Slot:
         self.transferring: Set[Request] = set()
         self.queue: Deque[Request] = deque()
         self.lastseen: float = 0
-        self.delay_run: bool = False
+        self.delay_lock: bool = False
 
     def free_transfer_slots(self):
         return self.concurrency - len(self.transferring)
@@ -73,9 +76,6 @@ class Slot:
             return random.uniform(0.5 * self.delay, 1.5 * self.delay)
         return self.delay
 
-    def close(self) -> None:
-        self.delay_run = True
-
     def __repr__(self):
         cls_name = self.__class__.__name__
         return "%s(concurrency=%r, delay=%0.2f, randomize_delay=%r)" % (
@@ -83,7 +83,7 @@ class Slot:
 
     def __str__(self):
         return (
-                "<downloader.Slot concurrency=%r delay=%0.2f randomize_delay=%r "
+                "pages<downloader.Slot concurrency=%r delay=%0.2f randomize_delay=%r "
                 "len(active)=%d len(queue)=%d len(transferring)=%d lastseen=%s>" % (
                     self.concurrency, self.delay, self.randomize_delay,
                     len(self.active), len(self.queue), len(self.transferring),
@@ -130,7 +130,7 @@ class Downloader(BaseDownloader):
 
         self.active: Set[Request] = set()
         self.slots: dict = {}
-        self._slot_gc_loop: bool = True
+        self.running: bool = True
         asyncio.create_task(self._slot_gc(60))
 
     @classmethod
@@ -145,8 +145,6 @@ class Downloader(BaseDownloader):
 
     async def fetch(self, request: Request) -> None:
         self.active.add(request)
-        if self.proxy:
-            request = await self.proxy.add_proxy(request)
         key, slot = self._get_slot(request, self.spider)
         request.meta[self.DOWNLOAD_SLOT] = key
 
@@ -155,7 +153,7 @@ class Downloader(BaseDownloader):
         await self._process_queue(slot)
 
     async def _process_queue(self, slot: Slot) -> None:
-        if slot.delay_run:
+        if slot.delay_lock:
             return
 
         now = time()
@@ -163,9 +161,9 @@ class Downloader(BaseDownloader):
         if delay:
             penalty = delay - now + slot.lastseen
             if penalty > 0:
-                slot.delay_run = True
+                slot.delay_lock = True
                 await asyncio.sleep(penalty)
-                slot.delay_run = False
+                slot.delay_lock = False
                 asyncio.create_task(self._process_queue(slot))
                 return
 
@@ -183,6 +181,8 @@ class Downloader(BaseDownloader):
             response = await self.middleware.process_request(self.spider, request)
             if response is None or isinstance(response, Request):
                 request = response or request
+                if self.proxy:
+                    request = await self.proxy.add_proxy(request)
                 response = await self.handler.download_request(request, self.spider)
         except BaseException as exc:
             self.proxy and self.proxy.check(request, exception=exc)
@@ -206,17 +206,15 @@ class Downloader(BaseDownloader):
             await self._process_queue(slot)
 
     def close(self) -> None:
-        self._slot_gc_loop = False
-        for slot in self.slots.values():
-            slot.close()
+        self.running = False
 
     async def _slot_gc(self, age=60):
-        for key, slot in list(self.slots.items()):
-            if not slot.active and slot.lastseen + slot.delay < (time() - age):
-                self.slots.pop(key).close()
-        await asyncio.sleep(age)
-        if self._slot_gc_loop:
-            asyncio.create_task(self._slot_gc())
+        while self.running:
+            await asyncio.sleep(age)
+            for key, slot in list(self.slots.items()):
+                logger.info(slot)
+                if not slot.active and slot.lastseen + slot.delay < (time() - age):
+                    self.slots.pop(key)
 
     def needs_backout(self):
         return len(self.active) >= self.total_concurrency
