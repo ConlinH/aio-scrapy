@@ -67,7 +67,7 @@ class ExecutionEngine(object):
             self.running and asyncio.create_task(self._next_request())
             await asyncio.sleep(1)
 
-    async def stop(self) -> None:
+    async def stop(self, reason: str = 'shutdown') -> None:
         """Stop the execution engine gracefully"""
         if not self.running:
             raise RuntimeError("Engine not running")
@@ -75,7 +75,7 @@ class ExecutionEngine(object):
 
         while not await self.is_idle():
             await asyncio.sleep(0.2)
-        await self.close_spider(self.spider, reason='shutdown')
+        await self.close_spider(self.spider, reason=reason)
         await self.signals.send_catch_log_deferred(signal=signals.engine_stopped)
         self.finish = True
 
@@ -137,7 +137,7 @@ class ExecutionEngine(object):
                 self.slot.start_requests = None
                 logger.error('Error while obtaining start requests', exc_info=e, extra={'spider': self.spider})
             else:
-                request and await self.crawl(request, self.spider) and asyncio.create_task(self._next_request())
+                request and await self.crawl(request, self.spider) or asyncio.create_task(self._next_request())
             finally:
                 self.slot.lock = False
 
@@ -176,7 +176,7 @@ class ExecutionEngine(object):
 
         finally:
             self.slot.remove_request(request)
-            await self._next_request()
+            asyncio.create_task(self._next_request())
 
     async def is_idle(self) -> bool:
 
@@ -198,6 +198,8 @@ class ExecutionEngine(object):
         await self.signals.send_catch_log(signals.request_scheduled, request=request, spider=spider)
         if not await call_helper(self.scheduler.enqueue_request, request):
             await self.signals.send_catch_log(signals.request_dropped, request=request, spider=spider)
+        else:
+            asyncio.create_task(self._next_request())
 
     async def close_spider(self, spider: Spider, reason: str = 'cancelled') -> None:
         """Close (cancel) spider and clear all its outstanding requests"""
@@ -248,4 +250,4 @@ class ExecutionEngine(object):
                 and self.slot.start_requests is None \
                 and not await self.scheduler.has_pending_requests() \
                 and await self.is_idle():
-            await self.close_spider(spider, reason='finished')
+            await self.stop(reason='finished')
