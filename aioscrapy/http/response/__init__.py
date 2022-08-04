@@ -4,7 +4,7 @@ responses in aioscrapy.
 
 See documentation in docs/topics/request-response.rst
 """
-from typing import Generator
+from typing import Generator, Optional
 from urllib.parse import urljoin
 
 from aioscrapy.exceptions import NotSupported
@@ -15,17 +15,14 @@ from aioscrapy.link import Link
 class Response(object):
 
     def __init__(
-        self,
-        url,
-        status=200,
-        headers=None,
-        cookies=None,
-        body=b"",
-        flags=None,
-        request=None,
-        certificate=None,
-        ip_address=None,
-        protocol=None,
+            self,
+            url: str,
+            status: int = 200,
+            headers: Optional[dict] = None,
+            cookies: Optional[dict] = None,
+            body: bytes = b"",
+            flags: Optional[list] = None,
+            request: Optional[Request] = None,
     ):
         self.headers = headers or {}
         self.status = int(status)
@@ -33,9 +30,6 @@ class Response(object):
         self._set_url(url)
         self.request = request
         self.flags = [] if flags is None else list(flags)
-        self.certificate = certificate
-        self.ip_address = ip_address
-        self.protocol = protocol
         self.cookies = cookies or {}
 
     @property
@@ -100,7 +94,7 @@ class Response(object):
         given new values.
         """
         for x in [
-            "url", "status", "headers", "body", "request", "flags", "certificate", "ip_address", "protocol",
+            "url", "status", "headers", "body", "request", "flags"
         ]:
             kwargs.setdefault(x, getattr(self, x))
         cls = kwargs.pop('cls', self.__class__)

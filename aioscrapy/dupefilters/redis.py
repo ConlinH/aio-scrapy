@@ -1,41 +1,45 @@
 import logging
 
+from aioscrapy import Spider, Request
 from aioscrapy.db import db_manager
-from aioscrapy.dupefilters import AbsDupeFilterBase
-from aioscrapy.utils.request import request_fingerprint
+from aioscrapy.dupefilters import DupeFilterBase
 
 logger = logging.getLogger(__name__)
 
 
-class RedisRFPDupeFilter(AbsDupeFilterBase):
-    """ 使用redis集合构建的过滤器"""
+class RedisRFPDupeFilter(DupeFilterBase):
+    """Request Fingerprint duplicates filter built with Set of Redis"""
 
     logger = logger
 
-    def __init__(self, server, key, debug=False, keep_on_close=True):
+    def __init__(
+            self,
+            server: "redis.asyncio.Redis",
+            key: str,
+            debug: bool = False,
+            keep_on_close: bool = True
+    ):
         self.server = server
         self.key = key
         self.debug = debug
-        self.logdupes = True
         self.keep_on_close = keep_on_close
+        self.logdupes: bool = True
 
     @classmethod
-    async def from_spider(cls, spider):
-        settings = spider.settings
+    def from_crawler(cls, crawler: "aioscrapy.crawler.Crawler"):
         server = db_manager.redis.queue
-        dupefilter_key = settings.get("SCHEDULER_DUPEFILTER_KEY",  '%(spider)s:dupefilter')
-        keep_on_close = settings.getbool("KEEP_DUPEFILTER_DATA_ON_CLOSE",  True)
-        key = dupefilter_key % {'spider': spider.name}
-        debug = settings.getbool('DUPEFILTER_DEBUG', False)
+        dupefilter_key = crawler.settings.get("SCHEDULER_DUPEFILTER_KEY", '%(spider)s:dupefilter')
+        keep_on_close = crawler.settings.getbool("KEEP_DUPEFILTER_DATA_ON_CLOSE", True)
+        key = dupefilter_key % {'spider': crawler.spider.name}
+        debug = crawler.settings.getbool('DUPEFILTER_DEBUG', False)
         instance = cls(server, key=key, debug=debug, keep_on_close=keep_on_close)
         return instance
 
-    async def request_seen(self, request):
-        fp = self.request_fingerprint(request)
-        return await self.server.sadd(self.key, fp) == 0
+    async def exist_fingerprint(self, request: Request) -> bool:
+        return bool(await self.server.sismember(self.key, request.fingerprint))
 
-    def request_fingerprint(self, request):
-        return request_fingerprint(request)
+    async def add_fingerprint(self, request: Request):
+        await self.server.sadd(self.key, request.fingerprint)
 
     async def close(self, reason=''):
         if not self.keep_on_close:
@@ -113,7 +117,7 @@ class BloomFilter(object):
 
 
 class RedisBloomDupeFilter(RedisRFPDupeFilter):
-    """ 使用redis的位图构建的布隆过滤器 """
+    """Bloom filter built with the bitis bitmap of redis"""
 
     def __init__(self, server, key, debug, bit, hash_number, keep_on_close):
         super().__init__(server, key, debug, keep_on_close)
@@ -122,23 +126,21 @@ class RedisBloomDupeFilter(RedisRFPDupeFilter):
         self.bf = BloomFilter(server, self.key, bit, hash_number)
 
     @classmethod
-    async def from_spider(cls, spider):
-        settings = spider.settings
+    async def from_spider(cls, spider: Spider):
         server = db_manager.redis.queue
-        dupefilter_key = settings.get("SCHEDULER_DUPEFILTER_KEY",  '%(spider)s:bloomfilter')
-        keep_on_close = settings.getbool("KEEP_DUPEFILTER_DATA_ON_CLOSE",  True)
+        dupefilter_key = spider.settings.get("SCHEDULER_DUPEFILTER_KEY", '%(spider)s:bloomfilter')
+        keep_on_close = spider.settings.getbool("KEEP_DUPEFILTER_DATA_ON_CLOSE", True)
         key = dupefilter_key % {'spider': spider.name}
-        debug = settings.getbool('DUPEFILTER_DEBUG', False)
-        bit = settings.getint('BLOOMFILTER_BIT', 30)
-        hash_number = settings.getint('BLOOMFILTER_HASH_NUMBER', 6)
+        debug = spider.settings.getbool('DUPEFILTER_DEBUG', False)
+        bit = spider.settings.getint('BLOOMFILTER_BIT', 30)
+        hash_number = spider.settings.getint('BLOOMFILTER_HASH_NUMBER', 6)
         return cls(server, key=key, debug=debug, bit=bit, hash_number=hash_number, keep_on_close=keep_on_close)
 
-    async def request_seen(self, request):
-        fp = self.request_fingerprint(request)
-        if await self.bf.exists(fp):
-            return True
-        await self.bf.insert(fp)
-        return False
+    async def exist_fingerprint(self, request: Request) -> bool:
+        return await self.bf.exists(request.fingerprint)
+
+    async def add_fingerprint(self, request: Request) -> None:
+        await self.bf.insert(request.fingerprint)
 
 
 RFPDupeFilter = RedisRFPDupeFilter

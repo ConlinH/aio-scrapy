@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import random
 from abc import abstractmethod
 from collections import deque
@@ -8,6 +9,7 @@ from typing import Optional, Set, Deque, Tuple, Callable, TypeVar
 
 from aioscrapy import signals, Request, Spider
 from aioscrapy.core.downloader.handlers import DownloadHandlerManager
+from aioscrapy.dupefilters import DupeFilterBase
 from aioscrapy.http import Response
 from aioscrapy.middleware import DownloaderMiddlewareManager
 from aioscrapy.proxy import AbsProxy
@@ -16,7 +18,6 @@ from aioscrapy.signalmanager import SignalManager
 from aioscrapy.utils.httpobj import urlparse_cached
 from aioscrapy.utils.misc import load_instance
 from aioscrapy.utils.tools import call_helper
-import logging
 
 logger = logging.getLogger('aioscrapy.downloader')
 
@@ -122,6 +123,7 @@ class Downloader(BaseDownloader):
         self.middleware = middleware
         self.handler = handler
         self.proxy = proxy
+        self.dupefilter: Optional[DupeFilterBase] = None
 
         self.total_concurrency: int = self.settings.getint('CONCURRENT_REQUESTS')
         self.domain_concurrency: int = self.settings.getint('CONCURRENT_REQUESTS_PER_DOMAIN')
@@ -181,8 +183,7 @@ class Downloader(BaseDownloader):
             response = await self.middleware.process_request(self.spider, request)
             if response is None or isinstance(response, Request):
                 request = response or request
-                if self.proxy:
-                    request = await self.proxy.add_proxy(request)
+                self.proxy and await self.proxy.add_proxy(request)
                 response = await self.handler.download_request(request, self.spider)
         except BaseException as exc:
             self.proxy and self.proxy.check(request, exception=exc)
@@ -198,6 +199,7 @@ class Downloader(BaseDownloader):
             slot.active.remove(request)
             self.active.remove(request)
             if isinstance(response, Response):
+                self.dupefilter and not request.dont_filter and await self.dupefilter.add_fingerprint(request)
                 await self.signals.send_catch_log(signal=signals.response_downloaded,
                                                   response=response,
                                                   request=request,

@@ -1,54 +1,28 @@
 from abc import ABCMeta, abstractmethod
 
+from aioscrapy import Request, Spider
 
-class AbsDupeFilterBase(metaclass=ABCMeta):
+
+class DupeFilterBase(metaclass=ABCMeta):
+    """Request Fingerprint duplicates filter"""
 
     @classmethod
     @abstractmethod
-    def from_spider(cls, spider):
-        """Returns instance from crawler.
-
-        Parameters
-        ----------
-        spider : aioscrapy.crawler.spider
-
-        Returns
-        -------
-        RFPDupeFilter
-            Instance of RFPDupeFilter.
-
-        """
+    def from_crawler(cls, crawler: "aioscrapy.crawler.Crawler"):
+        """ Get Instance of RFPDupeFilter from crawler """
 
     @abstractmethod
-    def request_seen(self, request):
-        """Returns True if request was already seen.
-
-        Parameters
-        ----------
-        request : aioscrapy.http.Request
-
-        Returns
-        -------
-        bool
-        """
+    async def exist_fingerprint(self, request: Request) -> bool:
+        """ Check whether fingerprint of request exists """
 
     @abstractmethod
-    def close(self, reason):
-        """Delete data on close. Called by aioscrapy's scheduler.
-
-        Parameters
-        ----------
-        reason : str, optional
-
-        """
+    async def add_fingerprint(self, request: Request) -> None:
+        """ Add fingerprint of request """
 
     @abstractmethod
-    def log(self, request, spider):
-        """Logs given request.
+    def close(self, reason: str) -> None:
+        """ Delete data on close """
 
-        Parameters
-        ----------
-        request : aioscrapy.http.Request
-        spider : aioscrapy.spiders.Spider
-
-        """
+    @abstractmethod
+    def log(self, request: Request, spider: Spider) -> None:
+        """ Logs given request """

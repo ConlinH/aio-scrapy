@@ -1,19 +1,20 @@
-import os
 import logging
+import os
+from typing import Optional, Set
 
-from aioscrapy.dupefilters import AbsDupeFilterBase
+from aioscrapy import Request, Spider
+from aioscrapy.dupefilters import DupeFilterBase
+from aioscrapy.utils.request import referer_str
 
-from aioscrapy.utils.request import referer_str, request_fingerprint
 
+class DiskRFPDupeFilter(DupeFilterBase):
+    """Request Fingerprint duplicates filter built with Disk storage"""
 
-class DiskRFPDupeFilter(AbsDupeFilterBase):
-    """Request Fingerprint duplicates filter"""
-
-    def __init__(self, path=None, debug=False):
-        self.file = None
-        self.fingerprints = set()
-        self.logdupes = True
+    def __init__(self, path: Optional[str] = None, debug: bool = False):
+        self.file: Optional["File object"] = None
         self.debug = debug
+        self.fingerprints: Set = set()
+        self.logdupes: bool = True
         self.logger = logging.getLogger(__name__)
         if path:
             self.file = open(os.path.join(path, 'requests.seen'), 'a+')
@@ -21,30 +22,26 @@ class DiskRFPDupeFilter(AbsDupeFilterBase):
             self.fingerprints.update(x.rstrip() for x in self.file)
 
     @classmethod
-    def from_spider(cls, spider):
-        settings = spider.settings
-        debug = settings.getbool('DUPEFILTER_DEBUG')
-        path = settings.get('JOBDIR', './job_dir')
+    def from_crawler(cls, crawler: "aioscrapy.crawler.Crawler"):
+        debug = crawler.settings.getbool('DUPEFILTER_DEBUG')
+        path = crawler.settings.get('JOBDIR', './job_dir')
         if path and not os.path.exists(path):
             os.makedirs(path)
         return cls(path, debug)
 
-    async def request_seen(self, request):
-        fp = self.request_fingerprint(request)
-        if fp in self.fingerprints:
-            return True
-        self.fingerprints.add(fp)
+    async def exist_fingerprint(self, request: Request) -> bool:
+        return request.fingerprint in self.fingerprints
+
+    async def add_fingerprint(self, request: Request) -> None:
+        self.fingerprints.add(request.fingerprint)
         if self.file:
-            self.file.write(fp + '\n')
+            self.file.write(request.fingerprint + '\n')
 
-    def request_fingerprint(self, request):
-        return request_fingerprint(request)
-
-    def close(self, reason):
+    def close(self, reason: str) -> None:
         if self.file:
             self.file.close()
 
-    def log(self, request, spider):
+    def log(self, request: Request, spider: Spider):
         if self.debug:
             msg = "Filtered duplicate request: %(request)s (referer: %(referer)s)"
             args = {'request': request, 'referer': referer_str(request)}

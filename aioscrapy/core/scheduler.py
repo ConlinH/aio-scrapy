@@ -2,7 +2,7 @@ from abc import abstractmethod
 from typing import Optional, Type, TypeVar
 
 from aioscrapy import Spider
-from aioscrapy.dupefilters import AbsDupeFilterBase
+from aioscrapy.dupefilters import DupeFilterBase
 from aioscrapy.http.request import Request
 from aioscrapy.queue import AbsQueue
 from aioscrapy.statscollectors import StatsCollector
@@ -88,15 +88,14 @@ class Scheduler(BaseScheduler):
             self,
             queue: AbsQueue,
             spider: Spider,
-            df=Optional[AbsDupeFilterBase],
             stats=Optional[StatsCollector],
             persist: bool = True
     ):
         self.queue = queue
         self.spider = spider
-        self.df = df
         self.stats = stats
         self.persist = persist
+        self.dupefilter: Optional[DupeFilterBase] = None
 
     @classmethod
     async def from_crawler(cls: Type[SchedulerTV], crawler) -> SchedulerTV:
@@ -104,14 +103,9 @@ class Scheduler(BaseScheduler):
         instance = cls(
             await load_instance(settings['SCHEDULER_QUEUE_CLASS'], spider=crawler.spider),
             crawler.spider,
-            df=settings.get('DUPEFILTER_CLASS') and await load_instance(settings['DUPEFILTER_CLASS'],
-                                                                        spider=crawler.spider),
             stats=crawler.stats,
             persist=settings.getbool('SCHEDULER_PERSIST', True)
         )
-
-        if settings.getbool('SCHEDULER_FLUSH_ON_START', False):
-            await instance.flush()
 
         count = await call_helper(instance.queue.len)
         count and crawler.spider.log("Resuming crawl (%d requests scheduled)" % count)
@@ -121,19 +115,13 @@ class Scheduler(BaseScheduler):
     async def close(self, reason: str) -> None:
         if not self.persist:
             await self.flush()
-        self.df and await call_helper(self.df.close, reason)
+        self.dupefilter and await call_helper(self.dupefilter.close, reason)
 
     async def flush(self) -> None:
-        self.df and await call_helper(self.df.clear)
+        self.dupefilter and await call_helper(self.dupefilter.clear)
         await call_helper(self.queue.clear)
 
     async def enqueue_request(self, request: Request) -> bool:
-        if not request.dont_filter \
-                and request.filter_mode == 'IN_QUEUE' \
-                and self.df and await self.df.request_seen(request):
-            self.df.log(request, self.spider)
-            return False
-
         await call_helper(self.queue.push, request)
         if self.stats:
             self.stats.inc_value(self.queue.inc_key, spider=self.spider)
@@ -141,10 +129,11 @@ class Scheduler(BaseScheduler):
 
     async def next_request(self, count: int = 1) -> Optional[Request]:
         async for request in self.queue.pop(count):
-            if request and not request.dont_filter \
-                    and request.filter_mode == 'OUT_QUEUE' \
-                    and self.df and await self.df.request_seen(request):
-                self.df.log(request, self.spider)
+            if request \
+                    and not request.dont_filter \
+                    and self.dupefilter \
+                    and await self.dupefilter.exist_fingerprint(request):
+                self.dupefilter.log(request, self.spider)
                 continue
 
             if request and self.stats:

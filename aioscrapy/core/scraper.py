@@ -9,8 +9,7 @@ from aioscrapy import signals, Spider
 from aioscrapy.exceptions import CloseSpider, DropItem, IgnoreRequest
 from aioscrapy.http import Request, Response
 from aioscrapy.logformatter import LogFormatter
-from aioscrapy.middleware import ItemPipelineManager
-from aioscrapy.middleware import SpiderMiddlewareManager
+from aioscrapy.middleware import ItemPipelineManager, SpiderMiddlewareManager
 from aioscrapy.signalmanager import SignalManager
 from aioscrapy.utils.log import logformatter_adapter
 from aioscrapy.utils.misc import load_object
@@ -26,7 +25,7 @@ class Slot:
 
     MIN_RESPONSE_SIZE = 1024
 
-    def __init__(self, max_active_size: int = 5000000):
+    def __init__(self, max_active_size: int = 50000000):
         self.max_active_size = max_active_size
         self.queue: Deque[QueueTuple] = deque()
         self.active: Set[Request] = set()
@@ -201,7 +200,7 @@ class Scraper:
         from the given spider
         """
         if isinstance(output, Request):
-            await self.crawler.engine.crawl(request=output)
+            asyncio.create_task(self.crawler.engine.crawl(request=output))
         elif isinstance(output, dict):
             self.slot.itemproc_size += 1
             item = await self.itemproc.process_item(output, self.spider)

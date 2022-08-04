@@ -6,15 +6,16 @@ from typing import Optional, AsyncGenerator, Union, Callable
 
 from aioscrapy import Spider
 from aioscrapy import signals
+from aioscrapy.core.downloader import DownloaderTV
+from aioscrapy.core.scheduler import BaseScheduler
+from aioscrapy.core.scraper import Scraper
+from aioscrapy.dupefilters import DupeFilterBase
 from aioscrapy.exceptions import DontCloseSpider
 from aioscrapy.http import Response
 from aioscrapy.http.request import Request
 from aioscrapy.utils.log import logformatter_adapter
 from aioscrapy.utils.misc import load_instance
 from aioscrapy.utils.tools import call_helper
-from aioscrapy.core.downloader import DownloaderTV
-from aioscrapy.core.scheduler import BaseScheduler
-from aioscrapy.core.scraper import Scraper
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +65,7 @@ class ExecutionEngine(object):
         await self.signals.send_catch_log_deferred(signal=signals.engine_started)
         await self.open(spider, start_requests)
         while not self.finish:
-            self.running and asyncio.create_task(self._next_request())
+            self.running and await self._next_request()
             await asyncio.sleep(1)
 
     async def stop(self, reason: str = 'shutdown') -> None:
@@ -88,8 +89,16 @@ class ExecutionEngine(object):
 
         self.spider = spider
         await call_helper(self.crawler.stats.open_spider, spider)
+        dupefilter: Optional[DupeFilterBase] = self.settings.get('DUPEFILTER_CLASS') and await load_instance(self.settings['DUPEFILTER_CLASS'], crawler=self.crawler)
+
         self.scheduler = await load_instance(self.settings['SCHEDULER'], crawler=self.crawler)
+        self.scheduler.dupefilter = dupefilter
+        if self.settings.getbool('SCHEDULER_FLUSH_ON_START', False):
+            await self.scheduler.flush()
+
         self.downloader = await load_instance(self.settings['DOWNLOADER'], crawler=self.crawler)
+        self.downloader.dupefilter = dupefilter
+
         self.scraper = await call_helper(Scraper.from_crawler, self.crawler)
 
         start_requests = await call_helper(self.scraper.spidermw.process_start_requests, start_requests, spider)
@@ -137,7 +146,7 @@ class ExecutionEngine(object):
                 self.slot.start_requests = None
                 logger.error('Error while obtaining start requests', exc_info=e, extra={'spider': self.spider})
             else:
-                request and await self.crawl(request, self.spider) or asyncio.create_task(self._next_request())
+                request and asyncio.create_task(self.crawl(request))
             finally:
                 self.slot.lock = False
 
@@ -152,9 +161,12 @@ class ExecutionEngine(object):
         )
 
     async def handle_downloader_output(
-            self, result: Union[Request, Response, BaseException], request: Request
+            self, result: Union[Request, Response, BaseException, None], request: Request
     ) -> None:
         try:
+            if result is None:
+                return
+
             if not isinstance(result, (Request, Response, BaseException)):
                 raise TypeError(
                     "Incorrect type: expected Request, Response or Failure, got %s: %r"
@@ -162,7 +174,7 @@ class ExecutionEngine(object):
                 )
 
             if isinstance(result, Request):
-                await self.crawl(result, self.spider)
+                await self.crawl(result)
                 return
 
             if isinstance(result, Response):
@@ -176,7 +188,7 @@ class ExecutionEngine(object):
 
         finally:
             self.slot.remove_request(request)
-            asyncio.create_task(self._next_request())
+            await self._next_request()
 
     async def is_idle(self) -> bool:
 
@@ -194,12 +206,12 @@ class ExecutionEngine(object):
 
         return True
 
-    async def crawl(self, request: Request, spider: Optional[Spider] = None) -> None:
-        await self.signals.send_catch_log(signals.request_scheduled, request=request, spider=spider)
+    async def crawl(self, request: Request) -> None:
+        await self.signals.send_catch_log(signals.request_scheduled, request=request, spider=self.spider)
         if not await call_helper(self.scheduler.enqueue_request, request):
-            await self.signals.send_catch_log(signals.request_dropped, request=request, spider=spider)
+            await self.signals.send_catch_log(signals.request_dropped, request=request, spider=self.spider)
         else:
-            asyncio.create_task(self._next_request())
+            await self._next_request()
 
     async def close_spider(self, spider: Spider, reason: str = 'cancelled') -> None:
         """Close (cancel) spider and clear all its outstanding requests"""

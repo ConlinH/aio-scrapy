@@ -4,39 +4,44 @@ requests in Aioscrapy.
 
 See documentation in docs/topics/request-response.rst
 """
+import hashlib
+from typing import Callable
+from typing import Iterable, Optional, Union
+
+from w3lib.url import canonicalize_url
 from w3lib.url import safe_url_string
 
-from aioscrapy.utils.curl import curl_to_request_kwargs
-from aioscrapy.utils.url import escape_ajax
 from aioscrapy.http.headers import Headers
+from aioscrapy.utils.curl import curl_to_request_kwargs
+from aioscrapy.utils.python import to_bytes
+from aioscrapy.utils.url import escape_ajax
 
 
 class Request(object):
 
     def __init__(
             self,
-            url,
-            callback=None,
-            method='GET',
-            headers=None,
-            body=None,
-            cookies=None,
-            meta=None,
-            encoding='utf-8',
-            priority=0,
-            dont_filter=False,
-            errback=None,
-            flags=None,
-            cb_kwargs=None,
-            filter_mode=None,
+            url: str,
+            callback: Optional[Callable] = None,
+            method: str = 'GET',
+            headers: Optional[dict] = None,
+            body: Optional[str] = None,
+            cookies: Optional[dict] = None,
+            meta: Optional[dict] = None,
+            encoding: str = 'utf-8',
+            priority: int = 0,
+            dont_filter: bool = False,
+            errback: Optional[Callable] = None,
+            flags: Optional[None] = None,
+            cb_kwargs: Optional[Callable] = None,
+            fingerprint: Optional[str] = None,
     ):
 
-        self._encoding = encoding  # this one has to be set first
+        self._encoding = encoding
         self.method = str(method).upper()
         self._set_url(url)
         self._set_body(body)
-        if not isinstance(priority, int):
-            raise TypeError(f"Request priority not an integer: {priority!r}")
+        assert isinstance(priority, int), f"Request priority not an integer: {priority!r}"
         self.priority = priority
 
         self.callback = callback
@@ -45,7 +50,7 @@ class Request(object):
         self.cookies = cookies or {}
         self.headers = Headers(headers or {})
         self.dont_filter = dont_filter
-        self.filter_mode = filter_mode or "IN_QUEUE"    # IN_QUEUE, OUT_QUEUE
+        self._fingerprint = fingerprint
 
         self._meta = dict(meta) if meta else None
         self._cb_kwargs = dict(cb_kwargs) if cb_kwargs else None
@@ -93,6 +98,16 @@ class Request(object):
 
     body = property(_get_body, _set_body)
 
+    def _set_fingerprint(self, fingerprint):
+        self._fingerprint = fingerprint
+
+    def _get_fingerprint(self):
+        if self._fingerprint is None:
+            self._fingerprint = self.make_fingerprint()
+        return self._fingerprint
+
+    fingerprint = property(_get_fingerprint, _set_fingerprint)
+
     @property
     def encoding(self):
         return self._encoding
@@ -110,8 +125,8 @@ class Request(object):
         """Create a new Request with the same attributes except for those
         given new values.
         """
-        for x in ['url', 'method', 'headers', 'body', 'cookies', 'meta', 'flags',
-                  'encoding', 'priority', 'dont_filter', 'callback', 'errback', 'cb_kwargs']:
+        for x in ['url', 'method', 'headers', 'body', 'cookies', 'meta', 'flags', 'encoding',
+                  'priority', 'dont_filter', 'callback', 'errback', 'cb_kwargs', 'fingerprint']:
             kwargs.setdefault(x, getattr(self, x))
         cls = kwargs.pop('cls', self.__class__)
         return cls(*args, **kwargs)
@@ -153,3 +168,16 @@ class Request(object):
     def serialize(self, callback):
         from aioscrapy.utils.reqser import request_to_dict
         return callback(request_to_dict(self))
+
+    def make_fingerprint(
+            self,
+            include_headers: Optional[Iterable[Union[bytes, str]]] = None,
+            keep_fragments: bool = False,
+    ):
+        """ make the request fingerprint. """
+        fp = hashlib.sha1()
+        fp.update(to_bytes(self.method))
+        fp.update(to_bytes(canonicalize_url(self.url, keep_fragments=keep_fragments)))
+        fp.update(to_bytes(self.body) or b'')
+        fp.hexdigest()
+        return fp.hexdigest()
