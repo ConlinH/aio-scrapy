@@ -114,6 +114,7 @@ class Downloader(BaseDownloader):
             middleware: DownloaderMiddlewareManager,
             *,
             proxy: Optional[AbsProxy] = None,
+            dupefilter: Optional[DupeFilterBase] = None,
     ):
         self.settings: Settings = crawler.settings
         self.signals: SignalManager = crawler.signals
@@ -123,7 +124,7 @@ class Downloader(BaseDownloader):
         self.middleware = middleware
         self.handler = handler
         self.proxy = proxy
-        self.dupefilter: Optional[DupeFilterBase] = None
+        self.dupefilter = dupefilter
 
         self.total_concurrency: int = self.settings.getint('CONCURRENT_REQUESTS')
         self.domain_concurrency: int = self.settings.getint('CONCURRENT_REQUESTS_PER_DOMAIN')
@@ -137,12 +138,14 @@ class Downloader(BaseDownloader):
 
     @classmethod
     async def from_crawler(cls, crawler) -> "Downloader":
-        settings = crawler.settings
         return cls(
             crawler,
             await call_helper(DownloadHandlerManager.for_crawler, crawler),
             await call_helper(DownloaderMiddlewareManager.from_crawler, crawler),
-            proxy=settings.get("PROXY_HANDLER") and await load_instance(settings["PROXY_HANDLER"], crawler=crawler)
+            proxy=crawler.settings.get("PROXY_HANDLER") and await load_instance(crawler.settings["PROXY_HANDLER"],
+                                                                                crawler=crawler),
+            dupefilter=crawler.settings.get('DUPEFILTER_CLASS') and await load_instance(
+                crawler.settings['DUPEFILTER_CLASS'], crawler=crawler)
         )
 
     async def fetch(self, request: Request) -> None:
@@ -180,6 +183,9 @@ class Downloader(BaseDownloader):
     async def _download(self, slot: Slot, request: Request) -> None:
         response = None
         try:
+            if self.dupefilter and not request.dont_filter and await self.dupefilter.exist_fingerprint(request):
+                self.dupefilter.log(request, self.spider)
+                return
             response = await self.middleware.process_request(self.spider, request)
             if response is None or isinstance(response, Request):
                 request = response or request

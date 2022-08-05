@@ -95,17 +95,18 @@ class Scheduler(BaseScheduler):
         self.spider = spider
         self.stats = stats
         self.persist = persist
-        self.dupefilter: Optional[DupeFilterBase] = None
 
     @classmethod
     async def from_crawler(cls: Type[SchedulerTV], crawler) -> SchedulerTV:
-        settings = crawler.settings
         instance = cls(
-            await load_instance(settings['SCHEDULER_QUEUE_CLASS'], spider=crawler.spider),
+            await load_instance(crawler.settings['SCHEDULER_QUEUE_CLASS'], spider=crawler.spider),
             crawler.spider,
             stats=crawler.stats,
-            persist=settings.getbool('SCHEDULER_PERSIST', True)
+            persist=crawler.settings.getbool('SCHEDULER_PERSIST', True)
         )
+
+        if crawler.settings.getbool('SCHEDULER_FLUSH_ON_START', False):
+            await instance.flush()
 
         count = await call_helper(instance.queue.len)
         count and crawler.spider.log("Resuming crawl (%d requests scheduled)" % count)
@@ -115,10 +116,8 @@ class Scheduler(BaseScheduler):
     async def close(self, reason: str) -> None:
         if not self.persist:
             await self.flush()
-        self.dupefilter and await call_helper(self.dupefilter.close, reason)
 
     async def flush(self) -> None:
-        self.dupefilter and await call_helper(self.dupefilter.clear)
         await call_helper(self.queue.clear)
 
     async def enqueue_request(self, request: Request) -> bool:
@@ -129,13 +128,6 @@ class Scheduler(BaseScheduler):
 
     async def next_request(self, count: int = 1) -> Optional[Request]:
         async for request in self.queue.pop(count):
-            if request \
-                    and not request.dont_filter \
-                    and self.dupefilter \
-                    and await self.dupefilter.exist_fingerprint(request):
-                self.dupefilter.log(request, self.spider)
-                continue
-
             if request and self.stats:
                 self.stats.inc_value(self.queue.inc_key, spider=self.spider)
             yield request

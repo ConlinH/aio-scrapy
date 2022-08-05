@@ -89,16 +89,9 @@ class ExecutionEngine(object):
 
         self.spider = spider
         await call_helper(self.crawler.stats.open_spider, spider)
-        dupefilter: Optional[DupeFilterBase] = self.settings.get('DUPEFILTER_CLASS') and await load_instance(self.settings['DUPEFILTER_CLASS'], crawler=self.crawler)
 
         self.scheduler = await load_instance(self.settings['SCHEDULER'], crawler=self.crawler)
-        self.scheduler.dupefilter = dupefilter
-        if self.settings.getbool('SCHEDULER_FLUSH_ON_START', False):
-            await self.scheduler.flush()
-
         self.downloader = await load_instance(self.settings['DOWNLOADER'], crawler=self.crawler)
-        self.downloader.dupefilter = dupefilter
-
         self.scraper = await call_helper(Scraper.from_crawler, self.crawler)
 
         start_requests = await call_helper(self.scraper.spidermw.process_start_requests, start_requests, spider)
