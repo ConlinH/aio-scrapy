@@ -32,7 +32,7 @@ CLOSESPIDER_ERRORCOUNT = 0
 
 COMMANDS_MODULE = ''
 
-CONCURRENT_PARSER = 4
+CONCURRENT_PARSER = 1
 
 CONCURRENT_REQUESTS = 16
 CONCURRENT_REQUESTS_PER_DOMAIN = 8
@@ -166,7 +166,7 @@ TEMPLATES_DIR = abspath(join(dirname(__file__), '..', 'templates'))
 
 URLLENGTH_LIMIT = 2083
 
-USER_AGENT = f'Aioscrapy/{import_module("aioscrapy").__version__} (+https://scrapy.org)'
+USER_AGENT = f'Aioscrapy/{import_module("aioscrapy").__version__}'
 
 
 CLOSE_SPIDER_ON_IDLE = False

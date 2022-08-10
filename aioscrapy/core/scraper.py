@@ -2,8 +2,7 @@
 extracts information from them"""
 import asyncio
 import logging
-from collections import deque
-from typing import Any, Deque, AsyncGenerator, Set, Tuple, Union, Optional
+from typing import Any, AsyncGenerator, Set, Union, Optional
 
 from aioscrapy import signals, Spider
 from aioscrapy.exceptions import CloseSpider, DropItem, IgnoreRequest
@@ -17,34 +16,26 @@ from aioscrapy.utils.tools import call_helper
 
 logger = logging.getLogger(__name__)
 
-QueueTuple = Tuple[Union[Response, BaseException], Request]
-
 
 class Slot:
     """Scraper slot (one per running spider)"""
 
     MIN_RESPONSE_SIZE = 1024
 
-    def __init__(self, max_active_size: int = 50000000):
+    def __init__(self, max_active_size: int = 5000000):
         self.max_active_size = max_active_size
-        self.queue: Deque[QueueTuple] = deque()
         self.active: Set[Request] = set()
         self.active_size: int = 0
         self.itemproc_size: int = 0
 
     def add_response_request(self, result: Union[Response, BaseException], request: Request) -> None:
-        self.queue.append((result, request))
+        self.active.add(request)
         if isinstance(result, Response):
             self.active_size += max(len(result.body), self.MIN_RESPONSE_SIZE)
         else:
             self.active_size += self.MIN_RESPONSE_SIZE
 
-    def next_response_request(self) -> QueueTuple:
-        response, request = self.queue.popleft()
-        self.active.add(request)
-        return response, request
-
-    def finish_response(self, result: Union[Response, BaseException], request: Request) -> None:
+    def finish_response(self, request: Request, result: Union[Response, BaseException]) -> None:
         self.active.remove(request)
         if isinstance(result, Response):
             self.active_size -= max(len(result.body), self.MIN_RESPONSE_SIZE)
@@ -53,7 +44,7 @@ class Slot:
             self.active_size -= self.MIN_RESPONSE_SIZE
 
     def is_idle(self) -> bool:
-        return not (self.queue or self.active)
+        return not self.active
 
     def needs_backout(self) -> bool:
         return self.active_size > self.max_active_size
@@ -78,7 +69,7 @@ class Scraper:
         self.itemproc = itemproc
 
         self.finish: bool = False
-        self.concurrent_parser = asyncio.Semaphore(crawler.settings.getint('CONCURRENT_PARSER', 4))
+        self.concurrent_parser = asyncio.Semaphore(crawler.settings.getint('CONCURRENT_PARSER', 1))
 
     @classmethod
     async def from_crawler(cls, crawler):
@@ -103,62 +94,55 @@ class Scraper:
     def needs_backout(self) -> bool:
         return self.slot.needs_backout()
 
-    async def consume_queue(self) -> None:
+    async def enqueue_scrape(self, result: Union[Response, BaseException], request: Request) -> None:
+        # Cache the results in the slot
+        self.slot.add_response_request(result, request)
+        await self._scrape(result, request)
+
+    async def _scrape(self, result: Union[Response, BaseException], request: Request) -> None:
+        """Handle the downloaded response or failure through the spider callback/errback"""
         async with self.concurrent_parser:
-            result, request = self.slot.next_response_request()
             try:
-                await self._scrape(result, request)
+                if not isinstance(result, (Response, BaseException)):
+                    raise TypeError(f"Incorrect type: expected Response or Failure, got {type(result)}: {result!r}")
+                try:
+                    output = await self._scrape2(result, request)  # returns spider's processed output
+                except BaseException as e:
+                    await self.handle_spider_error(e, request, result)
+                else:
+                    await self.handle_spider_output(output, request, result)
             except BaseException as e:
                 logger.error('Scraper bug processing %(request)s',
                              {'request': request},
                              exc_info=e,
                              extra={'spider': self.spider})
             finally:
-                # 将slot中的缓存结果删除
-                self.slot.finish_response(result, request)
-
-    async def enqueue_scrape(self, result: Union[Response, BaseException], request: Request) -> None:
-        # 将结果缓存到slot中
-        self.slot.add_response_request(result, request)
-        asyncio.create_task(self.consume_queue())
-
-    async def _scrape(self, result: Union[Response, BaseException], request: Request) -> None:
-        """
-        Handle the downloaded response or failure through the spider callback/errback
-        """
-        if not isinstance(result, (Response, BaseException)):
-            raise TypeError(f"Incorrect type: expected Response or Failure, got {type(result)}: {result!r}")
-        try:
-            output = await self._scrape2(result, request)  # returns spider's processed output
-        except BaseException as e:
-            await self.handle_spider_error(e, request, result)
-        else:
-            await self.handle_spider_output(output, request, result)
+                # Delete the cache result from the slot
+                self.slot.finish_response(request, result)
 
     async def _scrape2(self, result: Union[Response, BaseException], request: Request) -> Optional[AsyncGenerator]:
-        """
-        Handle the different cases of request's result been a Response or a Failure
-        """
+        """Handle the different cases of request's result been a Response or a Exception"""
+
         if isinstance(result, Response):
-            # 将Response丢给爬虫中间件处理, 处理结果将将给self.call_spider处理
+            # Throw the response to the middleware of the spider,
+            # and the processing results will be processed to the self.call_spider
             return await self.spidermw.scrape_response(self.call_spider, result, request, self.spider)
         else:
             try:
-                # 处理下载错误或经过下载中间件时出现的错误
+                # Processing Exception of download and download's middleware
                 return await self.call_spider(result, request)
             except BaseException as e:
                 await self._log_download_errors(e, result, request)
 
     async def call_spider(self, result: Union[Response, BaseException], request: Request) -> Optional[AsyncGenerator]:
         if isinstance(result, Response):
-            # 将Response丢给spider的解析函数
+            # throws Response to Spider's parse
             callback = request.callback or self.spider._parse
-            # 将parse解析出的结果,变成可迭代对象
             return await call_helper(callback, result, **result.request.cb_kwargs)
         else:
             if request.errback is None:
                 raise result
-            # 下载中间件或下载结果出现错误,回调request中的errback函数
+            # throws Exception of download and download's middleware to Spider's errback
             return await call_helper(request.errback, result)
 
     async def handle_spider_error(self, exc: BaseException, request: Request, response: Response) -> None:
@@ -182,23 +166,24 @@ class Scraper:
         )
 
     async def handle_spider_output(self, result: AsyncGenerator, request: Request, response: Response) -> None:
+        """Iter each Request/Item (given in the output parameter) returned from the given spider"""
+
         if not result:
             return
 
         while True:
             try:
-                res = await result.__anext__()
+                output = await result.__anext__()
             except StopAsyncIteration:
                 break
             except Exception as e:
                 await self.handle_spider_error(e, request, response)
             else:
-                await self._process_spidermw_output(res, request, response)
+                await self._process_spidermw_output(output, request, response)
 
     async def _process_spidermw_output(self, output: Any, request: Request, response: Response) -> None:
-        """Process each Request/Item (given in the output parameter) returned
-        from the given spider
-        """
+        """Process each Request/Item (given in the output parameter) returned from the given spider"""
+
         if isinstance(output, Request):
             asyncio.create_task(self.crawler.engine.crawl(request=output))
         elif isinstance(output, dict):
@@ -224,14 +209,7 @@ class Scraper:
             download_exception: BaseException,
             request: Request
     ) -> None:
-        """
-        处理并记录错误
-        :param spider_exception: 将download_exception丢给request.errback处理时,触发的新错误
-        :param download_exception: 下载过程发生的错误,或中间件中发生的错误
-        :param request:
-        :param spider:
-        :return:
-        """
+        """Process and record errors"""
         if isinstance(download_exception, BaseException) and not isinstance(download_exception, IgnoreRequest):
             logkws = self.logformatter.download_error(download_exception, request, self.spider)
             logger.log(
@@ -244,8 +222,7 @@ class Scraper:
             raise spider_exception
 
     async def _itemproc_finished(self, output: Any, item: Any, response: Response) -> None:
-        """ItemProcessor finished for the given ``item`` and returned ``output``
-        """
+        """ItemProcessor finished for the given ``item`` and returned ``output``"""
         self.slot.itemproc_size -= 1
         if isinstance(output, BaseException):
             if isinstance(output, DropItem):

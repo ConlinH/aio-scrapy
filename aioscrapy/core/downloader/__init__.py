@@ -210,7 +210,7 @@ class Downloader(BaseDownloader):
                                                   response=response,
                                                   request=request,
                                                   spider=self.spider)
-            asyncio.create_task(self._call_engine(response, request))
+            await self._call_engine(response, request)
             await self._process_queue(slot)
 
     def close(self) -> None:
