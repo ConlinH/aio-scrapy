@@ -24,6 +24,7 @@ The quick way:
 
 ```shell
 pip install aio-scrapy -U
+# pip install git+https://github.com/conlin-huang/aio-scrapy
 ```
 
 ### Usage

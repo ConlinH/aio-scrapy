@@ -26,6 +26,7 @@
 
 ```shell
 pip install aio-scrapy -U
+# pip install git+https://github.com/conlin-huang/aio-scrapy
 ```
 
 ### 用法
