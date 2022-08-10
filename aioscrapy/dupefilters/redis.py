@@ -126,14 +126,14 @@ class RedisBloomDupeFilter(RedisRFPDupeFilter):
         self.bf = BloomFilter(server, self.key, bit, hash_number)
 
     @classmethod
-    async def from_spider(cls, spider: Spider):
+    async def from_crawler(cls, crawler: "aioscrapy.crawler.Crawler"):
         server = db_manager.redis.queue
-        dupefilter_key = spider.settings.get("SCHEDULER_DUPEFILTER_KEY", '%(spider)s:bloomfilter')
-        keep_on_close = spider.settings.getbool("KEEP_DUPEFILTER_DATA_ON_CLOSE", True)
-        key = dupefilter_key % {'spider': spider.name}
-        debug = spider.settings.getbool('DUPEFILTER_DEBUG', False)
-        bit = spider.settings.getint('BLOOMFILTER_BIT', 30)
-        hash_number = spider.settings.getint('BLOOMFILTER_HASH_NUMBER', 6)
+        dupefilter_key = crawler.settings.get("SCHEDULER_DUPEFILTER_KEY", '%(spider)s:bloomfilter')
+        keep_on_close = crawler.settings.getbool("KEEP_DUPEFILTER_DATA_ON_CLOSE", True)
+        key = dupefilter_key % {'spider': crawler.spider.name}
+        debug = crawler.settings.getbool('DUPEFILTER_DEBUG', False)
+        bit = crawler.settings.getint('BLOOMFILTER_BIT', 30)
+        hash_number = crawler.settings.getint('BLOOMFILTER_HASH_NUMBER', 6)
         return cls(server, key=key, debug=debug, bit=bit, hash_number=hash_number, keep_on_close=keep_on_close)
 
     async def exist_fingerprint(self, request: Request) -> bool:
