@@ -1,19 +1,30 @@
 import logging
 
 from aioscrapy.db._aioredis import redis_manager
-from aioscrapy.db._aiomysql import mysql_manager
-from aioscrapy.db._aiorabbitmq import rabbitmq_manager
+
+db_manager_map = {
+    'redis': redis_manager
+}
+
+try:
+    from aiomysql import create_pool
+    from aioscrapy.db._aiomysql import mysql_manager
+
+    db_manager_map['mysql'] = mysql_manager
+except ImportError:
+    pass
+
+try:
+    import aio_pika
+    from aioscrapy.db._aiorabbitmq import rabbitmq_manager
+
+    db_manager_map['rabbitmq'] = rabbitmq_manager
+except ImportError:
+    pass
 
 logger = logging.getLogger(__name__)
 
 __all__ = ['db_manager', 'get_pool', 'get_manager']
-
-
-db_manager_map = {
-    'mysql': mysql_manager,
-    'redis': redis_manager,
-    'rabbitmq': rabbitmq_manager,
-}
 
 
 class DBManager:
@@ -21,7 +32,7 @@ class DBManager:
     @staticmethod
     def get_manager(db_type):
         manager = db_manager_map.get(db_type)
-        assert manager is not None, f"暂时不支持该类型数据库：{db_type}"
+        assert manager is not None, f"Not support db type：{db_type}"
         return manager
 
     def get_pool(self, db_type, alias='default'):

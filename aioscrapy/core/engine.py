@@ -9,7 +9,6 @@ from aioscrapy import signals
 from aioscrapy.core.downloader import DownloaderTV
 from aioscrapy.core.scheduler import BaseScheduler
 from aioscrapy.core.scraper import Scraper
-from aioscrapy.dupefilters import DupeFilterBase
 from aioscrapy.exceptions import DontCloseSpider
 from aioscrapy.http import Response
 from aioscrapy.http.request import Request

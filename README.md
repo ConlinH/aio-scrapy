@@ -23,8 +23,17 @@ English | [中文](./doc/README_ZH.md)
 The quick way:
 
 ```shell
-pip install aio-scrapy -U
-# pip install git+https://github.com/conlin-huang/aio-scrapy
+# Install the latest aio-scrapy
+pip install git+https://github.com/conlin-huang/aio-scrapy
+
+# default
+pip install aio-scrapy
+
+# Install all dependencies 
+pip install aio-scrapy[all]
+
+# When you need to use mysql/httpx/rabbitmq
+pip install aio-scrapy[aiomysql,httpx,aio-pika]
 ```
 
 ### Usage

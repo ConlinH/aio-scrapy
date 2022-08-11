@@ -9,10 +9,15 @@ install_requires = [
     "w3lib>=1.17.0",
     "parsel>=1.5.0",
     "PyDispatcher>=2.0.5",
-    'zope.interface>=5.1.0'
+    'zope.interface>=5.1.0',
     "redis>=4.3.1",
 ]
-extras_require = {}
+extras_require = {
+    "all": ["aiomysql" >= "0.1.1", "httpx" >= "0.23.0", "aio-pika" >= "8.1.1"],
+    "aiomysql": ["aiomysql" >= "0.1.1"],
+    "httpx": ["httpx" >= "0.23.0"],
+    "aio-pika": ["aio-pika" >= "8.1.1"],
+}
 
 setup(
     name='aio-scrapy',

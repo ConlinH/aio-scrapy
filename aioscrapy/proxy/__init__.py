@@ -41,7 +41,7 @@ class AbsProxy(metaclass=ABCMeta):
             return
 
         if response and response.status not in self.allow_status_code:
-            self.remove(request.meta['proxy'], f'无效状态码:{response.status}')
+            self.remove(request.meta['proxy'], f"Don't allow response status code:{response.status}")
 
         if exception and isinstance(exception, BaseException):
             self.remove(request.meta['proxy'], exception)
@@ -72,7 +72,7 @@ class RedisProxy(AbsProxy):
     async def from_crawler(cls, crawler) -> "RedisProxy":
         settings = crawler.settings
         proxy_key = settings.get('PROXY_KEY')
-        assert proxy_key is not None, f"未配置代理得key值：'ROXY_KEY'"
+        assert proxy_key is not None, f"Not configured：'ROXY_KEY'"
         alias = settings.get("PROXY_QUEUE_ALIAS", 'proxy')
         proxy_queue = db_manager.redis(alias)
         return cls(

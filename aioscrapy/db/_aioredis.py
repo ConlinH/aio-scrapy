@@ -9,7 +9,7 @@ class RedisExecutor:
         self.alias = alias
         self.pool_manager = pool_manager
 
-    def __getattr__(self, command):
+    def __getattr__(self, command: str):
         redis_pool: Redis = self.pool_manager.get_pool(self.alias)
         return getattr(redis_pool, command)
 
@@ -18,6 +18,7 @@ class AioRedisPoolManager(AbsDBPoolManager):
     _clients = {}
 
     async def create(self, alias: str, params: dict) -> Redis:
+        """Create Redis client"""
         if alias in self._clients:
             return self._clients[alias]
 
@@ -32,30 +33,34 @@ class AioRedisPoolManager(AbsDBPoolManager):
         return self._clients.setdefault(alias, redis)
 
     def get_pool(self, alias: str):
-        """获取数据库链接和数据库游标"""
+        """Get redis client"""
         redis_pool: Redis = self._clients.get(alias)
-        assert redis_pool is not None, f"redis没有创建该连接池： {alias}"
+        assert redis_pool is not None, f"Dont create the redis client named {alias}"
         return redis_pool
 
     def executor(self, alias: str) -> RedisExecutor:
+        """Get RedisExecutor"""
         return RedisExecutor(alias, self)
 
     async def close(self, alias: str):
-        """关闭指定redis pool"""
+        """Close redis pool named `alias`"""
         redis = self._clients.pop(alias, None)
         if redis:
             await redis.close()
             await redis.connection_pool.disconnect()
 
     async def close_all(self):
+        """Close all clients of redis"""
         for alias in list(self._clients.keys()):
             await self.close(alias)
 
     async def from_dict(self, db_args: dict):
+        """Create redis with dict"""
         for alias, redis_args in db_args.items():
             await self.create(alias, redis_args)
 
-    async def from_settings(self, settings: "aioscrapy.settings.Setting"):
+    async def from_settings(self, settings: "aioscrapy.settings.Settings"):
+        """Create redis with settings"""
         for alias, redis_args in settings.getdict('REDIS_ARGS').items():
             await self.create(alias, redis_args)
 

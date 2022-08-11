@@ -2,14 +2,11 @@ import logging
 import socket
 from contextlib import asynccontextmanager
 
-logger = logging.getLogger(__name__)
-
-try:
-    from aiomysql import create_pool
-except ImportError:
-    logger.warning("Please run 'pip install aiomysql' when you want use mysql related functions")
+from aiomysql import create_pool
 
 from aioscrapy.db.absmanager import AbsDBPoolManager
+
+logger = logging.getLogger(__name__)
 
 
 class MysqlExecutor:
@@ -44,7 +41,7 @@ class AioMysqlPoolManager(AbsDBPoolManager):
             return self._clients[alias]
 
         params = params.copy()
-        # 当host为域名形式时，将域名转换为ip形式
+        # When the host is domain,converted to IP
         # https://github.com/aio-libs/aiomysql/issues/641
         params.update({'host': socket.gethostbyname(params['host'])})
         params.setdefault('connect_timeout', 30)
@@ -52,14 +49,13 @@ class AioMysqlPoolManager(AbsDBPoolManager):
         return self._clients.setdefault(alias, mysql_pool)
 
     def get_pool(self, alias: str):
-        """获取数据库链接和数据库游标"""
         mysql_pool = self._clients.get(alias)
-        assert mysql_pool is not None, f"mysql没有创建该连接池： {alias}"
+        assert mysql_pool is not None, f"Dont create the mysql pool named {alias}"
         return mysql_pool
 
     @asynccontextmanager
     async def get(self, alias: str, ping=False):
-        """获取数据库链接和数据库游标"""
+        """Get connection and cursor of mysql"""
         mysql_pool = self.get_pool(alias)
         conn = await mysql_pool.acquire()
         cur = await conn.cursor()

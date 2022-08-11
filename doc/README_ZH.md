@@ -25,8 +25,17 @@
 快速安装方式:
 
 ```shell
-pip install aio-scrapy -U
-# pip install git+https://github.com/conlin-huang/aio-scrapy
+# 安装最新的代码
+pip install git+https://github.com/conlin-huang/aio-scrapy
+
+# default
+pip install aio-scrapy
+
+# 安装所以的依赖
+pip install aio-scrapy[all]
+
+# 需要使用到mysql/httpx/rabbitmq相关功能
+pip install aio-scrapy[aiomysql,httpx,aio-pika]
 ```
 
 ### 用法

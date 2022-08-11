@@ -1,16 +1,13 @@
 import logging
 from contextlib import asynccontextmanager
 
-logger = logging.getLogger(__name__)
-
-try:
-    import aio_pika
-    from aio_pika.exceptions import QueueEmpty
-    from aio_pika.pool import Pool
-except ImportError:
-    logger.warning("Please run 'pip install aio-pika' when you want use rabbitmq related functions")
+import aio_pika
+from aio_pika.exceptions import QueueEmpty
+from aio_pika.pool import Pool
 
 from aioscrapy.db.absmanager import AbsDBPoolManager
+
+logger = logging.getLogger(__name__)
 
 
 class RabbitmqExecutor:
@@ -105,8 +102,8 @@ class AioRabbitmqManager(AbsDBPoolManager):
 
     def get_pool(self, alias: str):
         connection_pool, channel_pool = self._clients.get(alias)
-        assert channel_pool is not None, f"rabbitmq没有创建该连接池： {alias}"
-        assert connection_pool is not None, f"rabbitmq没有创建该连接池： {alias}"
+        assert channel_pool is not None, f"Dont create the rabbitmq channel_pool named {alias}"
+        assert connection_pool is not None, f"Dont create the rabbitmq connection_pool named {alias}"
         return connection_pool, channel_pool
 
     @asynccontextmanager
@@ -119,7 +116,6 @@ class AioRabbitmqManager(AbsDBPoolManager):
         return RabbitmqExecutor(alias, self)
 
     async def close(self, alias: str):
-        """关闭指定pool"""
         connection_pool, channel_pool = self._clients.pop(alias, (None, None))
         connection_pool: Pool
         channel_pool: Pool
@@ -137,7 +133,7 @@ class AioRabbitmqManager(AbsDBPoolManager):
         for alias, rabbitmq_args in db_args.items():
             await self.create(alias, rabbitmq_args)
 
-    async def from_settings(self, settings: "aioscrapy.settings.Setting"):
+    async def from_settings(self, settings: "aioscrapy.settings.Settings"):
         for alias, rabbitmq_args in settings.getdict('RABBITMQ_ARGS').items():
             await self.create(alias, rabbitmq_args)
 

@@ -1,10 +1,7 @@
 import logging
 import ssl
 
-from aioscrapy.http import HtmlResponse
-from aioscrapy.core.downloader.handlers import BaseDownloadHandler
-
-from typing import Optional
+import httpx
 
 from aioscrapy import Request
 from aioscrapy.core.downloader.handlers import BaseDownloadHandler
@@ -12,11 +9,6 @@ from aioscrapy.http import HtmlResponse
 from aioscrapy.settings import Settings
 
 logger = logging.getLogger(__name__)
-
-try:
-    import httpx
-except ImportError:
-    logger.warning("Please run 'pip install httpx' when you want replace 'aiohttp' with 'httpx'")
 
 
 class HttpxDownloadHandler(BaseDownloadHandler):
