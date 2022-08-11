@@ -13,10 +13,10 @@ install_requires = [
     "redis>=4.3.1",
 ]
 extras_require = {
-    "all": ["aiomysql" >= "0.1.1", "httpx" >= "0.23.0", "aio-pika" >= "8.1.1"],
-    "aiomysql": ["aiomysql" >= "0.1.1"],
-    "httpx": ["httpx" >= "0.23.0"],
-    "aio-pika": ["aio-pika" >= "8.1.1"],
+    "all": ["aiomysql>=0.1.1", "httpx>=0.23.0", "aio-pika>8.1.1"],
+    "aiomysql": ["aiomysql>=0.1.1"],
+    "httpx": ["httpx>=0.23.0"],
+    "aio-pika": ["aio-pika>=8.1.1"],
 }
 
 setup(
