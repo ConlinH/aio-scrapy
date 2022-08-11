@@ -19,9 +19,10 @@ class AioHttpDownloadHandler(BaseDownloadHandler):
 
     def __init__(self, settings: Settings):
         self.settings = settings
-        self.aiohttp_client_session_args: dict = settings.get('AIOHTTP_CLIENT_SESSION_ARGS', {})
-        self.verify_ssl: bool = self.settings.get("VERIFY_SSL")
-        self.ssl_protocol = self.settings.get("SSL_PROTOCOL")  # ssl.PROTOCOL_TLSv1_2
+        self.aiohttp_client_session_args: dict = settings.getdict('AIOHTTP_CLIENT_SESSION_ARGS')
+        self.verify_ssl: bool = settings.getbool("VERIFY_SSL", False)
+        self.ssl_protocol = settings.get("SSL_PROTOCOL")  # ssl.PROTOCOL_TLSv1_2
+        self.use_session: bool = settings.getbool("USE_SESSION", False)
 
     @classmethod
     def from_settings(cls, settings: Settings):
@@ -62,15 +63,16 @@ class AioHttpDownloadHandler(BaseDownloadHandler):
             kwargs["proxy"] = proxy
             logger.debug(f"使用代理{proxy}抓取: {request.url}")
 
-            async with aiohttp.ClientSession(**self.aiohttp_client_session_args) as session:
-                async with session.request(request.method, request.url, **kwargs) as response:
-                    content: bytes = await response.read()
-
-        # Don't close session on the proxy is not in use
-        else:
+        if self.use_session:
+            # Not recommended to use session, The abnormal phenomena will occurs when using tunnel proxy
             session = self.get_session(**self.aiohttp_client_session_args)
             async with session.request(request.method, request.url, **kwargs) as response:
                 content: bytes = await response.read()
+
+        else:
+            async with aiohttp.ClientSession(**self.aiohttp_client_session_args) as session:
+                async with session.request(request.method, request.url, **kwargs) as response:
+                    content: bytes = await response.read()
 
         r_cookies = response.cookies.output() or None
         if r_cookies:
@@ -91,6 +93,6 @@ class AioHttpDownloadHandler(BaseDownloadHandler):
         if self.session is not None:
             await self.session.close()
 
-        # Wait 250 ms for the underlying SSL connections to close
-        # https://docs.aiohttp.org/en/latest/client_advanced.html#graceful-shutdown
-        await asyncio.sleep(0.250)
+            # Wait 250 ms for the underlying SSL connections to close
+            # https://docs.aiohttp.org/en/latest/client_advanced.html#graceful-shutdown
+            await asyncio.sleep(0.250)
