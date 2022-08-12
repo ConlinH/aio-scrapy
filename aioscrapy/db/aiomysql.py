@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 
 from aiomysql import create_pool
 
+import aioscrapy
 from aioscrapy.db.absmanager import AbsDBPoolManager
 
 logger = logging.getLogger(__name__)
@@ -84,13 +85,12 @@ class AioMysqlPoolManager(AbsDBPoolManager):
         for alias, mysql_args in db_args.items():
             await self.create(alias, mysql_args)
 
-    async def from_settings(self, settings: "aioscrapy.settings.Setting"):
+    async def from_settings(self, settings: aioscrapy.Settings):
         for alias, mysql_args in settings.getdict('MYSQL_ARGS').items():
             await self.create(alias, mysql_args)
 
 
 mysql_manager = AioMysqlPoolManager()
-
 
 if __name__ == '__main__':
     import asyncio

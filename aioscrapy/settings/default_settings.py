@@ -14,7 +14,6 @@ Aioscrapy developers, if you add a setting here remember to:
 """
 
 import sys
-from importlib import import_module
 from os.path import join, abspath, dirname
 
 AUTOTHROTTLE_ENABLED = False
@@ -165,8 +164,5 @@ STATS_DUMP = True
 TEMPLATES_DIR = abspath(join(dirname(__file__), '..', 'templates'))
 
 URLLENGTH_LIMIT = 2083
-
-USER_AGENT = f'Aioscrapy/{import_module("aioscrapy").__version__}'
-
 
 CLOSE_SPIDER_ON_IDLE = False

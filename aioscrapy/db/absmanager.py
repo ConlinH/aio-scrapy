@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod
 
-import aioscrapy.crawler
+import aioscrapy
 
 
 class AbsDBPoolManager(object, metaclass=ABCMeta):
@@ -31,10 +31,10 @@ class AbsDBPoolManager(object, metaclass=ABCMeta):
         """Create pool with dict"""
 
     @abstractmethod
-    async def from_settings(self, settings: "aioscrapy.settings.Settings"):
+    async def from_settings(self, settings: aioscrapy.Settings):
         """Create pool with settings"""
 
-    async def from_crawler(self, crawler: "aioscrapy.crawler.Crawler"):
+    async def from_crawler(self, crawler: "aioscrapy.Crawler"):
         return await self.from_settings(crawler.settings)
 
     def __call__(self, alias: str):

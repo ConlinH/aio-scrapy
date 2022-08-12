@@ -1,6 +1,9 @@
 import logging
+from typing import Any
 
-from aioscrapy.db._aioredis import redis_manager
+import aioscrapy
+from aioscrapy.db.absmanager import AbsDBPoolManager
+from aioscrapy.db.aioredis import redis_manager
 
 db_manager_map = {
     'redis': redis_manager
@@ -8,7 +11,7 @@ db_manager_map = {
 
 try:
     from aiomysql import create_pool
-    from aioscrapy.db._aiomysql import mysql_manager
+    from aioscrapy.db.aiomysql import mysql_manager
 
     db_manager_map['mysql'] = mysql_manager
 except ImportError:
@@ -16,7 +19,7 @@ except ImportError:
 
 try:
     import aio_pika
-    from aioscrapy.db._aiorabbitmq import rabbitmq_manager
+    from aioscrapy.db.aiorabbitmq import rabbitmq_manager
 
     db_manager_map['rabbitmq'] = rabbitmq_manager
 except ImportError:
@@ -30,22 +33,22 @@ __all__ = ['db_manager', 'get_pool', 'get_manager']
 class DBManager:
 
     @staticmethod
-    def get_manager(db_type):
+    def get_manager(db_type: str) -> AbsDBPoolManager:
         manager = db_manager_map.get(db_type)
         assert manager is not None, f"Not support db type：{db_type}"
         return manager
 
-    def get_pool(self, db_type, alias='default'):
+    def get_pool(self, db_type: str, alias='default') -> Any:
         manager = self.get_manager(db_type)
         return manager.get_pool(alias)
 
     @staticmethod
-    async def close_all():
+    async def close_all() -> None:
         for manager in db_manager_map.values():
             await manager.close_all()
 
     @staticmethod
-    async def from_dict(db_args: dict):
+    async def from_dict(db_args: dict) -> None:
         for db_type, args in db_args.items():
             manager = db_manager_map.get(db_type)
             if manager is None:
@@ -53,14 +56,14 @@ class DBManager:
             await manager.from_dict(args)
 
     @staticmethod
-    async def from_settings(settings: "aioscrapy.settings.Setting"):
+    async def from_settings(settings: aioscrapy.Settings) -> None:
         for manager in db_manager_map.values():
             await manager.from_settings(settings)
 
-    async def from_crawler(self, crawler):
+    async def from_crawler(self, crawler: "aioscrapy.Crawler") -> None:
         return await self.from_settings(crawler.settings)
 
-    def __getattr__(self, db_type: str):
+    def __getattr__(self, db_type: str) -> Any:
         if db_type not in db_manager_map:
             raise AttributeError(f'Not support db type: {db_type}')
         return db_manager_map[db_type]

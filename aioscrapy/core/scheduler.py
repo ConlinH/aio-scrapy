@@ -1,9 +1,7 @@
 from abc import abstractmethod
 from typing import Optional, Type, TypeVar
 
-from aioscrapy import Spider
-from aioscrapy.dupefilters import DupeFilterBase
-from aioscrapy.http.request import Request
+import aioscrapy
 from aioscrapy.queue import AbsQueue
 from aioscrapy.statscollectors import StatsCollector
 from aioscrapy.utils.misc import load_instance
@@ -29,7 +27,7 @@ class BaseSchedulerMeta(type):
 class BaseScheduler(metaclass=BaseSchedulerMeta):
 
     @classmethod
-    async def from_crawler(cls, crawler):
+    async def from_crawler(cls, crawler: "aioscrapy.Crawler") -> "BaseScheduler":
         """
         Factory method which receives the current :class:`~scrapy.crawler.Crawler` object as argument.
         """
@@ -53,7 +51,7 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
         raise NotImplementedError()
 
     @abstractmethod
-    async def enqueue_request(self, request: Request) -> bool:
+    async def enqueue_request(self, request: aioscrapy.Request) -> bool:
         """
         Process a request received by the engine.
 
@@ -67,7 +65,7 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
         raise NotImplementedError()
 
     @abstractmethod
-    async def next_request(self) -> Optional[Request]:
+    async def next_request(self) -> Optional[aioscrapy.Request]:
         """
         Return the next :class:`~scrapy.http.Request` to be processed, or ``None``
         to indicate that there are no requests to be considered ready at the moment.
@@ -87,7 +85,7 @@ class Scheduler(BaseScheduler):
     def __init__(
             self,
             queue: AbsQueue,
-            spider: Spider,
+            spider: aioscrapy.Spider,
             stats=Optional[StatsCollector],
             persist: bool = True
     ):
@@ -97,7 +95,7 @@ class Scheduler(BaseScheduler):
         self.persist = persist
 
     @classmethod
-    async def from_crawler(cls: Type[SchedulerTV], crawler) -> SchedulerTV:
+    async def from_crawler(cls: Type[SchedulerTV], crawler: "aioscrapy.Crawler") -> SchedulerTV:
         instance = cls(
             await load_instance(crawler.settings['SCHEDULER_QUEUE_CLASS'], spider=crawler.spider),
             crawler.spider,
@@ -120,13 +118,13 @@ class Scheduler(BaseScheduler):
     async def flush(self) -> None:
         await call_helper(self.queue.clear)
 
-    async def enqueue_request(self, request: Request) -> bool:
+    async def enqueue_request(self, request: aioscrapy.Request) -> bool:
         await call_helper(self.queue.push, request)
         if self.stats:
             self.stats.inc_value(self.queue.inc_key, spider=self.spider)
         return True
 
-    async def next_request(self, count: int = 1) -> Optional[Request]:
+    async def next_request(self, count: int = 1) -> Optional[aioscrapy.Request]:
         async for request in self.queue.pop(count):
             if request and self.stats:
                 self.stats.inc_value(self.queue.inc_key, spider=self.spider)

@@ -1,10 +1,12 @@
 import logging
 from abc import ABC
+from typing import Optional
 
-from aioscrapy.queue import AbsQueue
+import aioscrapy
 from aioscrapy.db import db_manager
-from aioscrapy.utils.misc import load_object
+from aioscrapy.queue import AbsQueue
 from aioscrapy.serializer import AbsSerializer
+from aioscrapy.utils.misc import load_object
 
 logger = logging.getLogger(__name__)
 
@@ -13,11 +15,11 @@ class RedisQueueBase(AbsQueue, ABC):
     inc_key = 'scheduler/enqueued/redis'
 
     @classmethod
-    def from_dict(cls, data: dict) -> "AbsQueue":
-        alias = data.get("alias", 'queue')
-        server = db_manager.redis(alias)
-        spider_name = data["spider_name"]
-        serializer = data.get("serializer", "aioscrapy.serializer.JsonSerializer")
+    def from_dict(cls, data: dict) -> "RedisQueueBase":
+        alias: str = data.get("alias", 'queue')
+        server: aioscrapy.db.aioredis.Redis = db_manager.redis(alias)
+        spider_name: str = data["spider_name"]
+        serializer: str = data.get("serializer", "aioscrapy.serializer.JsonSerializer")
         serializer: AbsSerializer = load_object(serializer)
         return cls(
             server,
@@ -26,12 +28,11 @@ class RedisQueueBase(AbsQueue, ABC):
         )
 
     @classmethod
-    async def from_spider(cls, spider) -> "RedisQueueBase":
-        settings = spider.settings
-        alias = settings.get("SCHEDULER_QUEUE_ALIAS", 'queue')
-        server = db_manager.redis(alias)
-        queue_key = settings.get("SCHEDULER_QUEUE_KEY", '%(spider)s:requests')
-        serializer = settings.get("SCHEDULER_SERIALIZER", "aioscrapy.serializer.JsonSerializer")
+    async def from_spider(cls, spider: aioscrapy.Spider) -> "RedisQueueBase":
+        alias: str = spider.settings.get("SCHEDULER_QUEUE_ALIAS", 'queue')
+        server: aioscrapy.db.aioredis.Redis = db_manager.redis(alias)
+        queue_key: str = spider.settings.get("SCHEDULER_QUEUE_KEY", '%(spider)s:requests')
+        serializer: str = spider.settings.get("SCHEDULER_SERIALIZER", "aioscrapy.serializer.JsonSerializer")
         serializer: AbsSerializer = load_object(serializer)
         return cls(
             server,
@@ -40,7 +41,7 @@ class RedisQueueBase(AbsQueue, ABC):
             serializer=serializer
         )
 
-    async def clear(self):
+    async def clear(self) -> None:
         """Clear queue/stack"""
         await self.container.delete(self.key)
 
@@ -48,14 +49,14 @@ class RedisQueueBase(AbsQueue, ABC):
 class RedisFifoQueue(RedisQueueBase):
     """Per-spider FIFO queue"""
 
-    async def len(self):
+    async def len(self) -> int:
         return await self.container.llen(self.key)
 
-    async def push(self, request):
+    async def push(self, request: aioscrapy.Request) -> None:
         """Push a request"""
         await self.container.lpush(self.key, self._encode_request(request))
 
-    async def pop(self, count: int = 1):
+    async def pop(self, count: int = 1) -> Optional[aioscrapy.Request]:
         """Pop a request"""
         async with self.container.pipeline(transaction=True) as pipe:
             for _ in range(count):
@@ -69,16 +70,16 @@ class RedisFifoQueue(RedisQueueBase):
 class RedisPriorityQueue(RedisQueueBase):
     """Per-spider priority queue abstraction using redis' sorted set"""
 
-    async def len(self):
+    async def len(self) -> int:
         return await self.container.zcard(self.key)
 
-    async def push(self, request):
+    async def push(self, request: aioscrapy.Request) -> None:
         """Push a request"""
         data = self._encode_request(request)
         score = request.priority
         await self.container.zadd(self.key, {data: score})
 
-    async def pop(self, count: int = 1):
+    async def pop(self, count: int = 1) -> Optional[aioscrapy.Request]:
         async with self.container.pipeline(transaction=True) as pipe:
             stop = count - 1 if count - 1 > 0 else 0
             results, _ = await (
@@ -93,14 +94,14 @@ class RedisPriorityQueue(RedisQueueBase):
 class RedisLifoQueue(RedisQueueBase):
     """Per-spider LIFO queue."""
 
-    async def len(self):
+    async def len(self) -> int:
         return await self.container.llen(self.key)
 
-    async def push(self, request):
+    async def push(self, request: aioscrapy.Request) -> None:
         """Push a request"""
         await self.container.lpush(self.key, self._encode_request(request))
 
-    async def pop(self, count: int = 1):
+    async def pop(self, count: int = 1) -> Optional[aioscrapy.Request]:
         """Pop a request"""
         async with self.container.pipeline(transaction=True) as pipe:
             for _ in range(count):
@@ -111,7 +112,6 @@ class RedisLifoQueue(RedisQueueBase):
                 yield self._decode_request(result)
 
 
-# TODO: Deprecate the use of these names.
 SpiderQueue = RedisFifoQueue
 SpiderStack = RedisLifoQueue
 SpiderPriorityQueue = RedisPriorityQueue

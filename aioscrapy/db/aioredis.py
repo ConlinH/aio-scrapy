@@ -1,5 +1,6 @@
 from redis.asyncio import BlockingConnectionPool, Redis
 
+import aioscrapy
 from aioscrapy.db.absmanager import AbsDBPoolManager
 
 
@@ -59,14 +60,13 @@ class AioRedisPoolManager(AbsDBPoolManager):
         for alias, redis_args in db_args.items():
             await self.create(alias, redis_args)
 
-    async def from_settings(self, settings: "aioscrapy.settings.Settings"):
+    async def from_settings(self, settings: aioscrapy.Settings):
         """Create redis with settings"""
         for alias, redis_args in settings.getdict('REDIS_ARGS').items():
             await self.create(alias, redis_args)
 
 
 redis_manager = AioRedisPoolManager()
-
 
 if __name__ == '__main__':
     import asyncio

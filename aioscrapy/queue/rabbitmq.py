@@ -1,3 +1,6 @@
+from typing import Optional
+
+import aioscrapy
 from aioscrapy.db import db_manager
 from aioscrapy.queue import AbsQueue
 from aioscrapy.serializer import AbsSerializer
@@ -8,11 +11,11 @@ class RabbitMqPriorityQueue(AbsQueue):
     inc_key = 'scheduler/enqueued/rabbitmq'
 
     @classmethod
-    def from_dict(cls, data: dict) -> "AbsQueue":
-        alias = data.get("alias", 'queue')
-        server = db_manager.rabbitmq.executor(alias)
-        spider_name = data["spider_name"]
-        serializer = data.get("serializer", "aioscrapy.serializer.JsonSerializer")
+    def from_dict(cls, data: dict) -> "RabbitMqPriorityQueue":
+        alias: str = data.get("alias", 'queue')
+        server: aioscrapy.db.aiorabbitmq.RabbitmqExecutor = db_manager.rabbitmq.executor(alias)
+        spider_name: str = data["spider_name"]
+        serializer: str = data.get("serializer", "aioscrapy.serializer.JsonSerializer")
         serializer: AbsSerializer = load_object(serializer)
         return cls(
             server,
@@ -21,12 +24,11 @@ class RabbitMqPriorityQueue(AbsQueue):
         )
 
     @classmethod
-    async def from_spider(cls, spider) -> "RabbitMqPriorityQueue":
-        settings = spider.settings
-        alias = settings.get("SCHEDULER_QUEUE_ALIAS", 'queue')
-        executor = db_manager.rabbitmq.executor(alias)
-        queue_key = settings.get("SCHEDULER_QUEUE_KEY", '%(spider)s:requests')
-        serializer = settings.get("SCHEDULER_SERIALIZER", "aioscrapy.serializer.JsonSerializer")
+    async def from_spider(cls, spider: aioscrapy.Spider) -> "RabbitMqPriorityQueue":
+        alias: str = spider.settings.get("SCHEDULER_QUEUE_ALIAS", 'queue')
+        executor: aioscrapy.db.aiorabbitmq.RabbitmqExecutor = db_manager.rabbitmq.executor(alias)
+        queue_key: str = spider.settings.get("SCHEDULER_QUEUE_KEY", '%(spider)s:requests')
+        serializer: str = spider.settings.get("SCHEDULER_SERIALIZER", "aioscrapy.serializer.JsonSerializer")
         serializer: AbsSerializer = load_object(serializer)
         return cls(
             executor,
@@ -38,7 +40,7 @@ class RabbitMqPriorityQueue(AbsQueue):
     async def len(self) -> int:
         return await self.container.get_message_count(self.key)
 
-    async def push(self, request):
+    async def push(self, request: aioscrapy.Request) -> None:
         data = self._encode_request(request)
         score = request.priority
         await self.container.publish(
@@ -47,13 +49,13 @@ class RabbitMqPriorityQueue(AbsQueue):
             priority=score
         )
 
-    async def pop(self, count: int = 1):
+    async def pop(self, count: int = 1) -> Optional[aioscrapy.Request]:
         result = await self.container.get_message(self.key)
         if result:
             yield self._decode_request(result)
 
-    async def clear(self):
-        return await self.container.clean_message_queue(self.key)
+    async def clear(self) -> None:
+        await self.container.clean_message_queue(self.key)
 
 
 SpiderPriorityQueue = RabbitMqPriorityQueue

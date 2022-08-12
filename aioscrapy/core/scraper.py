@@ -4,6 +4,7 @@ import asyncio
 import logging
 from typing import Any, AsyncGenerator, Set, Union, Optional
 
+import aioscrapy
 from aioscrapy import signals, Spider
 from aioscrapy.exceptions import CloseSpider, DropItem, IgnoreRequest
 from aioscrapy.http import Request, Response
@@ -54,7 +55,7 @@ class Scraper:
 
     def __init__(
             self,
-            crawler,
+            crawler: "aioscrapy.Crawler",
             slot: Slot,
             spidermw: SpiderMiddlewareManager,
             itemproc: ItemPipelineManager,
@@ -72,7 +73,7 @@ class Scraper:
         self.concurrent_parser = asyncio.Semaphore(crawler.settings.getint('CONCURRENT_PARSER', 1))
 
     @classmethod
-    async def from_crawler(cls, crawler):
+    async def from_crawler(cls, crawler: "aioscrapy.Crawler") -> "Scraper":
         instance: "Scraper" = cls(
             crawler,
             Slot(crawler.settings.getint('SCRAPER_SLOT_MAX_ACTIVE_SIZE')),

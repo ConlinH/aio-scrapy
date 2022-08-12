@@ -5,6 +5,7 @@ import aio_pika
 from aio_pika.exceptions import QueueEmpty
 from aio_pika.pool import Pool
 
+import aioscrapy
 from aioscrapy.db.absmanager import AbsDBPoolManager
 
 logger = logging.getLogger(__name__)
@@ -133,7 +134,7 @@ class AioRabbitmqManager(AbsDBPoolManager):
         for alias, rabbitmq_args in db_args.items():
             await self.create(alias, rabbitmq_args)
 
-    async def from_settings(self, settings: "aioscrapy.settings.Settings"):
+    async def from_settings(self, settings: aioscrapy.Settings):
         for alias, rabbitmq_args in settings.getdict('RABBITMQ_ARGS').items():
             await self.create(alias, rabbitmq_args)
 

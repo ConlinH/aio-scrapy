@@ -2,7 +2,8 @@
 
 from importlib import import_module
 from pkgutil import iter_modules
-from .tools import call_helper
+
+from aioscrapy.utils.tools import call_helper
 
 
 def walk_modules(path):

@@ -8,10 +8,12 @@ import sys
 # Declare top-level shortcuts
 from aioscrapy.spiders import Spider
 from aioscrapy.http import Request, FormRequest
+from aioscrapy.settings import Settings
+from aioscrapy.crawler import Crawler
 
 
 __all__ = [
-    '__version__', 'version_info', 'Spider', 'Request', 'FormRequest',
+    '__version__', 'version_info', 'Spider', 'Request', 'FormRequest', 'Crawler'
 ]
 
 

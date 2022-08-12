@@ -4,6 +4,7 @@ import asyncio
 import logging
 from typing import Optional, AsyncGenerator, Union, Callable
 
+import aioscrapy
 from aioscrapy import Spider
 from aioscrapy import signals
 from aioscrapy.core.downloader import DownloaderTV
@@ -35,7 +36,7 @@ class Slot:
 
 class ExecutionEngine(object):
 
-    def __init__(self, crawler) -> None:
+    def __init__(self, crawler: "aioscrapy.Crawler") -> None:
         self.crawler = crawler
         self.settings = crawler.settings
         self.signals = crawler.signals

@@ -8,15 +8,17 @@ See documentation in docs/topics/request-response.rst
 import copy
 import json
 import warnings
+from typing import Optional, Tuple
 
 from aioscrapy.http.request import Request
 from aioscrapy.utils.deprecate import create_deprecated_class
 
 
 class JsonRequest(Request):
-    def __init__(self, *args, **kwargs):
-        dumps_kwargs = copy.deepcopy(kwargs.pop('dumps_kwargs', {}))
-        dumps_kwargs.setdefault('sort_keys', True)
+    attributes: Tuple[str, ...] = Request.attributes + ("dumps_kwargs",)
+
+    def __init__(self, *args, dumps_kwargs: Optional[dict] = None, **kwargs) -> None:
+        dumps_kwargs = copy.deepcopy(dumps_kwargs) if dumps_kwargs is not None else {}
         self._dumps_kwargs = dumps_kwargs
 
         body_passed = kwargs.get('body', None) is not None
@@ -36,7 +38,11 @@ class JsonRequest(Request):
         self.headers.setdefault('Content-Type', 'application/json')
         self.headers.setdefault('Accept', 'application/json, text/javascript, */*; q=0.01')
 
-    def replace(self, *args, **kwargs):
+    @property
+    def dumps_kwargs(self) -> dict:
+        return self._dumps_kwargs
+
+    def replace(self, *args, **kwargs) -> Request:
         body_passed = kwargs.get('body', None) is not None
         data = kwargs.pop('data', None)
         data_passed = data is not None
@@ -49,7 +55,7 @@ class JsonRequest(Request):
 
         return super().replace(*args, **kwargs)
 
-    def _dumps(self, data):
+    def _dumps(self, data: dict) -> str:
         """Convert to JSON """
         return json.dumps(data, **self._dumps_kwargs)
 
