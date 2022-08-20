@@ -57,6 +57,7 @@ class AioHttpDownloadHandler(BaseDownloadHandler):
 
             ssl_ciphers and context.set_ciphers(ssl_ciphers)
             kwargs['ssl'] = context
+            kwargs['verify_ssl'] = True
 
         proxy: str = request.meta.get("proxy")
         if proxy:
