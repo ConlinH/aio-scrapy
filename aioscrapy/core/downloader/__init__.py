@@ -173,7 +173,6 @@ class Downloader(BaseDownloader):
                 return
 
         while slot.queue and slot.free_transfer_slots() > 0:
-            slot.lastseen = now
             request = slot.queue.popleft()
             slot.transferring.add(request)
             asyncio.create_task(self._download(slot, request))
@@ -186,6 +185,7 @@ class Downloader(BaseDownloader):
             if self.dupefilter and not request.dont_filter and await self.dupefilter.exist_fingerprint(request):
                 self.dupefilter.log(request, self.spider)
                 return
+            slot.lastseen = time()
             response = await self.middleware.process_request(self.spider, request)
             if response is None or isinstance(response, Request):
                 request = response or request
