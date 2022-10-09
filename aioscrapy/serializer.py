@@ -1,4 +1,4 @@
-import json
+import ujson
 import pickle
 from abc import ABCMeta, abstractmethod
 
@@ -31,9 +31,9 @@ class PickleSerializer(AbsSerializer):
 class JsonSerializer(AbsSerializer):
     @staticmethod
     def loads(s):
-        return json.loads(s)
+        return ujson.loads(s)
 
     @staticmethod
     def dumps(obj):
-        return json.dumps(obj)
+        return ujson.dumps(obj)
 

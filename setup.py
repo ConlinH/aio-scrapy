@@ -6,6 +6,7 @@ with open(join(dirname(__file__), 'aioscrapy/VERSION'), 'rb') as f:
 
 install_requires = [
     "aiohttp",
+    "ujson",
     "w3lib>=1.17.0",
     "parsel>=1.5.0",
     "PyDispatcher>=2.0.5",
