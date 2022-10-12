@@ -111,7 +111,7 @@ scrapyd &
 Mysql批量存储中间件
 ```python
 ITEM_PIPELINES = {
-    'aioscrapy.pipelines.db.MysqlPipeline': 100,
+    'aioscrapy.libs.pipelines.db.MysqlPipeline': 100,
 }
 
 # mysql parameter

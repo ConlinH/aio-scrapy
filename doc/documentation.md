@@ -112,7 +112,7 @@ Please refer to scrapyd's documentation for more details.
 Mysql Bulk Storage Middleware
 ```python
 ITEM_PIPELINES = {
-    'aioscrapy.pipelines.db.MysqlPipeline': 100,
+    'aioscrapy.libs.pipelines.db.MysqlPipeline': 100,
 }
 
 # mysql parameter
