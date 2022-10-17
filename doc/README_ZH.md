@@ -101,6 +101,7 @@ class QuotesMemorySpider(Spider):
     name = 'QuotesMemorySpider'
     custom_settings = {
         "USER_AGENT": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36",
+        'CLOSE_SPIDER_ON_IDLE': True,
         # 'DOWNLOAD_DELAY': 3,
         # 'RANDOMIZE_DOWNLOAD_DELAY': True,
         # 'CONCURRENT_REQUESTS': 1,

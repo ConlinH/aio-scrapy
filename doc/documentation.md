@@ -55,7 +55,7 @@ DUPEFILTER_CLASS = 'aioscrapy.dupefilters.redis.BloomDupeFilter'
 ```
 
 ### Close Sipder
-`CLOSE_SPIDER_ON_IDLE`: Whether to close crawler when queue has no work, Default `True`.
+`CLOSE_SPIDER_ON_IDLE`: Whether to close crawler when queue has no work, Default `False`.
 
 ### Scrapyd
 How to deploy distributed crawler of aio-scrapy with scrapyd

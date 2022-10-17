@@ -54,7 +54,7 @@ DUPEFILTER_CLASS = 'aioscrapy.dupefilters.redis.BloomDupeFilter'
 ```
 
 ### 关闭爬虫
-`CLOSE_SPIDER_ON_IDLE`: 当没有队列任务的时候是否关闭爬虫, 默认 `True`.
+`CLOSE_SPIDER_ON_IDLE`: 当没有队列任务的时候是否关闭爬虫, 默认 `False`.
 
 
 ### Scrapyd
