@@ -14,8 +14,8 @@ install_requires = [
     "redis>=4.3.1",
 ]
 extras_require = {
-    "all": ["aiomysql>=0.1.1", "httpx>=0.23.0", "aio-pika>=8.1.1"],
-    "aiomysql": ["aiomysql>=0.1.1"],
+    "all": ["aiomysql>=0.1.1", "httpx>=0.23.0", "aio-pika>=8.1.1", "cryptography"],
+    "aiomysql": ["aiomysql>=0.1.1", "cryptography"],
     "httpx": ["httpx>=0.23.0"],
     "aio-pika": ["aio-pika>=8.1.1"],
 }
@@ -44,6 +44,7 @@ setup(
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Software Development :: Libraries :: Application Frameworks',
         'Topic :: Software Development :: Libraries :: Python Modules',
