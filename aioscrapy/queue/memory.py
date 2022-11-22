@@ -48,6 +48,10 @@ class MemoryQueueBase(AbsQueue):
         data = self._encode_request(request)
         await self.container.put(data)
 
+    async def push_batch(self, requests) -> None:
+        for request in requests:
+            await self.push(request)
+
     async def pop(self, count: int = 1) -> None:
         for _ in range(count):
             try:
