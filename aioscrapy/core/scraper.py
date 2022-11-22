@@ -186,7 +186,7 @@ class Scraper:
         """Process each Request/Item (given in the output parameter) returned from the given spider"""
 
         if isinstance(output, Request):
-            asyncio.create_task(self.crawler.engine.crawl(request=output))
+            await self.crawler.engine.crawl(request=output)
         elif isinstance(output, dict):
             self.slot.itemproc_size += 1
             item = await self.itemproc.process_item(output, self.spider)
