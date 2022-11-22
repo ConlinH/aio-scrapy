@@ -56,6 +56,12 @@ class RedisFifoQueue(RedisQueueBase):
         """Push a request"""
         await self.container.lpush(self.key, self._encode_request(request))
 
+    async def push_batch(self, requests) -> None:
+        async with self.container.pipeline() as pipe:
+            for request in requests:
+                pipe.lpush(self.key, self._encode_request(request))
+            await pipe.execute()
+
     async def pop(self, count: int = 1) -> Optional[aioscrapy.Request]:
         """Pop a request"""
         async with self.container.pipeline(transaction=True) as pipe:
@@ -79,6 +85,12 @@ class RedisPriorityQueue(RedisQueueBase):
         score = request.priority
         await self.container.zadd(self.key, {data: score})
 
+    async def push_batch(self, requests) -> None:
+        async with self.container.pipeline() as pipe:
+            for request in requests:
+                pipe.zadd(self.key, {self._encode_request(request): request.priority})
+            await pipe.execute()
+
     async def pop(self, count: int = 1) -> Optional[aioscrapy.Request]:
         async with self.container.pipeline(transaction=True) as pipe:
             stop = count - 1 if count - 1 > 0 else 0
@@ -100,6 +112,12 @@ class RedisLifoQueue(RedisQueueBase):
     async def push(self, request: aioscrapy.Request) -> None:
         """Push a request"""
         await self.container.lpush(self.key, self._encode_request(request))
+
+    async def push_batch(self, requests) -> None:
+        async with self.container.pipeline() as pipe:
+            for request in requests:
+                pipe.lpush(self.key, self._encode_request(request))
+            await pipe.execute()
 
     async def pop(self, count: int = 1) -> Optional[aioscrapy.Request]:
         """Pop a request"""

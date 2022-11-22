@@ -3,6 +3,8 @@
 import asyncio
 import logging
 from typing import Optional, AsyncGenerator, Union, Callable
+from asyncio import Queue
+from asyncio.queues import QueueEmpty
 
 import aioscrapy
 from aioscrapy import Spider
@@ -42,6 +44,7 @@ class ExecutionEngine(object):
         self.signals = crawler.signals
         self.logformatter = crawler.logformatter
 
+        self.enqueue_cache: Queue = Queue(100)
         self.slot: Optional[Slot] = None
         self.spider: Optional[Spider] = None
         self.downloader: Optional[DownloaderTV] = None
@@ -51,6 +54,7 @@ class ExecutionEngine(object):
         self.running: bool = False
         self.unlock: bool = True
         self.finish: bool = False
+        self.enqueue_unlock: bool = True
 
     async def start(
             self,
@@ -67,6 +71,7 @@ class ExecutionEngine(object):
         while not self.finish:
             self.running and await self._next_request()
             await asyncio.sleep(1)
+            asyncio.create_task(self._crawl())
 
     async def stop(self, reason: str = 'shutdown') -> None:
         """Stop the execution engine gracefully"""
@@ -76,6 +81,7 @@ class ExecutionEngine(object):
 
         while not await self.is_idle():
             await asyncio.sleep(0.2)
+            asyncio.create_task(self._crawl())
         await self.close_spider(self.spider, reason=reason)
         await self.signals.send_catch_log_deferred(signal=signals.engine_stopped)
         self.finish = True
@@ -139,7 +145,7 @@ class ExecutionEngine(object):
                 self.slot.start_requests = None
                 logger.error('Error while obtaining start requests', exc_info=e, extra={'spider': self.spider})
             else:
-                request and asyncio.create_task(self.crawl(request))
+                request and await self.crawl(request)
             finally:
                 self.slot.lock = False
 
@@ -197,14 +203,28 @@ class ExecutionEngine(object):
             # scraper is not idle
             return False
 
+        if not self.enqueue_cache.empty():
+            return False
         return True
 
     async def crawl(self, request: Request) -> None:
-        await self.signals.send_catch_log(signals.request_scheduled, request=request, spider=self.spider)
-        if not await call_helper(self.scheduler.enqueue_request, request):
-            await self.signals.send_catch_log(signals.request_dropped, request=request, spider=self.spider)
-        else:
-            await self._next_request()
+        await self.enqueue_cache.put(request)
+
+    async def _crawl(self) -> None:
+        if not self.enqueue_unlock:
+            return
+        self.enqueue_unlock = False
+        requests = []
+        for _ in range(self.enqueue_cache.qsize()):
+            try:
+                request = self.enqueue_cache.get_nowait()
+                requests.append(request)
+            except QueueEmpty:
+                break
+        if requests:
+            await call_helper(self.scheduler.enqueue_request_batch, requests)
+            asyncio.create_task(self._next_request())
+        self.enqueue_unlock = True
 
     async def close_spider(self, spider: Spider, reason: str = 'cancelled') -> None:
         """Close (cancel) spider and clear all its outstanding requests"""

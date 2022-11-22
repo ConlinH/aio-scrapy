@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Optional, Type, TypeVar
+from typing import Optional, Type, TypeVar, List
 
 import aioscrapy
 from aioscrapy.queue import AbsQueue
@@ -19,7 +19,7 @@ class BaseSchedulerMeta(type):
     def __subclasscheck__(cls, subclass):
         return (
                 hasattr(subclass, "has_pending_requests") and callable(subclass.has_pending_requests)
-                and hasattr(subclass, "enqueue_request") and callable(subclass.enqueue_request)
+                and hasattr(subclass, "enqueue_request_batch") and callable(subclass.enqueue_request_batch)
                 and hasattr(subclass, "next_request") and callable(subclass.next_request)
         )
 
@@ -51,7 +51,7 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
         raise NotImplementedError()
 
     @abstractmethod
-    async def enqueue_request(self, request: aioscrapy.Request) -> bool:
+    async def enqueue_request_batch(self, request: aioscrapy.Request) -> bool:
         """
         Process a request received by the engine.
 
@@ -117,6 +117,12 @@ class Scheduler(BaseScheduler):
 
     async def flush(self) -> None:
         await call_helper(self.queue.clear)
+
+    async def enqueue_request_batch(self, requests: List[aioscrapy.Request]) -> bool:
+        await call_helper(self.queue.push_batch, requests)
+        if self.stats:
+            self.stats.inc_value(self.queue.inc_key, count=len(requests), spider=self.spider)
+        return True
 
     async def enqueue_request(self, request: aioscrapy.Request) -> bool:
         await call_helper(self.queue.push, request)

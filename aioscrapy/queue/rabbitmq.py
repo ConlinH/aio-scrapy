@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 
 import aioscrapy
 from aioscrapy.db import db_manager
@@ -48,6 +48,11 @@ class RabbitMqPriorityQueue(AbsQueue):
             body=data if isinstance(data, bytes) else data.encode(),
             priority=score
         )
+
+    async def push_batch(self, requests: List[aioscrapy.Request]) -> None:
+        # TODO: 实现rabbitmq的批量存储
+        for request in requests:
+            await self.push(request)
 
     async def pop(self, count: int = 1) -> Optional[aioscrapy.Request]:
         result = await self.container.get_message(self.key)
