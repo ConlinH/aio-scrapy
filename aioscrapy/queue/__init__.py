@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from typing import Optional, Any
+from typing import Optional, Any, List
 
 import aioscrapy
 from aioscrapy.serializer import AbsSerializer
@@ -53,6 +53,10 @@ class AbsQueue(metaclass=ABCMeta):
     @abstractmethod
     async def push(self, request: aioscrapy.Request) -> None:
         """Push a request"""
+
+    @abstractmethod
+    async def push_batch(self, requests: List[aioscrapy.Request]) -> None:
+        """Push a batch requests"""
 
     @abstractmethod
     async def pop(self, timeout: int = 0) -> Optional[aioscrapy.Request]:
