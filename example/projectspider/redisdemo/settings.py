@@ -9,18 +9,19 @@
 # SCHEDULER_SERIALIZER = 'aioscrapy.serializer.JsonSerializer'
 # SCHEDULER_SERIALIZER = 'aioscrapy.serializer.PickleSerializer'
 
-# ITEM_PIPELINES = {
-#     'aioscrapy.libs.pipelines.sink.MysqlPipeline': 100,
-# }
+ITEM_PIPELINES = {
+    # 'aioscrapy.libs.pipelines.sink.MysqlPipeline': 100,
+    'aioscrapy.libs.pipelines.sink.MongoPipeline': 100,
+}
 
 BOT_NAME = 'redisdemo'
 
 SPIDER_MODULES = ['redisdemo.spiders']
 NEWSPIDER_MODULE = 'redisdemo.spiders'
 
-DOWNLOAD_DELAY = 3
-RANDOMIZE_DOWNLOAD_DELAY = True
-CONCURRENT_REQUESTS = 1
+# DOWNLOAD_DELAY = 3
+# RANDOMIZE_DOWNLOAD_DELAY = True
+# CONCURRENT_REQUESTS = 1
 
 # SCHEDULER_FLUSH_ON_START = True
 
@@ -81,6 +82,14 @@ MYSQL_ARGS = {
     #     'port': 3306,
     #     'charset': 'utf8mb4',
     # }
+}
+
+# mongo parameter
+MONGO_ARGS = {
+    'default': {
+        'host': 'mongodb://root:root@192.168.234.128:27017',
+        'db': 'test',
+    },
 }
 
 # LOG_FILE = 'test.log'

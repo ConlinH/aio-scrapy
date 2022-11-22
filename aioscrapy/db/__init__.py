@@ -25,6 +25,16 @@ try:
 except ImportError:
     pass
 
+
+try:
+    import motor
+    from aioscrapy.db.aiomongo import mongo_manager
+
+    db_manager_map['mongo'] = mongo_manager
+except ImportError:
+    pass
+
+
 logger = logging.getLogger(__name__)
 
 __all__ = ['db_manager', 'get_pool', 'get_manager']

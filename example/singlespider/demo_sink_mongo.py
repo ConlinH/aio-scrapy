@@ -1,5 +1,3 @@
-import re
-from urllib.parse import unquote
 import logging
 
 from aioscrapy import Request
@@ -18,6 +16,18 @@ class DemoMemorySpider(Spider):
         # 'LOG_LEVEL': 'INFO'
         # 'DUPEFILTER_CLASS': 'aioscrapy.dupefilters.disk.RFPDupeFilter',
         "CLOSE_SPIDER_ON_IDLE": True,
+        # mongo parameter
+        "MONGO_ARGS": {
+            'default': {
+                'host': 'mongodb://root:root@192.168.234.128:27017',
+                'db': 'test',
+            }
+        },
+        "ITEM_PIPELINES": {
+            'aioscrapy.libs.pipelines.sink.MongoPipeline': 100,
+        },
+        "SAVE_CACHE_NUM": 1000,      # 每次存储1000条
+        "SAVE_CACHE_INTERVAL": 10,  # 每次10秒存储一次
     }
 
     start_urls = ['https://quotes.toscrape.com']
@@ -40,6 +50,10 @@ class DemoMemorySpider(Spider):
     async def parse(self, response):
         for quote in response.css('div.quote'):
             yield {
+                'save_table_name': 'article',   # 要存储的表名字
+                'save_db_alias': 'default',     # 要存储的mongo, 参数“MONGO_ARGS”的key
+                # 'save_db_name': 'xxx',     # 要存储的mongo的库名， 不指定则默认为“MONGO_ARGS”中的“db”值
+
                 'author': quote.xpath('span/small/text()').get(),
                 'text': quote.css('span.text::text').get(),
             }

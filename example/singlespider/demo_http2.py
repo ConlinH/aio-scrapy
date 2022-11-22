@@ -18,6 +18,13 @@ class DemoMemorySpider(Spider):
         # 'LOG_LEVEL': 'INFO'
         # 'DUPEFILTER_CLASS': 'aioscrapy.dupefilters.disk.RFPDupeFilter',
         "CLOSE_SPIDER_ON_IDLE": True,
+        'DOWNLOAD_HANDLERS': {
+            'http': 'aioscrapy.core.downloader.handlers.httpx.HttpxDownloadHandler',
+            'https': 'aioscrapy.core.downloader.handlers.httpx.HttpxDownloadHandler',
+        },
+        'HTTPX_CLIENT_SESSION_ARGS': {
+            'http2': True
+        }
     }
 
     start_urls = ['https://quotes.toscrape.com']
@@ -47,7 +54,7 @@ class DemoMemorySpider(Spider):
         next_page = response.css('li.next a::attr("href")').get()
         if next_page is not None:
             # yield response.follow(next_page, self.parse)
-            yield Request(f"https://quotes.toscrape.com{next_page}", callback=self.parse)
+            yield Request(f"https://quotes.toscrape.com/{next_page}", callback=self.parse)
 
     async def process_item(self, item):
         print(item)
