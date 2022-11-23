@@ -1,12 +1,17 @@
-
 [英文](./documentation.md)| 中文
+
 ### 调度的队列
+
 `SCHEDULER_QUEUE_CLASS`：获取请求任务的队列类型，默认为`memory`
+
 ##### memory
+
 ```python
 SCHEDULER_QUEUE_CLASS = 'aioscrapy.queue.memory.SpiderPriorityQueue'
 ```
+
 ##### reids
+
 ```python
 SCHEDULER_QUEUE_CLASS = 'aioscrapy.queue.redis.SpiderPriorityQueue'
 
@@ -21,7 +26,9 @@ REDIS_ARGS = {
     }
 }
 ```
+
 ##### rabbitMq
+
 ```python
 SCHEDULER_QUEUE_CLASS = 'aioscrapy.queue.rabbitmq.SpiderPriorityQueue'
 # RabbitMq parameter
@@ -35,80 +42,97 @@ RABBITMQ_ARGS = {
 ```
 
 ### 过滤重复请求
+
 `DUPEFILTER_CLASS`：配置url的去重类， 默认不配
 
 ##### disk
+
 将url指纹信息存放在磁盘
+
 ```python
 DUPEFILTER_CLASS = 'aioscrapy.dupefilters.disk.RFPDupeFilter'
 ```
+
 ##### redis with hash
+
 将url指纹信息放到redis， 对url进行hash
+
 ```python
 DUPEFILTER_CLASS = 'aioscrapy.dupefilters.redis.RFPDupeFilter'
 ```
+
 ##### redis with Bloom filter
+
 将url指纹信息放到redis，使用布隆过滤
+
 ```python
 DUPEFILTER_CLASS = 'aioscrapy.dupefilters.redis.BloomDupeFilter'
 ```
 
 ### 关闭爬虫
+
 `CLOSE_SPIDER_ON_IDLE`: 当没有队列任务的时候是否关闭爬虫, 默认 `False`.
 
-
 ### Scrapyd
+
 如可使用scrapyd部署aio-scrapy的分布式爬虫
 
 安装scrapyd
+
 ```shell
 pip install scrapyd
 ```
-修改scrapyd配置如下
-default_scrapyd.conf
+
+修改scrapyd配置如下 default_scrapyd.conf
+
 ```ini
 [scrapyd]
-eggs_dir    = eggs
-logs_dir    = logs
-items_dir   =
+eggs_dir = eggs
+logs_dir = logs
+items_dir =
 jobs_to_keep = 5
-dbs_dir     = dbs
-max_proc    = 0
+dbs_dir = dbs
+max_proc = 0
 max_proc_per_cpu = 4
 finished_to_keep = 100
 poll_interval = 5.0
 bind_address = 127.0.0.1
-http_port   = 6800
-debug       = off
+http_port = 6800
+debug = off
 # runner      = scrapyd.runner    # 原配置
-runner      = aioscrapy.scrapyd.runner  # 将runner替换为aio-scrapy提供的runner
+runner = aioscrapy.scrapyd.runner  # 将runner替换为aio-scrapy提供的runner
 application = scrapyd.app.application
-launcher    = scrapyd.launcher.Launcher
-webroot     = scrapyd.website.Root
+launcher = scrapyd.launcher.Launcher
+webroot = scrapyd.website.Root
 
 [services]
-schedule.json     = scrapyd.webservice.Schedule
-cancel.json       = scrapyd.webservice.Cancel
-addversion.json   = scrapyd.webservice.AddVersion
+schedule.json = scrapyd.webservice.Schedule
+cancel.json = scrapyd.webservice.Cancel
+addversion.json = scrapyd.webservice.AddVersion
 listprojects.json = scrapyd.webservice.ListProjects
 listversions.json = scrapyd.webservice.ListVersions
-listspiders.json  = scrapyd.webservice.ListSpiders
-delproject.json   = scrapyd.webservice.DeleteProject
-delversion.json   = scrapyd.webservice.DeleteVersion
-listjobs.json     = scrapyd.webservice.ListJobs
+listspiders.json = scrapyd.webservice.ListSpiders
+delproject.json = scrapyd.webservice.DeleteProject
+delversion.json = scrapyd.webservice.DeleteVersion
+listjobs.json = scrapyd.webservice.ListJobs
 daemonstatus.json = scrapyd.webservice.DaemonStatus
 
 ```
+
 启动scrapyd
+
 ```shell
 scrapyd &
 ```
+
 更多具体操作请参考scrapyd的文档
 
 ### 其它
 
 ##### MysqlPipeline
+
 Mysql批量存储中间件
+
 ```python
 ITEM_PIPELINES = {
     'aioscrapy.libs.pipelines.db.MysqlPipeline': 100,
@@ -140,8 +164,8 @@ MYSQL_ARGS = {
     #     'charset': 'utf8mb4',
     # }
 }
-SAVE_CACHE_NUM = 1000   # 每1000个item触发一次存储
-SAVE_CACHE_INTERVAL = 10    # 每10s触发一次存储
+SAVE_CACHE_NUM = 1000  # 每1000个item触发一次存储
+SAVE_CACHE_INTERVAL = 10  # 每10s触发一次存储
 """
 # item的格式要求如下
 item = {
@@ -152,5 +176,35 @@ item = {
             # 下面为存储的字段
             'title': "title",
         }
+"""
+```
+
+##### MongoPipeline
+
+Mongo批量存储中间件
+
+```python
+ITEM_PIPELINES = {
+    'aioscrapy.libs.pipelines.db.MongoPipeline': 100,
+}
+
+MONGO_ARGS = {
+    'default': {
+        'host': 'mongodb://root:root@192.168.234.128:27017',
+        'db': 'test',
+    }
+}
+SAVE_CACHE_NUM = 1000  # 每1000个item触发一次存储
+SAVE_CACHE_INTERVAL = 10  # 每10s触发一次存储
+"""
+# item的格式要求如下
+item = {
+    'save_table_name': 'article',   # 要存储的表名字
+    'save_db_alias': 'default',     # 要存储的mongo, 参数“MONGO_ARGS”的key
+    # 'save_db_name': 'xxx',     # 要存储的mongo的库名， 不指定则默认为“MONGO_ARGS”中的“db”值
+
+    # 下面为存储的字段
+    'title': "title",
+}
 """
 ```

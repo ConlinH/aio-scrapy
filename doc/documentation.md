@@ -156,3 +156,33 @@ item = {
 """
 
 ```
+
+##### MongoPipeline
+
+Mongo Bulk Storage Middleware
+
+```python
+ITEM_PIPELINES = {
+    'aioscrapy.libs.pipelines.db.MongoPipeline': 100,
+}
+
+MONGO_ARGS = {
+    'default': {
+        'host': 'mongodb://root:root@192.168.234.128:27017',
+        'db': 'test',
+    }
+}
+SAVE_CACHE_NUM = 1000   # Trigger mysql storage every 1000 item.
+SAVE_CACHE_INTERVAL = 10    # Trigger mysql storage every 10 seconds.
+"""
+# Format requirements for item
+item = {
+    'save_table_name': 'article',   # table name of mongo
+    'save_db_alias': 'default',     # Alias of mongo to save
+    # 'save_db_name': 'xxx',     # db name of mongo， If not specified, the default value is "MONGO_ARGS" in "db"
+
+    # Below are the item fields
+    'title': "title",
+}
+"""
+```

@@ -34,8 +34,8 @@ pip install aio-scrapy
 # 安装所以的依赖
 pip install aio-scrapy[all]
 
-# 需要使用到mysql/httpx/rabbitmq相关功能
-pip install aio-scrapy[aiomysql,httpx,aio-pika]
+# 需要使用到mysql/httpx/rabbitmq/mongo相关功能
+pip install aio-scrapy[aiomysql,httpx,aio-pika,mongo]
 ```
 
 ### 用法

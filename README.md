@@ -32,8 +32,8 @@ pip install aio-scrapy
 # Install all dependencies 
 pip install aio-scrapy[all]
 
-# When you need to use mysql/httpx/rabbitmq
-pip install aio-scrapy[aiomysql,httpx,aio-pika]
+# When you need to use mysql/httpx/rabbitmq/mongo
+pip install aio-scrapy[aiomysql,httpx,aio-pika,mongo]
 ```
 
 ### Usage
