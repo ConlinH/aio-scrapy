@@ -31,7 +31,7 @@ pip install git+https://github.com/conlin-huang/aio-scrapy
 # default
 pip install aio-scrapy
 
-# 安装所以的依赖
+# 安装所有的依赖
 pip install aio-scrapy[all]
 
 # 需要使用到mysql/httpx/rabbitmq/mongo相关功能
