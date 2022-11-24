@@ -1,43 +1,32 @@
 import logging
+from importlib import import_module
 from typing import Any
 
 import aioscrapy
 from aioscrapy.db.absmanager import AbsDBPoolManager
 from aioscrapy.db.aioredis import redis_manager
-
-db_manager_map = {
-    'redis': redis_manager
-}
-
-try:
-    from aiomysql import create_pool
-    from aioscrapy.db.aiomysql import mysql_manager
-
-    db_manager_map['mysql'] = mysql_manager
-except ImportError:
-    pass
-
-try:
-    import aio_pika
-    from aioscrapy.db.aiorabbitmq import rabbitmq_manager
-
-    db_manager_map['rabbitmq'] = rabbitmq_manager
-except ImportError:
-    pass
-
-
-try:
-    import motor
-    from aioscrapy.db.aiomongo import mongo_manager
-
-    db_manager_map['mongo'] = mongo_manager
-except ImportError:
-    pass
-
+from aioscrapy.utils.misc import load_object
 
 logger = logging.getLogger(__name__)
 
 __all__ = ['db_manager', 'get_pool', 'get_manager']
+
+DB_MODULE_MAP = {
+    'redis': ('redis', 'aioscrapy.db.aioredis.redis_manager'),
+    'aiomysql': ('mysql', 'aioscrapy.db.aiomysql.mysql_manager'),
+    'aio_pika': ('rabbitmq', 'aioscrapy.db.aiorabbitmq.rabbitmq_manager'),
+    'motor': ('mongo', 'aioscrapy.db.aiomongo.mongo_manager'),
+}
+
+db_manager_map = {}
+
+for module_name, (manager_key, class_path) in DB_MODULE_MAP.items():
+    try:
+        import_module(module_name)
+    except ImportError:
+        pass
+    else:
+        db_manager_map[manager_key] = load_object(class_path)
 
 
 class DBManager:
