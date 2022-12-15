@@ -165,6 +165,11 @@ aioscrapy -h
 
 请向我通过issue的方式提出您的建议
 
+### 联系
+
+QQ: 995018884
+WeChat: h995018884
+
 ## 感谢
 
 [aiohttp](https://github.com/aio-libs/aiohttp/)
