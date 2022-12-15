@@ -37,7 +37,7 @@ class DiskRFPDupeFilter(DupeFilterBase):
         if self.file:
             self.file.write(request.fingerprint + '\n')
 
-    def close(self, reason: str) -> None:
+    def close(self, reason: str = '') -> None:
         if self.file:
             self.file.close()
 

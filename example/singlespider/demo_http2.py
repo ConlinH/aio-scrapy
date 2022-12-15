@@ -1,5 +1,3 @@
-import re
-from urllib.parse import unquote
 import logging
 
 from aioscrapy import Request

@@ -142,8 +142,8 @@ class TextResponse(Response):
         return self.selector.css(query)
 
     def follow(self, url, callback=None, method='GET', headers=None, body=None,
-               cookies=None, meta=None, encoding=None, priority=0,
-               dont_filter=False, errback=None, cb_kwargs=None, flags=None):
+               cookies=None, meta=None, encoding=None, priority=0, dont_filter=False,
+               fingerprint=None, errback=None, cb_kwargs=None, flags=None):
         # type: (...) -> Request
         """
         Return a :class:`~.Request` instance to follow a link ``url``.
@@ -180,6 +180,7 @@ class TextResponse(Response):
             errback=errback,
             cb_kwargs=cb_kwargs,
             flags=flags,
+            fingerprint=fingerprint
         )
 
     def follow_all(self, urls=None, callback=None, method='GET', headers=None, body=None,

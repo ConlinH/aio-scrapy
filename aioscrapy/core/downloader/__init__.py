@@ -213,8 +213,9 @@ class Downloader(BaseDownloader):
             await self._call_engine(response, request)
             await self._process_queue(slot)
 
-    def close(self) -> None:
+    async def close(self) -> None:
         self.running = False
+        self.dupefilter and await self.dupefilter.close()
 
     async def _slot_gc(self, age=60):
         while self.running:

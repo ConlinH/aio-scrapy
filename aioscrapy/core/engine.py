@@ -203,7 +203,7 @@ class ExecutionEngine(object):
             # scraper is not idle
             return False
 
-        if not self.enqueue_cache.empty():
+        if not self.enqueue_unlock or not self.enqueue_cache.empty():
             return False
         return True
 

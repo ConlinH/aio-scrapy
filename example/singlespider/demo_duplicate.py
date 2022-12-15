@@ -1,12 +1,13 @@
 import logging
+import re
 
-from aioscrapy.spiders import Spider
+from aioscrapy.spiders import Spider, Request
 
 logger = logging.getLogger(__name__)
 
 
-class DemoRedisSpider(Spider):
-    name = 'DemoRedisSpider'
+class DemoDuplicateSpider(Spider):
+    name = 'DemoDuplicateSpider'
     custom_settings = {
         "USER_AGENT": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36",
         # 'DOWNLOAD_DELAY': 3,
@@ -15,18 +16,11 @@ class DemoRedisSpider(Spider):
         "CLOSE_SPIDER_ON_IDLE": True,
         # 'LOG_FILE': 'test.log',
 
-        # SCHEDULER_QUEUE_CLASS = 'aioscrapy.queue.redis.SpiderPriorityQueue'
-        # SCHEDULER_QUEUE_CLASS = 'aioscrapy.queue.rabbitmq.SpiderPriorityQueue'
-
-        # DUPEFILTER_CLASS = 'aioscrapy.dupefilters.disk.RFPDupeFilter'
-        # DUPEFILTER_CLASS = 'aioscrapy.dupefilters.redis.RFPDupeFilter'
-        # DUPEFILTER_CLASS = 'aioscrapy.dupefilters.redis.BloomDupeFilter'
-
-        # SCHEDULER_SERIALIZER = 'aioscrapy.serializer.JsonSerializer'
-        # SCHEDULER_SERIALIZER = 'aioscrapy.serializer.PickleSerializer'
+        'DUPEFILTER_CLASS': 'aioscrapy.dupefilters.disk.RFPDupeFilter',
+        # 'DUPEFILTER_CLASS': 'aioscrapy.dupefilters.redis.RFPDupeFilter',
+        # 'DUPEFILTER_CLASS': 'aioscrapy.dupefilters.redis.BloomDupeFilter',
 
         'SCHEDULER_QUEUE_CLASS': 'aioscrapy.queue.redis.SpiderPriorityQueue',
-        # 'DUPEFILTER_CLASS': 'aioscrapy.dupefilters.redis.RFPDupeFilter',
         'SCHEDULER_SERIALIZER': 'aioscrapy.serializer.JsonSerializer',
         'REDIS_ARGS': {
             'queue': {
@@ -36,7 +30,8 @@ class DemoRedisSpider(Spider):
         }
     }
 
-    start_urls = ['https://quotes.toscrape.com']
+    async def start_requests(self):
+        yield Request('https://quotes.toscrape.com/page/1', dont_filter=False, fingerprint='1')
 
     @staticmethod
     async def process_request(request, spider):
@@ -60,13 +55,14 @@ class DemoRedisSpider(Spider):
                 'text': quote.css('span.text::text').get(),
             }
 
-        next_page = response.css('li.next a::attr("href")').get()
-        if next_page is not None:
-            yield response.follow(next_page, self.parse, dont_filter=False)
+        next_page_url = response.css('li.next a::attr("href")').get()
+        if next_page_url is not None:
+            page_fingerprint = ''.join(re.findall(r'page/(\d+)', next_page_url))
+            yield response.follow(next_page_url, self.parse, dont_filter=False, fingerprint=page_fingerprint)
 
     async def process_item(self, item):
         print(item)
 
 
 if __name__ == '__main__':
-    DemoRedisSpider.start()
+    DemoDuplicateSpider.start()

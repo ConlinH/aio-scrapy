@@ -20,7 +20,7 @@ class DupeFilterBase(metaclass=ABCMeta):
         """ Add fingerprint of request """
 
     @abstractmethod
-    def close(self, reason: str) -> None:
+    def close(self, reason: str = '') -> None:
         """ Delete data on close """
 
     @abstractmethod

@@ -125,8 +125,8 @@ class Response(object):
         raise NotSupported("Response content isn't text")
 
     def follow(self, url, callback=None, method='GET', headers=None, body=None,
-               cookies=None, meta=None, encoding='utf-8', priority=0,
-               dont_filter=False, errback=None, cb_kwargs=None, flags=None):
+               cookies=None, meta=None, encoding='utf-8', priority=0, dont_filter=False,
+               fingerprint=None, errback=None, cb_kwargs=None, flags=None):
         # type: (...) -> Request
         """
         Return a :class:`~.Request` instance to follow a link ``url``.
@@ -161,6 +161,7 @@ class Response(object):
             errback=errback,
             cb_kwargs=cb_kwargs,
             flags=flags,
+            fingerprint=fingerprint
         )
 
     def follow_all(self, urls, callback=None, method='GET', headers=None, body=None,

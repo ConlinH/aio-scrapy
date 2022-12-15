@@ -1,8 +1,5 @@
-import re
-from urllib.parse import unquote
 import logging
 
-from aioscrapy import Request
 from aioscrapy.spiders import Spider
 
 logger = logging.getLogger(__name__)
