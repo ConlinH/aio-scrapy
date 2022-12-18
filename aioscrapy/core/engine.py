@@ -44,7 +44,8 @@ class ExecutionEngine(object):
         self.signals = crawler.signals
         self.logformatter = crawler.logformatter
 
-        self.enqueue_cache: Queue = Queue(100)
+        self.enqueue_cache_num = self.settings.getint("ENQUEUE_CACHE_NUM")
+        self.enqueue_cache: Queue = Queue(self.enqueue_cache_num)
         self.slot: Optional[Slot] = None
         self.spider: Optional[Spider] = None
         self.downloader: Optional[DownloaderTV] = None
@@ -71,7 +72,8 @@ class ExecutionEngine(object):
         while not self.finish:
             self.running and await self._next_request()
             await asyncio.sleep(1)
-            asyncio.create_task(self._crawl())
+            self.enqueue_cache_num != 1 and asyncio.create_task(self._crawl())
+            self.running and await self._spider_idle(self.spider)
 
     async def stop(self, reason: str = 'shutdown') -> None:
         """Stop the execution engine gracefully"""
@@ -79,9 +81,9 @@ class ExecutionEngine(object):
             raise RuntimeError("Engine not running")
         self.running = False
 
-        while not await self.is_idle():
+        while not self.is_idle():
             await asyncio.sleep(0.2)
-            asyncio.create_task(self._crawl())
+            self.enqueue_cache_num != 1 and asyncio.create_task(self._crawl())
         await self.close_spider(self.spider, reason=reason)
         await self.signals.send_catch_log_deferred(signal=signals.engine_stopped)
         self.finish = True
@@ -149,9 +151,6 @@ class ExecutionEngine(object):
             finally:
                 self.slot.lock = False
 
-        if self.running and await self.is_idle():
-            await self._spider_idle(self.spider)
-
     def _needs_backout(self) -> bool:
         return (
                 not self.running
@@ -189,7 +188,7 @@ class ExecutionEngine(object):
             self.slot.remove_request(request)
             await self._next_request()
 
-    async def is_idle(self) -> bool:
+    def is_idle(self) -> bool:
 
         if self.downloader.active:
             # downloader has pending requests
@@ -203,12 +202,14 @@ class ExecutionEngine(object):
             # scraper is not idle
             return False
 
-        if not self.enqueue_unlock or not self.enqueue_cache.empty():
-            return False
         return True
 
     async def crawl(self, request: Request) -> None:
-        await self.enqueue_cache.put(request)
+        if self.enqueue_cache_num == 1:
+            await self.scheduler.enqueue_request(request)
+            asyncio.create_task(self._next_request())
+        else:
+            await self.enqueue_cache.put(request)
 
     async def _crawl(self) -> None:
         if not self.enqueue_unlock:
@@ -271,8 +272,10 @@ class ExecutionEngine(object):
         if any(isinstance(x, DontCloseSpider) for _, x in res):
             return
 
-        if await self.is_idle() \
+        # method of 'has_pending_requests' has IO, so method of 'is_idle' execute twice
+        if self.is_idle() \
                 and self.slot.start_requests is None \
+                and self.enqueue_unlock and self.enqueue_cache.empty() \
                 and not await self.scheduler.has_pending_requests() \
-                and await self.is_idle():
+                and self.is_idle():
             await self.stop(reason='finished')

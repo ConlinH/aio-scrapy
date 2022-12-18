@@ -28,6 +28,7 @@ class DemoRedisSpider(Spider):
         'SCHEDULER_QUEUE_CLASS': 'aioscrapy.queue.redis.SpiderPriorityQueue',
         # 'DUPEFILTER_CLASS': 'aioscrapy.dupefilters.redis.RFPDupeFilter',
         'SCHEDULER_SERIALIZER': 'aioscrapy.serializer.JsonSerializer',
+        'ENQUEUE_CACHE_NUM': 100,
         'REDIS_ARGS': {
             'queue': {
                 'url': 'redis://192.168.18.129:6379/0',

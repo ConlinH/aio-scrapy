@@ -19,6 +19,7 @@ class BaseSchedulerMeta(type):
     def __subclasscheck__(cls, subclass):
         return (
                 hasattr(subclass, "has_pending_requests") and callable(subclass.has_pending_requests)
+                and hasattr(subclass, "enqueue_request") and callable(subclass.enqueue_request)
                 and hasattr(subclass, "enqueue_request_batch") and callable(subclass.enqueue_request_batch)
                 and hasattr(subclass, "next_request") and callable(subclass.next_request)
         )
@@ -51,7 +52,21 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
         raise NotImplementedError()
 
     @abstractmethod
-    async def enqueue_request_batch(self, request: aioscrapy.Request) -> bool:
+    async def enqueue_request_batch(self, requests: List[aioscrapy.Request]) -> bool:
+        """
+        Process a batch requests received by the engine.
+
+        Return ``True`` if the request is stored correctly, ``False`` otherwise.
+
+        If ``False``, the engine will fire a ``request_dropped`` signal, and
+        will not make further attempts to schedule the request at a later time.
+        For reference, the default Scrapy scheduler returns ``False`` when the
+        request is rejected by the dupefilter.
+        """
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def enqueue_request(self, request: aioscrapy.Request) -> bool:
         """
         Process a request received by the engine.
 
