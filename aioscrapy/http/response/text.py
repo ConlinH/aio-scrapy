@@ -5,7 +5,7 @@ discovering (through HTTP headers) to base Response class.
 See documentation in docs/topics/request-response.rst
 """
 
-import json
+import ujson
 import warnings
 from contextlib import suppress
 from typing import Generator
@@ -84,7 +84,7 @@ class TextResponse(Response):
         Deserialize a JSON document to a Python object.
         """
         if self._cached_decoded_json is _NONE:
-            self._cached_decoded_json = json.loads(self.text)
+            self._cached_decoded_json = ujson.loads(self.text)
         return self._cached_decoded_json
 
     @property
