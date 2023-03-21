@@ -187,7 +187,7 @@ class Downloader(BaseDownloader):
                 return
             slot.lastseen = time()
             response = await self.middleware.process_request(self.spider, request)
-            if response is None or isinstance(response, Request):
+            if response is None:
                 request = response or request
                 self.proxy and await self.proxy.add_proxy(request)
                 response = await self.handler.download_request(request, self.spider)
@@ -195,11 +195,12 @@ class Downloader(BaseDownloader):
             self.proxy and self.proxy.check(request, exception=exc)
             response = await self.middleware.process_exception(self.spider, request, exc)
         else:
-            try:
-                self.proxy and self.proxy.check(request, response=response)
-                response = await self.middleware.process_response(self.spider, request, response)
-            except BaseException as exc:
-                response = exc
+            if isinstance(response, Response):
+                try:
+                    self.proxy and self.proxy.check(request, response=response)
+                    response = await self.middleware.process_response(self.spider, request, response)
+                except BaseException as exc:
+                    response = exc
         finally:
             slot.transferring.remove(request)
             slot.active.remove(request)
