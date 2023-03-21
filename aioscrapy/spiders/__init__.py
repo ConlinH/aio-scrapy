@@ -9,6 +9,7 @@ from typing import Optional
 
 from aioscrapy import signals
 from aioscrapy.http.request import Request
+from aioscrapy.http.response import Response
 from aioscrapy.utils.url import url_is_from_spider
 from aioscrapy.utils.deprecate import method_is_overridden
 from aioscrapy.exceptions import DontCloseSpider
@@ -89,10 +90,10 @@ class Spider(object):
         )
         return Request(url, dont_filter=True)
 
-    async def _parse(self, response, **kwargs):
-        return await call_helper(self.parse, response, **kwargs)
+    async def _parse(self, response: Response, **kwargs):
+        return await call_helper(self.parse, response)
 
-    async def parse(self, response, **kwargs):
+    async def parse(self, response: Response):
         raise NotImplementedError(f'{self.__class__.__name__}.parse callback is not defined')
 
     @classmethod

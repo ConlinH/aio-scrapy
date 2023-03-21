@@ -124,6 +124,12 @@ class Response(object):
         """
         raise NotSupported("Response content isn't text")
 
+    def json(self, *a, **kw):
+        """Shortcut method implemented only by responses whose content
+        is text (subclasses of TextResponse).
+        """
+        raise NotSupported("Response content isn't text")
+
     def follow(self, url, callback=None, method='GET', headers=None, body=None,
                cookies=None, meta=None, encoding='utf-8', priority=0, dont_filter=False,
                fingerprint=None, errback=None, cb_kwargs=None, flags=None):
