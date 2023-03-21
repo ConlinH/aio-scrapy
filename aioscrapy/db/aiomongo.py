@@ -16,11 +16,11 @@ class MongoExecutor:
     async def insert(self, table_name, values, db_name=None):
         client, db_name_default = self.pool_manager.get_pool(self.alias)
         db_name = db_name or db_name_default
-        return await client[f'{db_name}'][f'{table_name}_collection'].insert_many(values)
+        return await client[f'{db_name}'][f'{table_name}'].insert_many(values)
 
     def __getattr__(self, table_name: str):
         client, db_name_default = self.pool_manager.get_pool(self.alias)
-        return client[f'{db_name_default}'][f'{table_name}_collection']
+        return client[f'{db_name_default}'][f'{table_name}']
 
 
 class AioMongoManager(AbsDBPoolManager):
@@ -77,7 +77,7 @@ if __name__ == '__main__':
             'db': 'test',
         })
         mongo = mongo_manager.executor('default')
-        # result = await mongo.insert('user', [{'name': 'zhang', 'age': 18}, {'name': 'li', 'age': 20}])
+        result = await mongo.insert('user', [{'name': 'zhang', 'age': 18}, {'name': 'li', 'age': 20}])
         # print('inserted %d docs' % (len(result.inserted_ids),))
 
         document = await mongo.user.find_one({'img_url': {'$gt': 19}})
