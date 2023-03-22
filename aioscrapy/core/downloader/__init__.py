@@ -180,38 +180,37 @@ class Downloader(BaseDownloader):
                 break
 
     async def _download(self, slot: Slot, request: Request) -> None:
-        response = None
+        result = None
         try:
             if self.dupefilter and not request.dont_filter and await self.dupefilter.exist_fingerprint(request):
                 self.dupefilter.log(request, self.spider)
                 return
             slot.lastseen = time()
-            response = await self.middleware.process_request(self.spider, request)
-            if response is None:
-                request = response or request
+            result = await self.middleware.process_request(self.spider, request)
+            if result is None:
                 self.proxy and await self.proxy.add_proxy(request)
-                response = await self.handler.download_request(request, self.spider)
+                result = await self.handler.download_request(request, self.spider)
         except BaseException as exc:
             self.proxy and self.proxy.check(request, exception=exc)
-            response = await self.middleware.process_exception(self.spider, request, exc)
+            result = await self.middleware.process_exception(self.spider, request, exc)
         else:
-            if isinstance(response, Response):
+            if isinstance(result, Response):
                 try:
-                    self.proxy and self.proxy.check(request, response=response)
-                    response = await self.middleware.process_response(self.spider, request, response)
+                    self.proxy and self.proxy.check(request, response=result)
+                    result = await self.middleware.process_response(self.spider, request, result)
                 except BaseException as exc:
-                    response = exc
+                    result = exc
         finally:
             slot.transferring.remove(request)
             slot.active.remove(request)
             self.active.remove(request)
-            if isinstance(response, Response):
+            if isinstance(result, Response):
                 self.dupefilter and not request.dont_filter and await self.dupefilter.add_fingerprint(request)
                 await self.signals.send_catch_log(signal=signals.response_downloaded,
-                                                  response=response,
+                                                  response=result,
                                                   request=request,
                                                   spider=self.spider)
-            await self._call_engine(response, request)
+            await self._call_engine(result, request)
             await self._process_queue(slot)
 
     async def close(self) -> None:
