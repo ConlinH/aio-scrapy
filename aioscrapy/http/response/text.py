@@ -5,15 +5,14 @@ discovering (through HTTP headers) to base Response class.
 See documentation in docs/topics/request-response.rst
 """
 
-import ujson
 import warnings
 from contextlib import suppress
 from typing import Generator
 from urllib.parse import urljoin
 
 import parsel
+import ujson
 from parsel import Selector
-
 from w3lib.encoding import (html_body_declared_encoding, html_to_unicode,
                             http_content_type_encoding, resolve_encoding)
 from w3lib.html import strip_html5_whitespace
@@ -32,8 +31,8 @@ class TextResponse(Response):
     _DEFAULT_ENCODING = 'ascii'
     _cached_decoded_json = _NONE
 
-    def __init__(self, *args, **kwargs):
-        self._encoding = kwargs.pop('encoding', None)
+    def __init__(self, *args, encoding=None, **kwargs):
+        self._encoding = encoding
         self._cached_benc = None
         self._cached_ubody = None
         self._cached_selector = None

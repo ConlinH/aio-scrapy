@@ -7,6 +7,7 @@ from typing import Any, AsyncGenerator, Set, Union, Optional
 import aioscrapy
 from aioscrapy import signals, Spider
 from aioscrapy.exceptions import CloseSpider, DropItem, IgnoreRequest
+from aioscrapy.http import PlaywrightResponse
 from aioscrapy.http import Request, Response
 from aioscrapy.logformatter import LogFormatter
 from aioscrapy.middleware import ItemPipelineManager, SpiderMiddlewareManager
@@ -118,6 +119,9 @@ class Scraper:
                              exc_info=e,
                              extra={'spider': self.spider})
             finally:
+                if isinstance(result, PlaywrightResponse):
+                    await result.release()
+
                 # Delete the cache result from the slot
                 self.slot.finish_response(request, result)
 
@@ -168,7 +172,6 @@ class Scraper:
 
     async def handle_spider_output(self, result: AsyncGenerator, request: Request, response: Response) -> None:
         """Iter each Request/Item (given in the output parameter) returned from the given spider"""
-
         if not result:
             return
 

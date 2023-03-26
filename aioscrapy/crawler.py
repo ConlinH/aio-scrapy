@@ -242,7 +242,7 @@ class CrawlerProcess(CrawlerRunner):
 
     def start(self) -> None:
         if sys.platform.startswith('win'):
-            asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+            asyncio.set_event_loop(asyncio.windows_events.ProactorEventLoop())
         else:
             try:
                 import uvloop
