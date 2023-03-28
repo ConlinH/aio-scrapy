@@ -28,9 +28,14 @@ class PyhttpxHandler(BaseDownloadHandler):
         kwargs = {
             'timeout': self.settings.get('DOWNLOAD_TIMEOUT'),
             'cookies': dict(request.cookies),
-            'data': request.body or None,
             'verify': self.verify_ssl
         }
+        post_data = request.body or None
+        if isinstance(post_data, dict):
+            kwargs['json'] = post_data
+        else:
+            kwargs['data'] = post_data
+
         headers = request.headers or self.settings.get('DEFAULT_REQUEST_HEADERS')
         kwargs['headers'] = headers
 
