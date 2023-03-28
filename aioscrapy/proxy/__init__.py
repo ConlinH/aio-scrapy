@@ -15,12 +15,12 @@ class AbsProxy(metaclass=ABCMeta):
         self.use_proxy = settings.getbool('USE_PROXY', False)
         self.max_count = settings.getint('PROXY_MAX_COUNT', 16)
         self.min_count = settings.getint('PROXY_MIN_COUNT', 1)
-        self.allow_status_code = settings.get('PROXY_ALLOW_STATUS_CODE', [200, 404, 302, 307])
+        self.allow_status_code = settings.get('PROXY_ALLOW_STATUS_CODE', [404])
         self.cache = []
 
     async def add_proxy(self, request):
         """add proxy for request"""
-        if self.use_proxy:
+        if self.use_proxy and request.use_proxy:
             request.meta['proxy'] = await self.get()
         else:
             request.meta.pop('proxy', None)
@@ -39,7 +39,8 @@ class AbsProxy(metaclass=ABCMeta):
     def check(self, request, response=None, exception=None):
         if not self.use_proxy:
             return
-
+        if response and 200 <= response.status < 400:
+            return
         if response and response.status not in self.allow_status_code:
             self.remove(request.meta['proxy'], f"Don't allow response status code:{response.status}")
 

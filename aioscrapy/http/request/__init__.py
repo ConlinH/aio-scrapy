@@ -26,7 +26,7 @@ class Request(object):
         "url", "callback", "method", "headers", "body",
         "cookies", "meta", "encoding", "priority",
         "dont_filter", "errback", "flags", "cb_kwargs",
-        "fingerprint"
+        "fingerprint", "use_proxy"
     )
 
     def __init__(
@@ -45,6 +45,7 @@ class Request(object):
             flags: Optional[List[str]] = None,
             cb_kwargs: Optional[Callable] = None,
             fingerprint: Optional[str] = None,
+            use_proxy: bool = True,
     ):
 
         self._encoding = encoding
@@ -61,6 +62,7 @@ class Request(object):
         self.headers = Headers(headers or {})
         self.dont_filter = dont_filter
         self._fingerprint = fingerprint
+        self.use_proxy=use_proxy
 
         self._meta = dict(meta) if meta else None
         self._cb_kwargs = dict(cb_kwargs) if cb_kwargs else None
