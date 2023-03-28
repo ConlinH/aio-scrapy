@@ -16,13 +16,14 @@ install_requires = [
 extras_require = {
     "all": [
         "aiomysql>=0.1.1", "httpx[http2]>=0.23.0", "aio-pika>=8.1.1",
-        "cryptography", "motor>=3.1.1", "playwright>=1.31.1"
+        "cryptography", "motor>=3.1.1", "playwright>=1.31.1", "pyhttpx>=2.10.1"
     ],
     "aiomysql": ["aiomysql>=0.1.1", "cryptography"],
     "httpx": ["httpx[http2]>=0.23.0"],
     "aio-pika": ["aio-pika>=8.1.1"],
     "mongo": ["motor>=3.1.1"],
     "playwright": ["playwright>=1.31.1"],
+    "pyhttpx": ["pyhttpx>=2.10.1"]
 }
 
 setup(
