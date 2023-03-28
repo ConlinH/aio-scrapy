@@ -325,7 +325,7 @@ class RefererMiddleware:
             if isinstance(resp_or_url, Response):
                 policy_header = resp_or_url.headers.get('Referrer-Policy')
                 if policy_header is not None:
-                    policy_name = to_unicode(policy_header.decode('latin1'))
+                    policy_name = to_unicode(policy_header.decode('latin1') if isinstance(policy_header, bytes) else policy_header)
         if policy_name is None:
             return self.default_policy()
 
