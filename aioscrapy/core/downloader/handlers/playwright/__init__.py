@@ -25,18 +25,22 @@ class PlaywrightHandler(BaseDownloadHandler):
     async def download_request(self, request: Request, spider) -> PlaywrightResponse:
         cookies = dict(request.cookies)
         timeout = request.meta.get('download_timeout', 5) * 1000
-        user_agent = (request.headers or self.settings.get('DEFAULT_REQUEST_HEADERS')).get("User-agent")
+        user_agent = request.headers.get("User-Agent")
         proxy: str = request.meta.get("proxy")
         url = request.url
-
-        driver: PlaywrightDriver = await self._webdriver_pool.get(
-            user_agent=user_agent,
-            proxy=proxy,
+        kwargs = dict(
             timeout=timeout,
             on_event={
-                name.replace('on_event', ''): getattr(spider, name) for name in dir(spider) if name.startswith('on_event')
-            },
+                name.replace('on_event', ''): getattr(spider, name) for name in dir(spider) if
+                name.startswith('on_event')
+            }
         )
+        if proxy:
+            kwargs['proxy'] = proxy
+        if user_agent:
+            kwargs['user_agent'] = user_agent
+
+        driver: PlaywrightDriver = await self._webdriver_pool.get(**kwargs)
         try:
             if cookies:
                 driver.url = url
@@ -44,7 +48,8 @@ class PlaywrightHandler(BaseDownloadHandler):
             await driver.page.goto(url, wait_until=request.meta.get('wait_until', "networkidle"))
             cache_response = {}
             for url_regex in self.url_regexes:
-                async with driver.page.expect_response(url_regex, timeout=int(timeout/len(self.url_regexes))) as result:
+                async with driver.page.expect_response(url_regex,
+                                                       timeout=int(timeout / len(self.url_regexes))) as result:
                     res = await result.value
                     cache_response[url_regex] = PlaywrightResponse(
                         url=res.url,

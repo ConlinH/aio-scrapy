@@ -81,9 +81,9 @@ class PlaywrightDriver:
     def format_context_proxy(proxy) -> ProxySettings:
         parsed_url = urlparse(proxy)
         return ProxySettings(
-            server=urlunparse(parsed_url._replace(netloc=parsed_url.hostname)),
-            username=urlparse(proxy).username,
-            password=urlparse(proxy).password,
+            server=urlunparse(parsed_url._replace(netloc=parsed_url.netloc.split('@')[-1])),
+            username=parsed_url.username,
+            password=parsed_url.password,
         )
 
     async def quit(self):
