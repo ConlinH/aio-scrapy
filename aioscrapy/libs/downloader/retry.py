@@ -31,6 +31,12 @@ try:
 except ImportError:
     pass
 
+try:
+    from pyhttpx.exception import BaseExpetion as PyHttpxError
+    NEED_RETRY_ERROR += (PyHttpxError,)
+except ImportError:
+    pass
+
 from aioscrapy.exceptions import NotConfigured
 from aioscrapy.http.request import Request
 from aioscrapy.spiders import Spider
