@@ -18,6 +18,11 @@ class HttpxDownloadHandler(BaseDownloadHandler):
         self.httpx_client_session_args: dict = self.settings.get('HTTPX_CLIENT_SESSION_ARGS', {})
         self.verify_ssl: bool = self.settings.get("VERIFY_SSL")
         self.ssl_protocol = self.settings.get("SSL_PROTOCOL")  # ssl.PROTOCOL_TLSv1_2
+        if self.settings.getbool("FIX_HTTPX_HEADER", True):
+            # Fixed non-standard response's header 修复不标准的响应头
+            import h11
+            import re
+            h11._readers.header_field_re = re.compile(b"(?P<field_name>.*?):[ \t](?P<field_value>.*?)")
 
     @classmethod
     def from_settings(cls, settings: Settings):
