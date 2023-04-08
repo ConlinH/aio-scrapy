@@ -165,6 +165,7 @@ class ExecutionEngine(object):
             if result is None:
                 return
 
+            result.request = request
             if not isinstance(result, (Request, Response, BaseException)):
                 raise TypeError(
                     "Incorrect type: expected Request, Response or Failure, got %s: %r"
@@ -176,7 +177,6 @@ class ExecutionEngine(object):
                 return
 
             if isinstance(result, Response):
-                result.request = request
                 logkws = self.logformatter.crawled(request, result, self.spider)
                 if logkws is not None:
                     logger.log(*logformatter_adapter(logkws), extra={'spider': self.spider})
