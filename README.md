@@ -15,7 +15,7 @@ English | [中文](./doc/README_ZH.md)
 - Distributed crawling/scraping.
 ### Requirements
 
-- Python 3.7+
+- Python 3.9+
 - Works on Linux, Windows, macOS, BSD
 
 ### Install
