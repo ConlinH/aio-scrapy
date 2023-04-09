@@ -4,6 +4,7 @@ from aioscrapy import Request
 from aioscrapy.core.downloader.handlers import BaseDownloadHandler
 from aioscrapy.http import PlaywrightResponse
 from aioscrapy.settings import Settings
+from aioscrapy.utils.tools import call_helper
 from .driverpool import WebDriverPool
 from .webdriver import PlaywrightDriver
 
@@ -14,6 +15,7 @@ class PlaywrightHandler(BaseDownloadHandler):
     def __init__(self, settings: Settings):
         self.settings = settings
         playwright_client_args = settings.getdict('PLAYWRIGHT_CLIENT_ARGS')
+        self.wait_until = playwright_client_args.get('wait_until', 'domcontentloaded')
         self.url_regexes = playwright_client_args.pop('url_regexes', [])
         pool_size = playwright_client_args.pop('pool_size', settings.getint("CONCURRENT_REQUESTS", 1))
         self._webdriver_pool = WebDriverPool(pool_size=pool_size, driver_cls=PlaywrightDriver, **playwright_client_args)
@@ -45,11 +47,18 @@ class PlaywrightHandler(BaseDownloadHandler):
             if cookies:
                 driver.url = url
                 await driver.set_cookies(cookies)
-            await driver.page.goto(url, wait_until=request.meta.get('wait_until', "networkidle"))
+            await driver.page.goto(url, wait_until=request.meta.get('wait_until', self.wait_until))
             cache_response = {}
+
+            if process_action_fn := getattr(spider, 'process_action', None):
+                action_result = await call_helper(process_action_fn, driver)
+                cache_response['action_result'] = action_result
+
             for url_regex in self.url_regexes:
-                async with driver.page.expect_response(url_regex,
-                                                       timeout=int(timeout / len(self.url_regexes))) as result:
+                async with driver.page.expect_response(
+                        url_regex,
+                        timeout=int(timeout / len(self.url_regexes))
+                ) as result:
                     res = await result.value
                     cache_response[url_regex] = PlaywrightResponse(
                         url=res.url,

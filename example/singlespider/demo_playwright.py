@@ -3,6 +3,7 @@ import logging
 from aioscrapy import Request
 from aioscrapy.spiders import Spider
 from aioscrapy.http import PlaywrightResponse
+from aioscrapy.core.downloader.handlers.playwright import PlaywrightDriver
 
 logger = logging.getLogger(__name__)
 
@@ -68,15 +69,22 @@ class DemoPlaywrightSpider(Spider):
         # res = response.get_response("xxxx")
         # print(res.text[:100])
 
+        img_bytes = response.get_response('action_result')
         yield {
             'pingyin': response.xpath('//div[@id="pinyin"]/span/b/text()').get(),
             'fan': response.xpath('//*[@id="traditional"]/span/text()').get(),
+            'img': img_bytes,
         }
 
         new_character = response.xpath('//a[@class="img-link"]/@href').getall()
         for character in new_character:
             new_url = 'https://hanyu.baidu.com/zici' + character
             yield Request(new_url, callback=self.parse, dont_filter=True)
+
+    async def process_action(self, driver: PlaywrightDriver):
+        """ Do some operations after function page.goto """
+        img_bytes = await driver.page.screenshot(type="jpeg", quality=50)
+        return img_bytes
 
     async def process_item(self, item):
         print(item)

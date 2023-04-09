@@ -34,8 +34,8 @@ class PlaywrightDriver:
         self.driver_type = driver_type
         self.proxy = proxy and self.format_context_proxy(proxy)
         self.viewport = window_size and ViewportSize(width=window_size[0], height=window_size[1])
-        self.browser_args = browser_args
-        self.context_args = context_args
+        self.browser_args = browser_args or {}
+        self.context_args = context_args or {}
         self.timout = timout
         self.on_event = on_event
         self.on_response = on_response
