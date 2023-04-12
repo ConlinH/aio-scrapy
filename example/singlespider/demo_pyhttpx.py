@@ -18,8 +18,8 @@ class DemoPyhttpxSpider(Spider):
         LOG_LEVEL='INFO',
         CLOSE_SPIDER_ON_IDLE=True,
         DOWNLOAD_HANDLERS={
-            'http': 'aioscrapy.core.downloader.handlers.pyhttpx.PyhttpxHandler',
-            'https': 'aioscrapy.core.downloader.handlers.pyhttpx.PyhttpxHandler',
+            'http': 'aioscrapy.core.downloader.handlers.pyhttpx.PyhttpxDownloadHandler',
+            'https': 'aioscrapy.core.downloader.handlers.pyhttpx.PyhttpxDownloadHandler',
         },
         PYHTTPX_CLIENT_ARGS=dict(
             browser_type='chrome',

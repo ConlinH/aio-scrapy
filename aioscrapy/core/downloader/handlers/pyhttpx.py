@@ -12,7 +12,7 @@ from aioscrapy.settings import Settings
 logger = logging.getLogger(__name__)
 
 
-class PyhttpxHandler(BaseDownloadHandler):
+class PyhttpxDownloadHandler(BaseDownloadHandler):
 
     def __init__(self, settings):
         self.settings: Settings = settings
@@ -53,7 +53,7 @@ class PyhttpxHandler(BaseDownloadHandler):
         session = pyhttpx.HttpSession(**session_args)
         response = await asyncio.to_thread(session.request, request.method, request.url, **kwargs)
         return HtmlResponse(
-            '',
+            response.url,
             status=response.status_code,
             headers=response.headers,
             body=response.content,
