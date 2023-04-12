@@ -22,6 +22,7 @@ class Spider(object):
     """
 
     name: Optional[str] = None
+    proxy: Optional["aioscrapy.proxy.AbsProxy"] = None
     custom_settings: Optional[dict] = None
 
     def __init__(self, name=None, **kwargs):
