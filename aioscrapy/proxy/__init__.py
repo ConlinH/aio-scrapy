@@ -39,9 +39,8 @@ class AbsProxy(metaclass=ABCMeta):
     def check(self, request, response=None, exception=None):
         if not self.use_proxy:
             return
-        if response and 200 <= response.status < 400:
-            return
-        if response and response.status not in self.allow_status_code:
+
+        if response and response.status >= 400 and response.status not in self.allow_status_code:
             self.remove(request.meta['proxy'], f"Don't allow response status code:{response.status}")
 
         if exception and isinstance(exception, BaseException):
