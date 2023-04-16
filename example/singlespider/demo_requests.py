@@ -7,8 +7,8 @@ from aioscrapy.http import Response
 logger = logging.getLogger(__name__)
 
 
-class DemoPyhttpxSpider(Spider):
-    name = 'DemoPyhttpxSpider'
+class DemoRequestsSpider(Spider):
+    name = 'DemoRequestsSpider'
 
     custom_settings = dict(
         USER_AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36",
@@ -18,16 +18,12 @@ class DemoPyhttpxSpider(Spider):
         LOG_LEVEL='INFO',
         CLOSE_SPIDER_ON_IDLE=True,
         DOWNLOAD_HANDLERS={
-            'http': 'aioscrapy.core.downloader.handlers.pyhttpx.PyhttpxDownloadHandler',
-            'https': 'aioscrapy.core.downloader.handlers.pyhttpx.PyhttpxDownloadHandler',
+            'http': 'aioscrapy.core.downloader.handlers.requests.RequestsDownloadHandler',
+            'https': 'aioscrapy.core.downloader.handlers.requests.RequestsDownloadHandler',
         },
-        PYHTTPX_CLIENT_ARGS=dict(
-            browser_type='chrome',
-            http2=True
-        )
     )
 
-    start_urls = ['https://tls.peet.ws/api/all']
+    start_urls = ['https://quotes.toscrape.com']
 
     @staticmethod
     async def process_request(request, spider):
@@ -52,4 +48,4 @@ class DemoPyhttpxSpider(Spider):
 
 
 if __name__ == '__main__':
-    DemoPyhttpxSpider.start()
+    DemoRequestsSpider.start()

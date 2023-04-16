@@ -1,8 +1,7 @@
 import asyncio
 import logging
-from urllib.parse import urlparse
 
-import pyhttpx
+import requests
 
 from aioscrapy import Request
 from aioscrapy.core.downloader.handlers import BaseDownloadHandler
@@ -12,11 +11,10 @@ from aioscrapy.settings import Settings
 logger = logging.getLogger(__name__)
 
 
-class PyhttpxDownloadHandler(BaseDownloadHandler):
+class RequestsDownloadHandler(BaseDownloadHandler):
 
     def __init__(self, settings):
         self.settings: Settings = settings
-        self.pyhttpx_client_args: dict = self.settings.get('PYHTTPX_CLIENT_ARGS', {})
         self.verify_ssl: bool = self.settings.get("VERIFY_SSL")
         self.loop = asyncio.get_running_loop()
 
@@ -43,15 +41,10 @@ class PyhttpxDownloadHandler(BaseDownloadHandler):
 
         proxy = request.meta.get("proxy")
         if proxy:
-            parsed_url = urlparse(proxy)
-            kwargs["proxies"] = {'https': parsed_url.netloc.split('@')[-1]}
-            if parsed_url.password or parsed_url.username:
-                kwargs['proxy_auth'] = (parsed_url.username, parsed_url.password)
+            kwargs["proxies"] = {'http': proxy, 'https': proxy}
             logger.debug(f"use proxy {proxy}: {request.url}")
 
-        session_args = self.pyhttpx_client_args.copy()
-        session = pyhttpx.HttpSession(**session_args)
-        response = await asyncio.to_thread(session.request, request.method, request.url, **kwargs)
+        response = await asyncio.to_thread(requests.request, request.method, request.url, **kwargs)
         return HtmlResponse(
             response.url,
             status=response.status_code,

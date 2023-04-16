@@ -37,6 +37,12 @@ try:
 except ImportError:
     pass
 
+try:
+    from requests.exceptions import RequestException as RequestsError
+    NEED_RETRY_ERROR += (RequestsError,)
+except ImportError:
+    pass
+
 from aioscrapy.exceptions import NotConfigured
 from aioscrapy.http.request import Request
 from aioscrapy.spiders import Spider

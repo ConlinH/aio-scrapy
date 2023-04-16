@@ -119,6 +119,7 @@ class Downloader(BaseDownloader):
         self.settings: Settings = crawler.settings
         self.signals: SignalManager = crawler.signals
         self.spider: Spider = crawler.spider
+        self.spider.proxy = proxy
         self._call_engine: Callable = crawler.engine.handle_downloader_output
 
         self.middleware = middleware
