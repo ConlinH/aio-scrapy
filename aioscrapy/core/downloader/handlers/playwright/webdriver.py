@@ -88,9 +88,13 @@ class PlaywrightDriver:
 
     async def quit(self):
         await self.page.close()
-        await self.context.close()
-        await self.browser.close()
-        await self.driver.stop()
+        try:
+            await self.context.close()
+        except:
+            pass
+        finally:
+            await self.browser.close()
+            await self.driver.stop()
 
     async def get_cookies(self):
         return {
