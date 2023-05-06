@@ -43,6 +43,12 @@ try:
 except ImportError:
     pass
 
+try:
+    from playwright._impl._api_types import Error as PlaywrightError
+    NEED_RETRY_ERROR += (PlaywrightError,)
+except ImportError:
+    pass
+
 from aioscrapy.exceptions import NotConfigured
 from aioscrapy.http.request import Request
 from aioscrapy.spiders import Spider

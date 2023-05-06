@@ -26,12 +26,11 @@ class PlaywrightHandler(BaseDownloadHandler):
 
     async def download_request(self, request: Request, spider) -> PlaywrightResponse:
         cookies = dict(request.cookies)
-        timeout = request.meta.get('download_timeout', 5) * 1000
+        timeout = request.meta.get('download_timeout', 30) * 1000
         user_agent = request.headers.get("User-Agent")
         proxy: str = request.meta.get("proxy")
         url = request.url
         kwargs = dict(
-            timeout=timeout,
             on_event={
                 name.replace('on_event', ''): getattr(spider, name) for name in dir(spider) if
                 name.startswith('on_event')
@@ -47,7 +46,7 @@ class PlaywrightHandler(BaseDownloadHandler):
             if cookies:
                 driver.url = url
                 await driver.set_cookies(cookies)
-            await driver.page.goto(url, wait_until=request.meta.get('wait_until', self.wait_until))
+            await driver.page.goto(url, wait_until=request.meta.get('wait_until', self.wait_until), timeout=timeout)
             cache_response = {}
 
             if process_action_fn := getattr(spider, 'process_action', None):
