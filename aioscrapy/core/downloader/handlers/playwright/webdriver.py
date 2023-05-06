@@ -41,10 +41,10 @@ class PlaywrightDriver:
         self.on_response = on_response
         self.user_agent = user_agent
 
-        self.driver: Playwright = None
-        self.browser: Browser = None
-        self.context: BrowserContext = None
-        self.page: Page = None
+        self.driver: Optional[Playwright] = None
+        self.browser: Optional[Browser] = None
+        self.context: Optional[BrowserContext] = None
+        self.page: Optional[Page] = None
         self.url = None
 
     async def setup(self):
@@ -67,7 +67,7 @@ class PlaywrightDriver:
             context_args.update({'user_agent': self.user_agent})
 
         self.driver = await async_playwright().start()
-        # self.browser = await getattr(self.driver, self.driver_type).launch(**browser_args)
+        self.browser = await getattr(self.driver, self.driver_type).launch(**browser_args)
         self.browser = await self.driver.chromium.launch(**browser_args)
         self.context = await self.browser.new_context(**context_args)
         self.page = await self.context.new_page()

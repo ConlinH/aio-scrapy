@@ -13,8 +13,7 @@ class DemoMemorySpider(Spider):
         # 'DOWNLOAD_DELAY': 3,
         # 'RANDOMIZE_DOWNLOAD_DELAY': True,
         # 'CONCURRENT_REQUESTS': 1,
-        # 'LOG_LEVEL': 'INFO'
-        # 'DUPEFILTER_CLASS': 'aioscrapy.dupefilters.disk.RFPDupeFilter',
+        # 'LOG_LEVEL': 'INFO',
         "CLOSE_SPIDER_ON_IDLE": True,
     }
 

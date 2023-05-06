@@ -6,8 +6,8 @@ from aioscrapy.spiders import Spider
 logger = logging.getLogger(__name__)
 
 
-class DemoMemorySpider(Spider):
-    name = 'DemoMemorySpider'
+class DemoMongoSpider(Spider):
+    name = 'DemoMongoSpider'
     custom_settings = {
         "USER_AGENT": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36",
         # 'DOWNLOAD_DELAY': 3,
@@ -68,4 +68,4 @@ class DemoMemorySpider(Spider):
 
 
 if __name__ == '__main__':
-    DemoMemorySpider.start()
+    DemoMongoSpider.start()

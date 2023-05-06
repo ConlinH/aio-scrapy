@@ -86,8 +86,8 @@ class DemoPlaywrightSpider(Spider):
         img_bytes = await driver.page.screenshot(type="jpeg", quality=50)
         return img_bytes
 
-    async def process_item(self, item):
-        print(item)
+    # async def process_item(self, item):
+    #     print(item)
 
 
 if __name__ == '__main__':

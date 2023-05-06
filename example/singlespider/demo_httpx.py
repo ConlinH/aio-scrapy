@@ -6,24 +6,23 @@ from aioscrapy.spiders import Spider
 logger = logging.getLogger(__name__)
 
 
-class DemoMemorySpider(Spider):
-    name = 'DemoMemorySpider'
-    custom_settings = {
-        "USER_AGENT": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36",
-        # 'DOWNLOAD_DELAY': 3,
-        # 'RANDOMIZE_DOWNLOAD_DELAY': True,
-        # 'CONCURRENT_REQUESTS': 1,
-        # 'LOG_LEVEL': 'INFO'
-        # 'DUPEFILTER_CLASS': 'aioscrapy.dupefilters.disk.RFPDupeFilter',
-        "CLOSE_SPIDER_ON_IDLE": True,
-        'DOWNLOAD_HANDLERS': {
+class DemoHttpxSpider(Spider):
+    name = 'DemoHttpxSpider'
+    custom_settings = dict(
+        USER_AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36",
+        # DOWNLOAD_DELAY=3,
+        # RANDOMIZE_DOWNLOAD_DELAY=True,
+        # CONCURRENT_REQUESTS=1,
+        LOG_LEVEL='INFO',
+        CLOSE_SPIDER_ON_IDLE=True,
+        DOWNLOAD_HANDLERS={
             'http': 'aioscrapy.core.downloader.handlers.httpx.HttpxDownloadHandler',
             'https': 'aioscrapy.core.downloader.handlers.httpx.HttpxDownloadHandler',
         },
-        'HTTPX_CLIENT_SESSION_ARGS': {
+        HTTPX_CLIENT_SESSION_ARGS={
             'http2': True
         }
-    }
+    )
 
     start_urls = ['https://quotes.toscrape.com']
 
@@ -59,4 +58,4 @@ class DemoMemorySpider(Spider):
 
 
 if __name__ == '__main__':
-    DemoMemorySpider.start()
+    DemoHttpxSpider.start()

@@ -4,6 +4,7 @@ conditions are met.
 See documentation in docs/topics/extensions.rst
 """
 import asyncio
+from typing import Optional
 from collections import defaultdict
 
 from aioscrapy import signals
@@ -26,13 +27,14 @@ class CloseSpider:
             raise NotConfigured
 
         self.counter = defaultdict(int)
+        self.task: Optional[asyncio.tasks.Task] = None
 
         if self.close_on.get('errorcount'):
             crawler.signals.connect(self.error_count, signal=signals.spider_error)
         if self.close_on.get('pagecount'):
             crawler.signals.connect(self.page_count, signal=signals.response_received)
         if self.close_on.get('timeout'):
-            crawler.signals.connect(self.spider_opened, signal=signals.spider_opened)
+            crawler.signals.connect(self.timeout_close, signal=signals.spider_opened)
         if self.close_on.get('itemcount'):
             crawler.signals.connect(self.item_scraped, signal=signals.item_scraped)
         crawler.signals.connect(self.spider_closed, signal=signals.spider_closed)
@@ -44,26 +46,25 @@ class CloseSpider:
     async def error_count(self, failure, response, spider):
         self.counter['errorcount'] += 1
         if self.counter['errorcount'] == self.close_on['errorcount']:
-            asyncio.create_task(self.crawler.engine.close_spider(spider, 'closespider_errorcount'))
+            asyncio.create_task(self.crawler.engine.stop(reason='closespider_errorcount'))
 
     async def page_count(self, response, request, spider):
         self.counter['pagecount'] += 1
         if self.counter['pagecount'] == self.close_on['pagecount']:
-            asyncio.create_task(self.crawler.engine.close_spider(spider, 'closespider_pagecount'))
+            asyncio.create_task(self.crawler.engine.stop(reason='closespider_pagecount'))
 
-    async def spider_opened(self, spider):
-        self.task = asyncio.create_task(self.timeout_close(spider))
-        
     async def timeout_close(self, spider):
-        await asyncio.sleep(self.close_on['timeout'])
-        asyncio.create_task(self.crawler.engine.close_spider(spider, reason='closespider_timeout'))
-        
+        async def close():
+            await asyncio.sleep(self.close_on['timeout'])
+            asyncio.create_task(self.crawler.engine.stop(reason='closespider_timeout'))
+
+        self.task = asyncio.create_task(close())
+
     async def item_scraped(self, item, spider):
         self.counter['itemcount'] += 1
         if self.counter['itemcount'] == self.close_on['itemcount']:
-            asyncio.create_task(self.crawler.engine.close_spider(spider, 'closespider_itemcount'))
+            asyncio.create_task(self.crawler.engine.stop(reason='closespider_itemcount'))
 
     def spider_closed(self, spider):
-        task = getattr(self, 'task', False)
-        if task and not task.done():
-            task.cancel()
+        if self.task and not self.task.done():
+            self.task.cancel()
