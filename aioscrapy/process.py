@@ -8,8 +8,6 @@ from aioscrapy import Spider
 from aioscrapy.crawler import CrawlerProcess
 from aioscrapy.settings import Settings
 
-S = Union[Settings, dict, None]
-
 
 def loop_initializer():
     if sys.platform.startswith('win'):
