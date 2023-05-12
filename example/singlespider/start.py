@@ -2,16 +2,24 @@ import os
 import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(os.getcwd())))
+from aioscrapy.process import multi_process_run, single_process_run
 
-from aioscrapy.crawler import CrawlerProcess
 from demo_memory import DemoMemorySpider
-from demo_redis import DemoRedisSpider
-from demo_rabbitmq import DemoRabbitmqSpider
+from demo_httpx import DemoHttpxSpider
+from demo_playwright import DemoPlaywrightSpider
 
+if __name__ == '__main__':
 
-cp = CrawlerProcess()
-cp.crawl(DemoMemorySpider)
-cp.crawl(DemoRedisSpider)
-cp.crawl(DemoRabbitmqSpider)
-cp.start()
+    # # 单进程跑多爬虫
+    # single_process_run(
+    #     (DemoMemorySpider, None),
+    #     (DemoHttpxSpider, None),
+    #     # ...
+    # )
 
+    # 多进程跑多爬虫
+    multi_process_run(
+        [(DemoMemorySpider, None), (DemoHttpxSpider, None)],   # 子进程进程里面跑多爬虫
+        (DemoPlaywrightSpider, None),     # 子进程进程里面跑但爬虫
+        # ...
+    )
