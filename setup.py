@@ -24,7 +24,7 @@ extras_require = {
     "aio-pika": ["aio-pika>=8.1.1"],
     "mongo": ["motor>=3.1.1"],
     "playwright": ["playwright>=1.31.1"],
-    "pyhttpx": ["pyhttpx>=2.10.1"]
+    "pyhttpx": ["pyhttpx>=2.10.4"]
 }
 
 setup(

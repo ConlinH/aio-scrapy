@@ -1,6 +1,5 @@
 import asyncio
 import logging
-from urllib.parse import urlparse
 
 import pyhttpx
 
@@ -43,17 +42,15 @@ class PyhttpxDownloadHandler(BaseDownloadHandler):
 
         proxy = request.meta.get("proxy")
         if proxy:
-            parsed_url = urlparse(proxy)
-            kwargs["proxies"] = {'https': parsed_url.netloc.split('@')[-1]}
-            if parsed_url.password or parsed_url.username:
-                kwargs['proxy_auth'] = (parsed_url.username, parsed_url.password)
+            kwargs["proxies"] = {'https': proxy}
+            print(f"use proxy {proxy}: {request.url}")
             logger.debug(f"use proxy {proxy}: {request.url}")
 
         session_args = self.pyhttpx_client_args.copy()
         session = pyhttpx.HttpSession(**session_args)
         response = await asyncio.to_thread(session.request, request.method, request.url, **kwargs)
         return HtmlResponse(
-            response.url,
+            request.url,
             status=response.status_code,
             headers=response.headers,
             body=response.content,
