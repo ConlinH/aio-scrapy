@@ -43,20 +43,19 @@ class PyhttpxDownloadHandler(BaseDownloadHandler):
         proxy = request.meta.get("proxy")
         if proxy:
             kwargs["proxies"] = {'https': proxy}
-            print(f"use proxy {proxy}: {request.url}")
             logger.debug(f"use proxy {proxy}: {request.url}")
 
         session_args = self.pyhttpx_client_args.copy()
-        session = pyhttpx.HttpSession(**session_args)
-        response = await asyncio.to_thread(session.request, request.method, request.url, **kwargs)
-        return HtmlResponse(
-            request.url,
-            status=response.status_code,
-            headers=response.headers,
-            body=response.content,
-            cookies=dict(response.cookies),
-            encoding=response.encoding
-        )
+        with pyhttpx.HttpSession(**session_args) as session:
+            response = await asyncio.to_thread(session.request, request.method, request.url, **kwargs)
+            return HtmlResponse(
+                request.url,
+                status=response.status_code,
+                headers=response.headers,
+                body=response.content,
+                cookies=dict(response.cookies),
+                encoding=response.encoding
+            )
 
     async def close(self):
         pass
