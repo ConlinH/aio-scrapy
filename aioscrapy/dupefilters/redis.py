@@ -35,11 +35,8 @@ class RedisRFPDupeFilter(DupeFilterBase):
         instance = cls(server, key=key, debug=debug, keep_on_close=keep_on_close)
         return instance
 
-    async def exist_fingerprint(self, request: Request) -> bool:
-        return bool(await self.server.sismember(self.key, request.fingerprint))
-
-    async def add_fingerprint(self, request: Request):
-        await self.server.sadd(self.key, request.fingerprint)
+    async def request_seen(self, request: Request):
+        return await self.server.sadd(self.key, request.fingerprint) == 0
 
     async def close(self, reason=''):
         if not self.keep_on_close:
@@ -97,13 +94,12 @@ class BloomFilter(object):
     async def exists(self, value):
         if not value:
             return False
-        exist = True
-        for map_ in self.maps:
-            offset = map_.hash(value)
-            exist = exist & await self.server.getbit(self.key, offset)
-            if not exist:
-                return False
-        return exist
+        async with self.server.pipeline(transaction=True) as pipe:
+            for f in self.maps:
+                offset = f.hash(value)
+                pipe.getbit(self.key, offset)
+            result = await pipe.execute()
+        return any(result)
 
     async def insert(self, value):
         """
@@ -111,9 +107,11 @@ class BloomFilter(object):
         :param value:
         :return:
         """
-        for f in self.maps:
-            offset = f.hash(value)
-            await self.server.setbit(self.key, offset, 1)
+        async with self.server.pipeline(transaction=True) as pipe:
+            for f in self.maps:
+                offset = f.hash(value)
+                pipe.setbit(self.key, offset, 1)
+            await pipe.execute()
 
 
 class RedisBloomDupeFilter(RedisRFPDupeFilter):
@@ -136,11 +134,12 @@ class RedisBloomDupeFilter(RedisRFPDupeFilter):
         hash_number = crawler.settings.getint('BLOOMFILTER_HASH_NUMBER', 6)
         return cls(server, key=key, debug=debug, bit=bit, hash_number=hash_number, keep_on_close=keep_on_close)
 
-    async def exist_fingerprint(self, request: Request) -> bool:
-        return await self.bf.exists(request.fingerprint)
-
-    async def add_fingerprint(self, request: Request) -> None:
+    async def request_seen(self, request: Request) -> bool:
+        fp = await self.bf.exists(request.fingerprint)
+        if fp:
+            return True
         await self.bf.insert(request.fingerprint)
+        return False
 
 
 RFPDupeFilter = RedisRFPDupeFilter

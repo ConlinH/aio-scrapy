@@ -1,10 +1,6 @@
-import asyncio
 import logging
-import time
 from abc import ABCMeta, abstractmethod
-from typing import Optional
 
-from aioscrapy.db import db_manager
 from aioscrapy.utils.python import global_object_name
 
 logger = logging.getLogger('aioscrapy.proxy')

@@ -42,7 +42,7 @@ class DemoRedisSpider(Spider):
     @staticmethod
     async def process_request(request, spider):
         """ request middleware """
-        return request
+        pass
 
     @staticmethod
     async def process_response(request, response, spider):

@@ -29,13 +29,13 @@ class DiskRFPDupeFilter(DupeFilterBase):
             os.makedirs(path)
         return cls(path, debug)
 
-    async def exist_fingerprint(self, request: Request) -> bool:
-        return request.fingerprint in self.fingerprints
-
-    async def add_fingerprint(self, request: Request) -> None:
+    async def request_seen(self, request: Request) -> bool:
+        if request.fingerprint in self.fingerprints:
+            return True
         self.fingerprints.add(request.fingerprint)
         if self.file:
             self.file.write(request.fingerprint + '\n')
+        return False
 
     def close(self, reason: str = '') -> None:
         if self.file:

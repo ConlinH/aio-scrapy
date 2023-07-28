@@ -67,7 +67,6 @@ class PlaywrightDriver:
 
         self.driver = await async_playwright().start()
         self.browser = await getattr(self.driver, self.driver_type).launch(**browser_args)
-        self.browser = await self.driver.chromium.launch(**browser_args)
         self.context = await self.browser.new_context(**context_args)
         self.page = await self.context.new_page()
 

@@ -62,7 +62,7 @@ class Request(object):
         self.headers = Headers(headers or {})
         self.dont_filter = dont_filter
         self._fingerprint = fingerprint
-        self.use_proxy=use_proxy
+        self.use_proxy = use_proxy
 
         self._meta = dict(meta) if meta else None
         self._cb_kwargs = dict(cb_kwargs) if cb_kwargs else None
@@ -111,7 +111,7 @@ class Request(object):
         self._fingerprint = fingerprint
 
     def _get_fingerprint(self) -> str:
-        if self._fingerprint is None:
+        if self._fingerprint is None and not self.dont_filter:
             self._fingerprint = self.make_fingerprint()
         return self._fingerprint
 

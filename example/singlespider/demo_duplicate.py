@@ -16,15 +16,15 @@ class DemoDuplicateSpider(Spider):
         "CLOSE_SPIDER_ON_IDLE": True,
         # 'LOG_FILE': 'test.log',
 
-        'DUPEFILTER_CLASS': 'aioscrapy.dupefilters.disk.RFPDupeFilter',
+        # 'DUPEFILTER_CLASS': 'aioscrapy.dupefilters.disk.RFPDupeFilter',
         # 'DUPEFILTER_CLASS': 'aioscrapy.dupefilters.redis.RFPDupeFilter',
-        # 'DUPEFILTER_CLASS': 'aioscrapy.dupefilters.redis.BloomDupeFilter',
+        'DUPEFILTER_CLASS': 'aioscrapy.dupefilters.redis.BloomDupeFilter',
 
         'SCHEDULER_QUEUE_CLASS': 'aioscrapy.queue.redis.SpiderPriorityQueue',
         'SCHEDULER_SERIALIZER': 'aioscrapy.serializer.JsonSerializer',
         'REDIS_ARGS': {
             'queue': {
-                'url': 'redis://192.168.18.129:6379/0',
+                'url': 'redis://:@192.168.43.165:6379/10',
                 'max_connections': 2,
             }
         }
@@ -36,7 +36,7 @@ class DemoDuplicateSpider(Spider):
     @staticmethod
     async def process_request(request, spider):
         """ request middleware """
-        return request
+        pass
 
     @staticmethod
     async def process_response(request, response, spider):

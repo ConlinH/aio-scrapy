@@ -183,7 +183,7 @@ class Downloader(BaseDownloader):
     async def _download(self, slot: Slot, request: Request) -> None:
         result = None
         try:
-            if self.dupefilter and not request.dont_filter and await self.dupefilter.exist_fingerprint(request):
+            if self.dupefilter and not request.dont_filter and await self.dupefilter.request_seen(request):
                 self.dupefilter.log(request, self.spider)
                 return
             slot.lastseen = time()
@@ -206,7 +206,6 @@ class Downloader(BaseDownloader):
             slot.active.remove(request)
             self.active.remove(request)
             if isinstance(result, Response):
-                self.dupefilter and not request.dont_filter and await self.dupefilter.add_fingerprint(request)
                 await self.signals.send_catch_log(signal=signals.response_downloaded,
                                                   response=result,
                                                   request=request,

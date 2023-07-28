@@ -12,12 +12,8 @@ class DupeFilterBase(metaclass=ABCMeta):
         """ Get Instance of RFPDupeFilter from crawler """
 
     @abstractmethod
-    async def exist_fingerprint(self, request: Request) -> bool:
+    async def request_seen(self, request: Request) -> bool:
         """ Check whether fingerprint of request exists """
-
-    @abstractmethod
-    async def add_fingerprint(self, request: Request) -> None:
-        """ Add fingerprint of request """
 
     @abstractmethod
     def close(self, reason: str = '') -> None:
