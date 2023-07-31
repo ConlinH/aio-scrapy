@@ -1,6 +1,6 @@
 import logging
 
-from aioscrapy import Spider, Request
+from aioscrapy import Request
 from aioscrapy.db import db_manager
 from aioscrapy.dupefilters import DupeFilterBase
 
@@ -99,7 +99,7 @@ class BloomFilter(object):
                 offset = f.hash(value)
                 pipe.getbit(self.key, offset)
             result = await pipe.execute()
-        return any(result)
+        return all(result)
 
     async def insert(self, value):
         """
