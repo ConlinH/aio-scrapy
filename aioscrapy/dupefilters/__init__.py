@@ -16,7 +16,7 @@ class DupeFilterBase(metaclass=ABCMeta):
         """ Check whether fingerprint of request exists """
 
     @abstractmethod
-    def close(self, reason: str = '') -> None:
+    async def close(self, reason: str = '') -> None:
         """ Delete data on close """
 
     @abstractmethod

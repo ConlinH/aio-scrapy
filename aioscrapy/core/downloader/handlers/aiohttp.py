@@ -20,7 +20,7 @@ class AioHttpDownloadHandler(BaseDownloadHandler):
     def __init__(self, settings: Settings):
         self.settings = settings
         self.aiohttp_client_session_args: dict = settings.getdict('AIOHTTP_CLIENT_SESSION_ARGS')
-        self.verify_ssl: bool = settings.getbool("VERIFY_SSL", False)
+        self.verify_ssl: Optional[bool] = settings.get("VERIFY_SSL")
         self.ssl_protocol = settings.get("SSL_PROTOCOL")  # ssl.PROTOCOL_TLSv1_2
         self.use_session: bool = settings.getbool("USE_SESSION", False)
 

@@ -66,7 +66,7 @@ class PlaywrightDriver:
             context_args.update({'user_agent': self.user_agent})
 
         self.driver = await async_playwright().start()
-        self.browser = await getattr(self.driver, self.driver_type).launch(**browser_args)
+        self.browser: Browser = await getattr(self.driver, self.driver_type).launch(**browser_args)
         self.context = await self.browser.new_context(**context_args)
         self.page = await self.context.new_page()
 

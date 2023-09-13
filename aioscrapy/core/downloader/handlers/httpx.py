@@ -16,7 +16,7 @@ class HttpxDownloadHandler(BaseDownloadHandler):
     def __init__(self, settings):
         self.settings: Settings = settings
         self.httpx_client_session_args: dict = self.settings.get('HTTPX_CLIENT_SESSION_ARGS', {})
-        self.verify_ssl: bool = self.settings.get("VERIFY_SSL")
+        self.verify_ssl: bool = self.settings.get("VERIFY_SSL", True)
         self.ssl_protocol = self.settings.get("SSL_PROTOCOL")  # ssl.PROTOCOL_TLSv1_2
         if self.settings.getbool("FIX_HTTPX_HEADER", True):
             # Fixed non-standard response's header 修复不标准的响应头
@@ -39,6 +39,7 @@ class HttpxDownloadHandler(BaseDownloadHandler):
 
         session_args = self.httpx_client_session_args.copy()
         session_args.update({
+            'verify': request.meta.get('verify_ssl', self.verify_ssl),
             'follow_redirects': self.settings.getbool('REDIRECT_ENABLED', True) if request.meta.get(
                 'dont_redirect') is None else request.meta.get('dont_redirect'),
             'max_redirects': self.settings.getint('REDIRECT_MAX_TIMES', 10),

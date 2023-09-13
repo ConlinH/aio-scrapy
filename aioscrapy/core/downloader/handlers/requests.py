@@ -15,7 +15,7 @@ class RequestsDownloadHandler(BaseDownloadHandler):
 
     def __init__(self, settings):
         self.settings: Settings = settings
-        self.verify_ssl: bool = self.settings.get("VERIFY_SSL")
+        self.verify_ssl: bool = self.settings.get("VERIFY_SSL", True)
         self.loop = asyncio.get_running_loop()
 
     @classmethod
@@ -26,7 +26,7 @@ class RequestsDownloadHandler(BaseDownloadHandler):
         kwargs = {
             'timeout': self.settings.get('DOWNLOAD_TIMEOUT'),
             'cookies': dict(request.cookies),
-            'verify': self.verify_ssl,
+            'verify': request.meta.get('verify_ssl', self.verify_ssl),
             'allow_redirects': self.settings.getbool('REDIRECT_ENABLED', True) if request.meta.get(
                 'dont_redirect') is None else request.meta.get('dont_redirect')
         }

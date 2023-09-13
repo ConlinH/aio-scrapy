@@ -23,8 +23,8 @@ version_info = tuple(int(v) if v.isdigit() else v for v in __version__.split('.'
 
 
 # Check minimum required Python version
-if sys.version_info < (3, 7):
-    print("aioscrapy %s requires Python 3.7+" % __version__)
+if sys.version_info < (3, 9):
+    print("aioscrapy %s requires Python 3.9+" % __version__)
     sys.exit(1)
 
 

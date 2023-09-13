@@ -26,7 +26,7 @@ class Request(object):
         "url", "callback", "method", "headers", "body",
         "cookies", "meta", "encoding", "priority",
         "dont_filter", "errback", "flags", "cb_kwargs",
-        "fingerprint", "use_proxy"
+        "use_proxy"
     )
 
     def __init__(
@@ -61,10 +61,11 @@ class Request(object):
         self.cookies = cookies or {}
         self.headers = Headers(headers or {})
         self.dont_filter = dont_filter
-        self._fingerprint = fingerprint
         self.use_proxy = use_proxy
 
         self._meta = dict(meta) if meta else None
+        if fingerprint:
+            self._set_fingerprint(fingerprint)
         self._cb_kwargs = dict(cb_kwargs) if cb_kwargs else None
         self.flags = [] if flags is None else list(flags)
 
@@ -108,12 +109,12 @@ class Request(object):
     body = property(_get_body, _set_body)
 
     def _set_fingerprint(self, fingerprint: str) -> None:
-        self._fingerprint = fingerprint
+        self._meta['_fingerprint'] = fingerprint
 
     def _get_fingerprint(self) -> str:
-        if self._fingerprint is None and not self.dont_filter:
-            self._fingerprint = self.make_fingerprint()
-        return self._fingerprint
+        if not self._meta.get('_fingerprint'):
+            self._meta['_fingerprint'] = self.make_fingerprint()
+        return self._meta.get('_fingerprint')
 
     fingerprint = property(_get_fingerprint, _set_fingerprint)
 
@@ -173,12 +174,9 @@ class Request(object):
             "errback": _find_method(spider, self.errback) if callable(self.errback) else self.errback,
             "headers": dict(self.headers),
         }
-        if self._fingerprint:
-            d['fingerprint'] = self._fingerprint
 
         for attr in self.attributes:
-            if attr != 'fingerprint':
-                d.setdefault(attr, getattr(self, attr))
+            d.setdefault(attr, getattr(self, attr))
         if type(self) is not Request:
             d["_class"] = self.__module__ + '.' + self.__class__.__name__
         return d
