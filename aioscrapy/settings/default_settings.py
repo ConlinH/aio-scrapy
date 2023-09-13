@@ -37,7 +37,6 @@ CONCURRENT_REQUESTS = 16
 CONCURRENT_REQUESTS_PER_DOMAIN = 8
 CONCURRENT_REQUESTS_PER_IP = 0
 
-
 DEFAULT_REQUEST_HEADERS = {
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
     'Accept-Language': 'en',
@@ -55,7 +54,27 @@ DOWNLOAD_HANDLERS_BASE = {
     'https': 'aioscrapy.core.downloader.handlers.aiohttp.AioHttpDownloadHandler',
 }
 
-DOWNLOAD_TIMEOUT = 180      # 3mins
+DOWNLOAD_HANDLERS_MAP = {
+    'aiohttp': DOWNLOAD_HANDLERS_BASE,
+    'httpx': {
+        'http': 'aioscrapy.core.downloader.handlers.httpx.HttpxDownloadHandler',
+        'https': 'aioscrapy.core.downloader.handlers.httpx.HttpxDownloadHandler',
+    },
+    'requests': {
+        'http': 'aioscrapy.core.downloader.handlers.requests.RequestsDownloadHandler',
+        'https': 'aioscrapy.core.downloader.handlers.requests.RequestsDownloadHandler',
+    },
+    'pyhttpx': {
+        'http': 'aioscrapy.core.downloader.handlers.pyhttpx.PyhttpxDownloadHandler',
+        'https': 'aioscrapy.core.downloader.handlers.pyhttpx.PyhttpxDownloadHandler',
+    },
+    'playwright': {
+        'http': 'aioscrapy.core.downloader.handlers.playwright.PlaywrightHandler',
+        'https': 'aioscrapy.core.downloader.handlers.playwright.PlaywrightHandler',
+    },
+}
+
+DOWNLOAD_TIMEOUT = 180  # 3mins
 
 DOWNLOADER = 'aioscrapy.core.downloader.Downloader'
 
@@ -90,7 +109,6 @@ EXTENSIONS_BASE = {
     'aioscrapy.libs.extensions.throttle.AutoThrottle': 0,
 }
 
-
 FILES_STORE_S3_ACL = 'private'
 FILES_STORE_GCS_ACL = ''
 
@@ -104,7 +122,7 @@ ITEM_PIPELINES_BASE = {}
 
 LOG_ENABLED = True
 LOG_ENCODING = 'utf-8'
-LOG_MAX_BYTES = 50*1024*1024
+LOG_MAX_BYTES = 50 * 1024 * 1024
 LOG_BACKUP_COUNT = 10
 LOG_FORMATTER = 'aioscrapy.logformatter.LogFormatter'
 LOG_FORMAT = '%(asctime)s %(process)d [%(name)s] %(levelname)s: %(message)s'
@@ -117,7 +135,6 @@ LOG_SHORT_NAMES = False
 SCHEDULER_DEBUG = False
 
 LOGSTATS_INTERVAL = 60.0
-
 
 METAREFRESH_ENABLED = True
 METAREFRESH_IGNORE_TAGS = []

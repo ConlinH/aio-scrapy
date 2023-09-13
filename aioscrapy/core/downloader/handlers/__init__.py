@@ -30,7 +30,10 @@ class DownloadHandlerManager:
         self._crawler = crawler
 
         # stores acceptable schemes on instancing
-        self._schemes: dict = without_none_values(crawler.settings.getwithbase('DOWNLOAD_HANDLERS')) or {}
+        self._schemes: dict = without_none_values(
+            crawler.settings.get('DOWNLOAD_HANDLERS_MAP', {}).get(crawler.settings.get('DOWNLOAD_HANDLERS_TYPE')) or
+            crawler.settings.getwithbase('DOWNLOAD_HANDLERS')
+        )
         self._handlers: dict = {}  # stores instanced handlers for schemes
         self._notconfigured: dict = {}  # remembers failed handlers
         crawler.signals.connect(self._close, signals.engine_stopped)
