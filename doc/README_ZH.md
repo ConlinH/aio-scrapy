@@ -17,7 +17,7 @@
 - 分布式爬虫。
 ### 需求
 
-- Python 3.7+
+- Python 3.9+
 - Works on Linux, Windows, macOS, BSD
 
 ### 安装
