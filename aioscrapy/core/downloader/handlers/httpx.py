@@ -38,6 +38,7 @@ class HttpxDownloadHandler(BaseDownloadHandler):
         kwargs['headers'] = headers
 
         session_args = self.httpx_client_session_args.copy()
+        session_args.setdefault('http2', True)
         session_args.update({
             'verify': request.meta.get('verify_ssl', self.verify_ssl),
             'follow_redirects': self.settings.getbool('REDIRECT_ENABLED', True) if request.meta.get(

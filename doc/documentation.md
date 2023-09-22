@@ -108,11 +108,57 @@ Please refer to scrapyd's documentation for more details.
 
 ### Other
 
+##### CsvPipeline
+Csv Bulk Storage Middleware
+
+```python
+ITEM_PIPELINES = {
+    'aioscrapy.libs.pipelines.sink.CsvPipeline': 100,
+}
+"""
+# Format requirements for item
+item = {
+    '__csv__': {
+        'filename': 'article',  # 文件名 或 存储的路径及文件名 如：D:\article.xlsx
+    },
+
+    # Below are the item fields
+    'title': "title",
+}
+"""
+```
+
+##### ExeclPipeline
+Execl Bulk Storage Middleware
+
+```python
+ITEM_PIPELINES = {
+    'aioscrapy.libs.pipelines.sink.ExeclPipeline': 100,
+}
+
+"""
+# Format requirements for item
+item = {
+    '__execl__': {
+        'filename': 'article',  # File name to store, eg：D:\article.xlsx
+        'sheet': 'sheet1',  # sheet name,  default: sheet1
+
+        # 'img_fields': ['img'],    # Specify the image fields when you want to download
+        # 'img_size': (100, 100)    # the size of image
+    },
+
+    # Below are the item fields
+    'title': "title",
+    'img': "https://domain/test.png",
+}
+"""
+```
+
 ##### MysqlPipeline
 Mysql Bulk Storage Middleware
 ```python
 ITEM_PIPELINES = {
-    'aioscrapy.libs.pipelines.db.MysqlPipeline': 100,
+    'aioscrapy.libs.pipelines.sink.MysqlPipeline': 100,
 }
 
 # mysql parameter
@@ -146,13 +192,15 @@ SAVE_CACHE_INTERVAL = 10    # Trigger mysql storage every 10 seconds.
 """
 # Format requirements for item
 item = {
-            'save_table_name': 'baidu',  # table name of mysql
-            'save_insert_type': 'insert',   # Save type for mysql
-            'save_db_alias': ['default'],     # Alias of mysql to save
-
-            # Below are the item fields
-            'title': "title",
-        }
+    '__mysql__': {
+        'table_name': 'baidu',  # table name of mysql
+        'insert_type': 'insert',   # Save type for mysql
+        'db_alias': ['default'],     # Alias of mysql to save
+    },
+    
+    # Below are the item fields
+    'title': "title",
+}
 """
 
 ```
@@ -163,7 +211,7 @@ Mongo Bulk Storage Middleware
 
 ```python
 ITEM_PIPELINES = {
-    'aioscrapy.libs.pipelines.db.MongoPipeline': 100,
+    'aioscrapy.libs.pipelines.sink.MongoPipeline': 100,
 }
 
 MONGO_ARGS = {
@@ -177,9 +225,46 @@ SAVE_CACHE_INTERVAL = 10    # Trigger mysql storage every 10 seconds.
 """
 # Format requirements for item
 item = {
-    'save_table_name': 'article',   # table name of mongo
-    'save_db_alias': 'default',     # Alias of mongo to save
-    # 'save_db_name': 'xxx',     # db name of mongo， If not specified, the default value is "MONGO_ARGS" in "db"
+    '__mongo__': {
+        'db_alias': 'default',     # Alias of mongo to save
+        'table_name': 'article',   # table name of mongo
+        # 'db_name': 'xxx',     # db name of mongo， If not specified, the default value is "MONGO_ARGS" in "db"
+      
+    },
+    # Below are the item fields
+    'title': "title",
+}
+"""
+```
+
+
+##### PGPipeline
+PostpreSQL批量存储中间件
+
+```python
+ITEM_PIPELINES = {
+    'aioscrapy.libs.pipelines.sink.PGPipeline': 100,
+}
+PG_ARGS = {
+    'default': {
+        'user': 'user',
+        'password': 'password',
+        'database': 'spider_db',
+        'host': '127.0.0.1'
+    }
+}
+SAVE_CACHE_NUM = 1000  # 每1000个item触发一次存储
+SAVE_CACHE_INTERVAL = 10  # 每10s触发一次存储
+"""
+# Format requirements for item
+item = {
+    '__pg__': {
+        'db_alias': 'default',  # # Alias of PostgreSQL to save
+        'table_name': 'spider_db.article',  # schema and table_name, Separate with "."
+
+        'insert_type': 'insert', # Save type for PostgreSQL
+        # 'on_conflict': 'id',  
+    }
 
     # Below are the item fields
     'title': "title",

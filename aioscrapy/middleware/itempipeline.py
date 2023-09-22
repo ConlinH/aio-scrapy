@@ -1,11 +1,5 @@
-import logging
-
-from aioscrapy.utils.conf import build_component_list
-
 from aioscrapy.middleware.absmanager import AbsMiddlewareManager
-
-
-logger = logging.getLogger(__name__)
+from aioscrapy.utils.conf import build_component_list
 
 
 class ItemPipelineManager(AbsMiddlewareManager):

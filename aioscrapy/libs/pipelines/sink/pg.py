@@ -6,19 +6,19 @@ from aioscrapy.libs.pipelines import DBPipelineBase
 logger = logging.getLogger(__name__)
 
 
-class MysqlPipeline(DBPipelineBase):
+class PGPipeline(DBPipelineBase):
 
     @classmethod
     def from_settings(cls, settings):
-        return cls(settings, 'mysql')
+        return cls(settings, 'pg')
 
     async def _save(self, cache_key):
         table_name = self.table_cache[cache_key]
         try:
             for alias in self.db_alias_cache[cache_key]:
-                async with db_manager.mysql.get(alias, ping=True) as (conn, cursor):
+                async with db_manager.pg.get(alias) as conn:
                     try:
-                        num = await cursor.executemany(
+                        num = await conn.executemany(
                             self.insert_sql_cache[cache_key], self.item_cache[cache_key]
                         )
                         logger.info(f'table:{alias}->{table_name} sum:{len(self.item_cache[cache_key])} ok:{num}')

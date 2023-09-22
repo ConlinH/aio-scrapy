@@ -16,7 +16,7 @@ class PyhttpxDownloadHandler(BaseDownloadHandler):
     def __init__(self, settings):
         self.settings: Settings = settings
         self.pyhttpx_client_args: dict = self.settings.get('PYHTTPX_CLIENT_ARGS', {})
-        self.verify_ssl: bool = self.settings.get("VERIFY_SSL")
+        self.verify_ssl = self.settings.get("VERIFY_SSL", True)
         self.loop = asyncio.get_running_loop()
 
     @classmethod
@@ -46,6 +46,7 @@ class PyhttpxDownloadHandler(BaseDownloadHandler):
             logger.debug(f"use proxy {proxy}: {request.url}")
 
         session_args = self.pyhttpx_client_args.copy()
+        session_args.setdefault('http2', True)
         with pyhttpx.HttpSession(**session_args) as session:
             response = await asyncio.to_thread(session.request, request.method, request.url, **kwargs)
             return HtmlResponse(

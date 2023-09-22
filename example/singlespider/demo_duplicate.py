@@ -16,9 +16,9 @@ class DemoDuplicateSpider(Spider):
         "CLOSE_SPIDER_ON_IDLE": True,
         # 'LOG_FILE': 'test.log',
 
-        # 'DUPEFILTER_CLASS': 'aioscrapy.dupefilters.disk.RFPDupeFilter',
-        # 'DUPEFILTER_CLASS': 'aioscrapy.dupefilters.redis.RFPDupeFilter',
-        'DUPEFILTER_CLASS': 'aioscrapy.dupefilters.redis.BloomDupeFilter',
+        # 'DUPEFILTER_CLASS': 'aioscrapy.dupefilters.disk.RFPDupeFilter',   # 本地文件存储指纹去重
+        # 'DUPEFILTER_CLASS': 'aioscrapy.dupefilters.redis.RFPDupeFilter',  # redis set去重
+        'DUPEFILTER_CLASS': 'aioscrapy.dupefilters.redis.BloomDupeFilter',  # 布隆过滤器去重
 
         'SCHEDULER_QUEUE_CLASS': 'aioscrapy.queue.redis.SpiderPriorityQueue',
         'SCHEDULER_SERIALIZER': 'aioscrapy.serializer.JsonSerializer',

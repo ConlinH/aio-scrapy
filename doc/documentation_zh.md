@@ -129,13 +129,59 @@ scrapyd &
 
 ### 其它
 
+##### CsvPipeline
+csv存储中间件
+
+```python
+ITEM_PIPELINES = {
+    'aioscrapy.libs.pipelines.sink.CsvPipeline': 100,
+}
+"""
+# item的格式要求如下
+item = {
+    '__csv__': {
+        'filename': 'article',  # 文件名 或 存储的路径及文件名 如：D:\article.xlsx
+    },
+
+    # 下面为存储的字段
+    'title': "title",
+}
+"""
+```
+
+##### ExeclPipeline
+execl存储中间件
+
+```python
+ITEM_PIPELINES = {
+    'aioscrapy.libs.pipelines.sink.ExeclPipeline': 100,
+}
+
+"""
+# item的格式要求如下
+item = {
+    '__execl__': {
+        'filename': 'article',  # 文件名 或 存储的路径及文件名 如：D:\article.xlsx
+        'sheet': 'sheet1',  # 表格的sheet名字 不指定默认为sheet1
+
+        # 'img_fields': ['img'],    # 图片字段 当指定图片字段时 自行下载图片 并保存到表格里
+        # 'img_size': (100, 100)    # 指定图片大小时 自动将图片转换为指定大小
+    },
+
+    # 下面为存储的字段
+    'title': "title",
+    'img': "https://domain/test.png",
+}
+"""
+```
+
 ##### MysqlPipeline
 
 Mysql批量存储中间件
 
 ```python
 ITEM_PIPELINES = {
-    'aioscrapy.libs.pipelines.db.MysqlPipeline': 100,
+    'aioscrapy.libs.pipelines.sink.MysqlPipeline': 100,
 }
 
 # mysql parameter
@@ -169,13 +215,20 @@ SAVE_CACHE_INTERVAL = 10  # 每10s触发一次存储
 """
 # item的格式要求如下
 item = {
-            'save_table_name': 'baidu',  # 要存储的表名字
-            'save_insert_type': 'insert',   # 存储的方式
-            'save_db_alias': ['default'],     # 要存储的mysql的库, mysql的alias
+    '__mysql__': {
+        'db_alias': 'default',      # 要存储的mysql, 参数“MYSQL_ARGS”的key
+        'table_name': 'article',  # 要存储的表名字
 
-            # 下面为存储的字段
-            'title': "title",
-        }
+        # 写入数据库的方式： 默认insert方式
+        # insert：普通写入 出现主键或唯一键冲突时抛出异常
+        # update_insert：更新插入 出现主键或唯一键冲突时，更新写入
+        # ignore_insert：忽略写入 写入时出现冲突 丢掉该条数据 不抛出异常
+        'insert_type': 'update_insert',
+    }
+
+    # 下面为存储的字段
+    'title': "title",
+}
 """
 ```
 
@@ -185,7 +238,7 @@ Mongo批量存储中间件
 
 ```python
 ITEM_PIPELINES = {
-    'aioscrapy.libs.pipelines.db.MongoPipeline': 100,
+    'aioscrapy.libs.pipelines.sink.MongoPipeline': 100,
 }
 
 MONGO_ARGS = {
@@ -199,9 +252,49 @@ SAVE_CACHE_INTERVAL = 10  # 每10s触发一次存储
 """
 # item的格式要求如下
 item = {
-    'save_table_name': 'article',   # 要存储的表名字
-    'save_db_alias': 'default',     # 要存储的mongo, 参数“MONGO_ARGS”的key
-    # 'save_db_name': 'xxx',     # 要存储的mongo的库名， 不指定则默认为“MONGO_ARGS”中的“db”值
+    '__mongo__': {
+        'db_alias': 'default',  # 要存储的mongo, 参数“MONGO_ARGS”的key
+        'table_name': 'article',  # 要存储的表名字
+        # 'db_name': 'xxx',     # 要存储的mongo的库名， 不指定则默认为“MONGO_ARGS”中的“db”值
+    }
+
+    # 下面为存储的字段
+    'title': "title",
+}
+"""
+```
+
+##### PGPipeline
+PostpreSQL批量存储中间件
+
+```python
+ITEM_PIPELINES = {
+    'aioscrapy.libs.pipelines.sink.PGPipeline': 100,
+}
+PG_ARGS = {
+    'default': {
+        'user': 'user',
+        'password': 'password',
+        'database': 'spider_db',
+        'host': '127.0.0.1'
+    }
+}
+SAVE_CACHE_NUM = 1000  # 每1000个item触发一次存储
+SAVE_CACHE_INTERVAL = 10  # 每10s触发一次存储
+"""
+# item的格式要求如下
+item = {
+    '__pg__': {
+        'db_alias': 'default',  # 要存储的PostgreSQL, 参数“PG_ARGS”的key
+        'table_name': 'spider_db.article',  # 要存储的schema和表名字，用.隔开
+
+        # 写入数据库的方式：
+        # insert：普通写入 出现主键或唯一键冲突时抛出异常
+        # update_insert：更新插入 出现on_conflict指定的冲突时，更新写入
+        # ignore_insert：忽略写入 写入时出现冲突 丢掉该条数据 不抛出异常
+        'insert_type': 'update_insert',
+        'on_conflict': 'id',     # update_insert方式下的约束
+    }
 
     # 下面为存储的字段
     'title': "title",

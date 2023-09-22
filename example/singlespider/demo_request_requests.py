@@ -17,10 +17,11 @@ class DemoRequestsSpider(Spider):
         CONCURRENT_REQUESTS=1,
         LOG_LEVEL='INFO',
         CLOSE_SPIDER_ON_IDLE=True,
-        DOWNLOAD_HANDLERS={
-            'http': 'aioscrapy.core.downloader.handlers.requests.RequestsDownloadHandler',
-            'https': 'aioscrapy.core.downloader.handlers.requests.RequestsDownloadHandler',
-        },
+        # DOWNLOAD_HANDLERS={
+        #     'http': 'aioscrapy.core.downloader.handlers.requests.RequestsDownloadHandler',
+        #     'https': 'aioscrapy.core.downloader.handlers.requests.RequestsDownloadHandler',
+        # },
+        DOWNLOAD_HANDLERS_TYPE="requests",
     )
 
     start_urls = ['https://quotes.toscrape.com']

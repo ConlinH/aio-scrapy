@@ -33,6 +33,9 @@ class DemoRedisSpider(Spider):
             'queue': {
                 'url': 'redis://192.168.18.129:6379/0',
                 'max_connections': 2,
+                'timeout': None,
+                'retry_on_timeout': True,
+                'health_check_interval': 30
             }
         }
     }

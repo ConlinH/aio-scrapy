@@ -16,6 +16,7 @@ DB_MODULE_MAP = {
     'aiomysql': ('mysql', 'aioscrapy.db.aiomysql.mysql_manager'),
     'aio_pika': ('rabbitmq', 'aioscrapy.db.aiorabbitmq.rabbitmq_manager'),
     'motor': ('mongo', 'aioscrapy.db.aiomongo.mongo_manager'),
+    'asyncpg': ('pg', 'aioscrapy.db.aiopg.pg_manager'),
 }
 
 db_manager_map = {}
