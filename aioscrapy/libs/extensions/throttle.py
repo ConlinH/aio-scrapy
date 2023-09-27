@@ -1,9 +1,6 @@
-import logging
-
-from aioscrapy.exceptions import NotConfigured
 from aioscrapy import signals
-
-logger = logging.getLogger(__name__)
+from aioscrapy.exceptions import NotConfigured
+from aioscrapy.utils.log import logger
 
 
 class AutoThrottle:
@@ -52,13 +49,11 @@ class AutoThrottle:
             logger.info(
                 "slot: %(slot)s | conc:%(concurrency)2d | "
                 "delay:%(delay)5d ms (%(delaydiff)+d) | "
-                "latency:%(latency)5d ms | size:%(size)6d bytes",
-                {
+                "latency:%(latency)5d ms | size:%(size)6d bytes" % {
                     'slot': key, 'concurrency': conc,
                     'delay': slot.delay * 1000, 'delaydiff': diff * 1000,
                     'latency': latency * 1000, 'size': size
-                },
-                extra={'spider': spider}
+                }
             )
 
     def _get_slot(self, request, spider):

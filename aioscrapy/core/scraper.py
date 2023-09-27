@@ -1,7 +1,6 @@
 """This module implements the Scraper component which parses responses and
 extracts information from them"""
 import asyncio
-import logging
 from typing import Any, AsyncGenerator, Set, Union, Optional
 
 import aioscrapy
@@ -12,11 +11,9 @@ from aioscrapy.http import Request, Response
 from aioscrapy.logformatter import LogFormatter
 from aioscrapy.middleware import ItemPipelineManager, SpiderMiddlewareManager
 from aioscrapy.signalmanager import SignalManager
-from aioscrapy.utils.log import logformatter_adapter
+from aioscrapy.utils.log import logger
 from aioscrapy.utils.misc import load_object
-from aioscrapy.utils.tools import call_helper
-
-logger = logging.getLogger(__name__)
+from aioscrapy.utils.tools import call_helper, create_task
 
 
 class Slot:
@@ -113,11 +110,8 @@ class Scraper:
                     await self.handle_spider_error(e, request, result)
                 else:
                     await self.handle_spider_output(output, request, result)
-            except BaseException as e:
-                logger.error('Scraper bug processing %(request)s',
-                             {'request': request},
-                             exc_info=e,
-                             extra={'spider': self.spider})
+            except BaseException:
+                logger.exception('Scraper bug processing %(request)s' % {'request': request})
             finally:
                 if isinstance(result, PlaywrightResponse):
                     await result.release()
@@ -152,23 +146,16 @@ class Scraper:
 
     async def handle_spider_error(self, exc: BaseException, request: Request, response: Response) -> None:
         if isinstance(exc, CloseSpider):
-            asyncio.create_task(self.crawler.engine.close_spider(self.spider, exc.reason or 'cancelled'))
+            create_task(self.crawler.engine.close_spider(self.spider, exc.reason or 'cancelled'))
             return
-        logkws = self.logformatter.spider_error(exc, request, response, self.spider)
-        logger.log(
-            *logformatter_adapter(logkws),
-            exc_info=exc,
-            extra={'spider': self.spider}
-        )
+        logger.log(**self.logformatter.spider_error(exc, request, response, self.spider))
         await self.signals.send_catch_log(
             signal=signals.spider_error,
             failure=exc, response=response,
             spider=self.spider
         )
-        self.crawler.stats.inc_value(
-            "spider_exceptions/%s" % exc.__class__.__name__,
-            spider=self.spider
-        )
+        self.crawler.stats.inc_value("spider_exceptions/%s" % exc.__class__.__name__, spider=self.spider)
+        self.crawler.stats.inc_value("spider_exceptions", spider=self.spider)
 
     async def handle_spider_output(self, result: AsyncGenerator, request: Request, response: Response) -> None:
         """Iter each Request/Item (given in the output parameter) returned from the given spider"""
@@ -202,9 +189,8 @@ class Scraper:
         else:
             typename = type(output).__name__
             logger.error(
-                'Spider must return request, item, or None, got %(typename)r in %(request)s',
-                {'request': request, 'typename': typename},
-                extra={'spider': self.spider},
+                'Spider must return request, item, or None, got %(typename)r in %(request)s' % {'request': request,
+                                                                                                'typename': typename},
             )
 
     async def _log_download_errors(
@@ -215,12 +201,7 @@ class Scraper:
     ) -> None:
         """Process and record errors"""
         if isinstance(download_exception, BaseException) and not isinstance(download_exception, IgnoreRequest):
-            logkws = self.logformatter.download_error(download_exception, request, self.spider)
-            logger.log(
-                *logformatter_adapter(logkws),
-                extra={'spider': self.spider},
-                exc_info=download_exception,
-            )
+            logger.log(**self.logformatter.download_error(download_exception, request, self.spider))
 
         if spider_exception is not download_exception:
             raise spider_exception
@@ -230,23 +211,17 @@ class Scraper:
         self.slot.itemproc_size -= 1
         if isinstance(output, BaseException):
             if isinstance(output, DropItem):
-                logkws = self.logformatter.dropped(item, output, response, self.spider)
-                if logkws is not None:
-                    logger.log(*logformatter_adapter(logkws), extra={'spider': self.spider})
+                logger.log(**self.logformatter.dropped(item, output, response, self.spider))
                 return await self.signals.send_catch_log_deferred(
                     signal=signals.item_dropped, item=item, response=response,
                     spider=self.spider, exception=output)
             else:
-                logkws = self.logformatter.item_error(item, output, response, self.spider)
-                logger.log(*logformatter_adapter(logkws), extra={'spider': self.spider},
-                           exc_info=output)
+                logger.log(**self.logformatter.item_error(item, output, response, self.spider))
                 return await self.signals.send_catch_log_deferred(
                     signal=signals.item_error, item=item, response=response,
                     spider=self.spider, failure=output)
         else:
-            logkws = self.logformatter.scraped(output, response, self.spider)
-            if logkws is not None:
-                logger.log(*logformatter_adapter(logkws), extra={'spider': self.spider})
+            logger.log(**self.logformatter.scraped(output, response, self.spider))
             return await self.signals.send_catch_log_deferred(
                 signal=signals.item_scraped, item=output, response=response,
                 spider=self.spider)

@@ -1,12 +1,12 @@
 """Helper functions for working with signals"""
 import asyncio
-import logging
 
 from pydispatch.dispatcher import Anonymous, Any, disconnect, getAllReceivers, liveReceivers
 from pydispatch.robustapply import robustApply
-from aioscrapy.exceptions import StopDownload
 
-logger = logging.getLogger(__name__)
+from aioscrapy.exceptions import StopDownload
+from aioscrapy.utils.log import logger
+from aioscrapy.utils.tools import create_task
 
 
 class _IgnoredException(Exception):
@@ -22,10 +22,7 @@ async def robustApplyWrap(f, recv, *args, **kw):
             return await result
     except (Exception, BaseException) as exc:  # noqa: E722
         if dont_log is None or not isinstance(exc, dont_log):
-            logger.error("Error caught on signal handler: %(receiver)s",
-                         {'receiver': recv},
-                         exc_info=exc,
-                         extra={'spider': spider})
+            logger.exception(f"Error caught on signal handler: {recv}")
         return exc
 
 
@@ -48,10 +45,12 @@ async def send_catch_log_deferred(signal=Any, sender=Anonymous, *arguments, **na
     """
     dfds = []
     for receiver in liveReceivers(getAllReceivers(sender, signal)):
-        dfds.append(asyncio.create_task(
-            robustApplyWrap(robustApply, receiver, signal=signal, sender=sender, *arguments, **named)))
-    res = await asyncio.gather(*dfds)
-    return res
+        dfds.append(
+            create_task(
+                robustApplyWrap(robustApply, receiver, signal=signal, sender=sender, *arguments, **named)
+            )
+        )
+    return await asyncio.gather(*dfds)
 
 
 def disconnect_all(signal=Any, sender=Any):
@@ -60,4 +59,3 @@ def disconnect_all(signal=Any, sender=Any):
     """
     for receiver in liveReceivers(getAllReceivers(sender, signal)):
         disconnect(receiver, signal=signal, sender=sender)
-

@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import random
 from abc import abstractmethod
 from collections import deque
@@ -16,10 +15,9 @@ from aioscrapy.proxy import AbsProxy
 from aioscrapy.settings import Settings
 from aioscrapy.signalmanager import SignalManager
 from aioscrapy.utils.httpobj import urlparse_cached
+from aioscrapy.utils.log import logger
 from aioscrapy.utils.misc import load_instance
-from aioscrapy.utils.tools import call_helper
-
-logger = logging.getLogger('aioscrapy.downloader')
+from aioscrapy.utils.tools import call_helper, create_task
 
 
 class BaseDownloaderMeta(type):
@@ -135,7 +133,7 @@ class Downloader(BaseDownloader):
         self.active: Set[Request] = set()
         self.slots: dict = {}
         self.running: bool = True
-        asyncio.create_task(self._slot_gc(60))
+        create_task(self._slot_gc(60))
 
     @classmethod
     async def from_crawler(cls, crawler) -> "Downloader":
@@ -170,13 +168,13 @@ class Downloader(BaseDownloader):
                 slot.delay_lock = True
                 await asyncio.sleep(penalty)
                 slot.delay_lock = False
-                asyncio.create_task(self._process_queue(slot))
+                create_task(self._process_queue(slot))
                 return
 
         while slot.queue and slot.free_transfer_slots() > 0:
             request = slot.queue.popleft()
             slot.transferring.add(request)
-            asyncio.create_task(self._download(slot, request))
+            create_task(self._download(slot, request))
             if delay:
                 break
 

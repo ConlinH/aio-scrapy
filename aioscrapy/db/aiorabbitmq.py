@@ -1,4 +1,3 @@
-import logging
 from contextlib import asynccontextmanager
 
 import aio_pika
@@ -7,8 +6,6 @@ from aio_pika.pool import Pool
 
 import aioscrapy
 from aioscrapy.db.absmanager import AbsDBPoolManager
-
-logger = logging.getLogger(__name__)
 
 
 class RabbitmqExecutor:

@@ -1,4 +1,3 @@
-import logging
 import socket
 from contextlib import asynccontextmanager
 
@@ -6,8 +5,6 @@ from aiomysql import create_pool
 
 import aioscrapy
 from aioscrapy.db.absmanager import AbsDBPoolManager
-
-logger = logging.getLogger(__name__)
 
 
 class MysqlExecutor:

@@ -13,7 +13,7 @@ from aioscrapy.crawler import Crawler
 
 
 __all__ = [
-    '__version__', 'version_info', 'Spider', 'Request', 'FormRequest', 'Crawler'
+    '__version__', 'version_info', 'Spider', 'Request', 'FormRequest', 'Crawler', 'Settings'
 ]
 
 

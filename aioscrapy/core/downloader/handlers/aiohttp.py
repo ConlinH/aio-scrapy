@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import re
 import ssl
 from typing import Optional
@@ -10,8 +9,7 @@ from aioscrapy import Request
 from aioscrapy.core.downloader.handlers import BaseDownloadHandler
 from aioscrapy.http import HtmlResponse
 from aioscrapy.settings import Settings
-
-logger = logging.getLogger(__name__)
+from aioscrapy.utils.log import logger
 
 
 class AioHttpDownloadHandler(BaseDownloadHandler):
@@ -41,7 +39,7 @@ class AioHttpDownloadHandler(BaseDownloadHandler):
             'data': request.body or None,
             'allow_redirects': self.settings.getbool('REDIRECT_ENABLED', True) if request.meta.get(
                 'dont_redirect') is None else request.meta.get('dont_redirect'),
-            'max_redirects': self.settings.getint('REDIRECT_MAX_TIMES', 10),
+            'max_redirects': self.settings.getint('REDIRECT_MAX_TIMES', 20),
         }
 
         headers = request.headers or self.settings.get('DEFAULT_REQUEST_HEADERS')

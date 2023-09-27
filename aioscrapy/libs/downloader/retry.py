@@ -9,7 +9,6 @@ RETRY_HTTP_CODES - which HTTP response codes to retry
 Failed pages are collected on the scraping process and rescheduled at the end,
 once the spider has finished crawling all regular (non failed) pages.
 """
-from logging import getLogger, Logger
 from typing import Optional, Union
 
 try:
@@ -21,30 +20,35 @@ NEED_RETRY_ERROR = (TimeoutError, ConnectionRefusedError, IOError)
 
 try:
     from aiohttp.client_exceptions import ClientError
-    NEED_RETRY_ERROR += (ClientError, )
+
+    NEED_RETRY_ERROR += (ClientError,)
 except ImportError:
     pass
 
 try:
     from httpx import HTTPError as HttpxError
-    NEED_RETRY_ERROR += (HttpxError, )
+
+    NEED_RETRY_ERROR += (HttpxError,)
 except ImportError:
     pass
 
 try:
     from pyhttpx.exception import BaseExpetion as PyHttpxError
+
     NEED_RETRY_ERROR += (PyHttpxError,)
 except ImportError:
     pass
 
 try:
     from requests.exceptions import RequestException as RequestsError
+
     NEED_RETRY_ERROR += (RequestsError,)
 except ImportError:
     pass
 
 try:
     from playwright._impl._api_types import Error as PlaywrightError
+
     NEED_RETRY_ERROR += (PlaywrightError,)
 except ImportError:
     pass
@@ -53,8 +57,7 @@ from aioscrapy.exceptions import NotConfigured
 from aioscrapy.http.request import Request
 from aioscrapy.spiders import Spider
 from aioscrapy.utils.python import global_object_name
-
-retry_logger = getLogger(__name__)
+from aioscrapy.utils.log import logger as retry_logger
 
 
 def get_retry_request(
@@ -64,7 +67,7 @@ def get_retry_request(
         reason: Union[str, Exception] = 'unspecified',
         max_retry_times: Optional[int] = None,
         priority_adjust: Optional[int] = None,
-        logger: Logger = retry_logger,
+        logger=retry_logger,
         stats_base_key: str = 'retry',
 ):
     """
@@ -84,9 +87,9 @@ def get_retry_request(
             reason = global_object_name(reason.__class__)
 
         logger.info(
-            "Retrying %(request)s (failed %(retry_times)d times): %(reason)s",
-            {'request': request, 'retry_times': retry_times, 'reason': reason},
-            extra={'spider': spider}
+            "Retrying %(request)s (failed %(retry_times)d times): %(reason)s" % {
+                'request': request, 'retry_times': retry_times, 'reason': reason
+            },
         )
         new_request = request.copy()
         new_request.meta['retry_times'] = retry_times
@@ -102,9 +105,7 @@ def get_retry_request(
         stats.inc_value(f'{stats_base_key}/max_reached')
         logger.error(
             "Gave up retrying %(request)s (failed %(retry_times)d times): "
-            "%(reason)s",
-            {'request': request, 'retry_times': retry_times, 'reason': reason},
-            extra={'spider': spider},
+            "%(reason)s" % {'request': request, 'retry_times': retry_times, 'reason': reason}
         )
         return None
 

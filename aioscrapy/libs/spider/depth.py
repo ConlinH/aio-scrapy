@@ -4,11 +4,9 @@ Depth Spider Middleware
 See documentation in docs/topics/spider-middleware.rst
 """
 
-import logging
-
 from aioscrapy.http import Request
 
-logger = logging.getLogger(__name__)
+from aioscrapy.utils.log import logger
 
 
 class DepthMiddleware:
@@ -35,11 +33,9 @@ class DepthMiddleware:
                 if self.prio:
                     request.priority -= depth * self.prio
                 if self.maxdepth and depth > self.maxdepth:
-                    logger.debug(
-                        "Ignoring link (depth > %(maxdepth)d): %(requrl)s ",
-                        {'maxdepth': self.maxdepth, 'requrl': request.url},
-                        extra={'spider': spider}
-                    )
+                    logger.debug("Ignoring link (depth > %(maxdepth)d): %(requrl)s " % {
+                        'maxdepth': self.maxdepth, 'requrl': request.url
+                    })
                     return False
                 else:
                     if self.verbose_stats:

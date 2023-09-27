@@ -1,16 +1,12 @@
-import logging
-
 from aioscrapy import Request
 from aioscrapy.db import db_manager
 from aioscrapy.dupefilters import DupeFilterBase
 
-logger = logging.getLogger(__name__)
+from aioscrapy.utils.log import logger
 
 
 class RedisRFPDupeFilter(DupeFilterBase):
     """Request Fingerprint duplicates filter built with Set of Redis"""
-
-    logger = logger
 
     def __init__(
             self,
@@ -47,13 +43,12 @@ class RedisRFPDupeFilter(DupeFilterBase):
 
     def log(self, request, spider):
         if self.debug:
-            msg = "Filtered duplicate request: %(request)s"
-            self.logger.debug(msg, {'request': request}, extra={'spider': spider})
+            logger.debug("Filtered duplicate request: %(request)s" % {'request': request})
         elif self.logdupes:
             msg = ("Filtered duplicate request %(request)s"
                    " - no more duplicates will be shown"
                    " (see DUPEFILTER_DEBUG to show all duplicates)")
-            self.logger.debug(msg, {'request': request}, extra={'spider': spider})
+            logger.debug(msg % {'request': request})
             self.logdupes = False
         spider.crawler.stats.inc_value('dupefilter/filtered', spider=spider)
 

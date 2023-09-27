@@ -4,7 +4,7 @@ aioscrapy extension for collecting scraping stats
 import pprint
 import logging
 
-logger = logging.getLogger(__name__)
+from aioscrapy.utils.log import logger
 
 
 class StatsCollector:
@@ -43,8 +43,7 @@ class StatsCollector:
 
     def close_spider(self, spider, reason):
         if self._dump:
-            logger.info("Dumping aioscrapy stats:\n" + pprint.pformat(self._stats),
-                        extra={'spider': spider})
+            logger.info("Dumping aioscrapy stats:\n" + pprint.pformat(self._stats))
         self._persist_stats(self._stats, spider)
 
     def _persist_stats(self, stats, spider):

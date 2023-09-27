@@ -1,4 +1,3 @@
-import logging
 from abc import ABC
 from typing import Optional
 
@@ -7,8 +6,6 @@ from aioscrapy.db import db_manager
 from aioscrapy.queue import AbsQueue
 from aioscrapy.serializer import AbsSerializer
 from aioscrapy.utils.misc import load_object
-
-logger = logging.getLogger(__name__)
 
 
 class RedisQueueBase(AbsQueue, ABC):
@@ -96,8 +93,8 @@ class RedisPriorityQueue(RedisQueueBase):
             stop = count - 1 if count - 1 > 0 else 0
             results, _ = await (
                 pipe.zrange(self.key, 0, stop)
-                    .zremrangebyrank(self.key, 0, stop)
-                    .execute()
+                .zremrangebyrank(self.key, 0, stop)
+                .execute()
             )
         for result in results:
             yield self._decode_request(result)

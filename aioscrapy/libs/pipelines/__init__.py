@@ -1,9 +1,7 @@
 import asyncio
-import logging
-from typing import Optional
 
-
-logger = logging.getLogger(__name__)
+from aioscrapy.utils.log import logger
+from aioscrapy.utils.tools import create_task
 
 
 class SqlFormat:
@@ -107,12 +105,12 @@ class DBPipelineBase(ItemCacheMixin):
         self.item_save_key: str = f'__{db_type}__'
 
     async def open_spider(self, spider):
-        asyncio.create_task(self.save_heartbeat())
+        create_task(self.save_heartbeat())
 
     async def save_heartbeat(self):
         while self.running:
             await asyncio.sleep(self.save_cache_interval)
-            asyncio.create_task(self.save_all())
+            create_task(self.save_all())
 
     async def process_item(self, item, spider):
         save_info = item.pop(self.item_save_key, None)

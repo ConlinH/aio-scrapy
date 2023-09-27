@@ -1,12 +1,8 @@
-import logging
-
 from aioscrapy.exceptions import _InvalidOutput
 from aioscrapy.http import Request, Response
 from aioscrapy.middleware.absmanager import AbsMiddlewareManager
 from aioscrapy.utils.conf import build_component_list
 from aioscrapy.utils.tools import call_helper
-
-logger = logging.getLogger(__name__)
 
 
 class DownloaderMiddlewareManager(AbsMiddlewareManager):
@@ -71,4 +67,3 @@ class DownloaderMiddlewareManager(AbsMiddlewareManager):
             if response:
                 return response
         return exception
-

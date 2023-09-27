@@ -1,11 +1,7 @@
-import logging
-
 from motor.motor_asyncio import AsyncIOMotorClient
 
 import aioscrapy
 from aioscrapy.db.absmanager import AbsDBPoolManager
-
-logger = logging.getLogger(__name__)
 
 
 class MongoExecutor:

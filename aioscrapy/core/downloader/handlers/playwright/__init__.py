@@ -1,5 +1,3 @@
-import logging
-
 from aioscrapy import Request
 from aioscrapy.core.downloader.handlers import BaseDownloadHandler
 from aioscrapy.http import PlaywrightResponse
@@ -7,8 +5,6 @@ from aioscrapy.settings import Settings
 from aioscrapy.utils.tools import call_helper
 from .driverpool import WebDriverPool
 from .webdriver import PlaywrightDriver
-
-logger = logging.getLogger(__name__)
 
 
 class PlaywrightHandler(BaseDownloadHandler):

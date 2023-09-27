@@ -63,8 +63,8 @@ class Request(object):
         self.dont_filter = dont_filter
         self.use_proxy = use_proxy
 
-        self._meta = dict(meta) if meta else None
-        if fingerprint:
+        self._meta = dict(meta) if meta else {}
+        if fingerprint is not None:
             self._set_fingerprint(fingerprint)
         self._cb_kwargs = dict(cb_kwargs) if cb_kwargs else None
         self.flags = [] if flags is None else list(flags)

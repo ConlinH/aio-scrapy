@@ -1,12 +1,9 @@
-import logging
 from contextlib import asynccontextmanager
 
 from asyncpg.pool import create_pool
 
 import aioscrapy
 from aioscrapy.db.absmanager import AbsDBPoolManager
-
-logger = logging.getLogger(__name__)
 
 
 class PGExecutor:
@@ -108,5 +105,6 @@ if __name__ == '__main__':
         async with pg_manager.get('default') as conn:
             result = await conn.fetch('select 1 ')
             print(tuple(result[0]))
+
 
     asyncio.run(test())

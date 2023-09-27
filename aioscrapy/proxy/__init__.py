@@ -1,9 +1,7 @@
-import logging
 from abc import ABCMeta, abstractmethod
 
+from aioscrapy.utils.log import logger
 from aioscrapy.utils.python import global_object_name
-
-logger = logging.getLogger('aioscrapy.proxy')
 
 
 class AbsProxy(metaclass=ABCMeta):

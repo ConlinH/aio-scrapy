@@ -4,14 +4,12 @@ Offsite Spider Middleware
 See documentation in docs/topics/spider-middleware.rst
 """
 import re
-import logging
 import warnings
 
 from aioscrapy import signals
 from aioscrapy.http import Request
 from aioscrapy.utils.httpobj import urlparse_cached
-
-logger = logging.getLogger(__name__)
+from aioscrapy.utils.log import logger
 
 
 class OffsiteMiddleware:
@@ -35,8 +33,8 @@ class OffsiteMiddleware:
                     if domain and domain not in self.domains_seen:
                         self.domains_seen.add(domain)
                         logger.debug(
-                            "Filtered offsite request to %(domain)r: %(request)s",
-                            {'domain': domain, 'request': x}, extra={'spider': spider})
+                            "Filtered offsite request to %(domain)r: %(request)s" % {'domain': domain, 'request': x}
+                        )
                         self.stats.inc_value('offsite/domains', spider=spider)
                     self.stats.inc_value('offsite/filtered', spider=spider)
             else:

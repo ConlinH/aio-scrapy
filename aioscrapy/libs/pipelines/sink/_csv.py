@@ -1,9 +1,8 @@
 import asyncio
 import csv
-import logging
 from typing import Optional
 
-logger = logging.getLogger(__name__)
+from aioscrapy.utils.log import logger
 
 
 class CsvSinkMixin:
@@ -27,7 +26,7 @@ class CsvSinkMixin:
     def _get_writer(self, filename, item):
         writer, *_ = self.csv_writer.get(filename, (None, None))
         if writer is None:
-            file = open(filename, 'w', encoding="UTF8",  newline='')
+            file = open(filename, 'w', encoding="UTF8", newline='')
             writer = csv.writer(file)
             writer.writerow(item.keys())
             self.csv_writer[filename] = (writer, file)

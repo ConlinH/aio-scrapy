@@ -13,6 +13,7 @@ install_requires = [
     'zope.interface>=5.1.0',
     "redis>=4.3.1",
     "aiomultiprocess>=0.9.0",
+    "loguru>=0.7.0",
 ]
 extras_require = {
     "all": [

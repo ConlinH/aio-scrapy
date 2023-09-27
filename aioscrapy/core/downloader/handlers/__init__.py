@@ -1,6 +1,5 @@
 """Download handlers for different schemes"""
 
-import logging
 from abc import abstractmethod
 from typing import Optional
 
@@ -8,10 +7,9 @@ from aioscrapy import signals, Request, Spider
 from aioscrapy.exceptions import NotConfigured, NotSupported
 from aioscrapy.http import HtmlResponse
 from aioscrapy.utils.httpobj import urlparse_cached
+from aioscrapy.utils.log import logger
 from aioscrapy.utils.misc import load_instance
 from aioscrapy.utils.python import without_none_values
-
-logger = logging.getLogger(__name__)
 
 
 class BaseDownloadHandler:
@@ -67,9 +65,7 @@ class DownloadHandlerManager:
             self._notconfigured[scheme] = str(ex)
             return None
         except Exception as ex:
-            logger.error('Loading "%(clspath)s" for scheme "%(scheme)s"',
-                         {"clspath": path, "scheme": scheme},
-                         exc_info=True, extra={'crawler': self._crawler})
+            logger.exception(f'Loading "{path}" for scheme "{scheme}"')
             self._notconfigured[scheme] = str(ex)
             return None
         else:

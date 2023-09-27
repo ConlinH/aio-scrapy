@@ -53,8 +53,8 @@ class DemoHttpxSpider(Spider):
             # yield response.follow(next_page, self.parse)
             yield Request(f"https://quotes.toscrape.com/{next_page}", callback=self.parse)
 
-    async def process_item(self, item):
-        print(item)
+    # async def process_item(self, item):
+    #     print(item)
 
 
 if __name__ == '__main__':

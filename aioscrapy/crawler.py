@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import pprint
 import signal
 import sys
@@ -16,14 +15,9 @@ except ImportError:
 
 from zope.interface.verify import verifyClass
 from aioscrapy.logformatter import LogFormatter
-from aioscrapy import signals, Spider
+from aioscrapy import Spider
 from aioscrapy.settings import overridden_settings, Settings
-from aioscrapy.utils.log import (
-    get_scrapy_root_handler,
-    install_scrapy_root_handler,
-    LogCounterHandler,
-    configure_logging,
-)
+from aioscrapy.utils.log import configure_logging, logger
 from aioscrapy.utils.misc import load_object, load_instance
 from aioscrapy.spiderloader import ISpiderLoader
 from aioscrapy.exceptions import AioScrapyDeprecationWarning
@@ -35,8 +29,6 @@ from aioscrapy.core.engine import ExecutionEngine
 from aioscrapy.signalmanager import SignalManager
 from aioscrapy.utils.ossignal import install_shutdown_handlers, signal_names
 from aioscrapy.statscollectors import StatsCollector
-
-logger = logging.getLogger(__name__)
 
 
 class Crawler:
@@ -64,6 +56,8 @@ class Crawler:
 
     async def crawl(self, *args, **kwargs) -> None:
         try:
+            configure_logging(self.spidercls, self.settings)
+
             if self.crawling:
                 raise RuntimeError("Crawling already taking place")
 
@@ -71,15 +65,7 @@ class Crawler:
             self.signals = SignalManager(self)
             self.stats = load_object(self.settings['STATS_CLASS'])(self)
 
-            handler = LogCounterHandler(self, level=self.settings.get('LOG_LEVEL'))
-            logging.root.addHandler(handler)
-
-            d = dict(overridden_settings(self.settings))
-            logger.info("Overridden settings:\n%(settings)s", {'settings': pprint.pformat(d)})
-
-            if get_scrapy_root_handler() is not None:
-                install_scrapy_root_handler(self.settings)
-            self.signals.connect(lambda: logging.root.removeHandler(handler), signals.engine_stopped)
+            logger.info(f"Overridden settings:\n{pprint.pformat(dict(overridden_settings(self.settings)))}")
 
             self.spider = await self.spidercls.from_crawler(self, *args, **kwargs)
             self.logformatter = await load_instance(self.settings['LOG_FORMATTER'], crawler=self)
@@ -96,12 +82,22 @@ class Crawler:
                 await self.engine.close()
             raise e
 
-    async def stop(self) -> None:
+    async def stop(self, signum=None) -> None:
         """Starts a graceful stop of the crawler and returns a deferred that is
         fired when the crawler is stopped."""
+        if signum is not None:
+            asyncio.current_task().set_name(self.spidercls.name)
+            logger.info(
+                "Received  %(signame)s, shutting down gracefully. Send again to force" % {
+                    'signame': signal_names[signum]
+                }
+            )
         if self.crawling:
             self.crawling = False
             await self.engine.stop()
+
+    def _signal_shutdown(self, signum: Any, _) -> None:
+        asyncio.create_task(self.stop(signum))
 
 
 class CrawlerRunner:
@@ -156,7 +152,7 @@ class CrawlerRunner:
         self.active_crawler(crawler, *args, **kwargs)
 
     def active_crawler(self, crawler: Crawler, *args, **kwargs) -> None:
-        task = asyncio.create_task(crawler.crawl(*args, **kwargs))
+        task = asyncio.create_task(crawler.crawl(*args, **kwargs), name=crawler.spidercls.name)
         self._active.add(task)
 
         def _done(result):
@@ -204,8 +200,8 @@ class CrawlerRunner:
             spidercls = self.spider_loader.load(spidercls)
         return Crawler(spidercls, settings=settings)
 
-    async def stop(self) -> None:
-        await asyncio.gather(*[c.stop() for c in self.crawlers])
+    async def stop(self, signum=None) -> None:
+        await asyncio.gather(*[c.stop(signum) for c in self.crawlers])
 
 
 class CrawlerProcess(CrawlerRunner):
@@ -217,28 +213,25 @@ class CrawlerProcess(CrawlerRunner):
     ) -> None:
         super().__init__(settings)
         install_shutdown_handlers(self._signal_shutdown)
-        configure_logging(self.settings, install_root_handler)
 
     def _signal_shutdown(self, signum: Any, _) -> None:
         install_shutdown_handlers(self._signal_kill)
-        signame = signal_names[signum]
-        logger.info("Received %(signame)s, shutting down gracefully. Send again to force ",
-                    {'signame': signame})
-        asyncio.create_task(self._graceful_stop_reactor())
+        asyncio.create_task(self.stop(signum))
 
     def _signal_kill(self, signum: Any, _) -> None:
         install_shutdown_handlers(signal.SIG_IGN)
         signame = signal_names[signum]
-        logger.info('Received %(signame)s twice, forcing unclean shutdown',
-                    {'signame': signame})
+        logger.info('Received %(signame)s twice, forcing unclean shutdown' % {'signame': signame})
         asyncio.create_task(self._stop_reactor())
 
     async def run(self) -> None:
-        for crawler, (args, kwargs) in self.crawlers.items():
-            self.active_crawler(crawler, *args, **kwargs)
-        while self._active:
-            await asyncio.gather(*self._active)
-        await self.recycle_db_connect()
+        try:
+            for crawler, (args, kwargs) in self.crawlers.items():
+                self.active_crawler(crawler, *args, **kwargs)
+            while self._active:
+                await asyncio.gather(*self._active)
+        finally:
+            await self.recycle_db_connect()
 
     def start(self) -> None:
         if sys.platform.startswith('win'):
@@ -250,10 +243,6 @@ class CrawlerProcess(CrawlerRunner):
             except ImportError:
                 pass
         asyncio.run(self.run())
-
-    async def _graceful_stop_reactor(self) -> None:
-        await self.stop()
-        await self.recycle_db_connect()
 
     async def _stop_reactor(self) -> None:
         try:

@@ -1,6 +1,6 @@
 
 from aioscrapy import signals
-
+from aioscrapy.utils.log import logger
 
 class ${ProjectName}SpiderMiddleware:
     # Not all methods need to be defined. If a method is not defined,
@@ -46,7 +46,7 @@ class ${ProjectName}SpiderMiddleware:
             yield r
 
     async def spider_opened(self, spider):
-        spider.logger.info('Spider opened: %s' % spider.name)
+        logger.info('Spider opened: %s' % spider.name)
 
 
 class ${ProjectName}DownloaderMiddleware:
@@ -93,4 +93,4 @@ class ${ProjectName}DownloaderMiddleware:
         pass
 
     async def spider_opened(self, spider):
-        spider.logger.info('Spider opened: %s' % spider.name)
+        logger.info('Spider opened: %s' % spider.name)

@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import math
 from io import BytesIO
 from typing import Tuple, Optional
@@ -8,7 +7,8 @@ import requests
 import xlsxwriter
 from PIL import Image, ImageFile
 
-logger = logging.getLogger(__name__)
+from aioscrapy.utils.log import logger
+
 try:
     resample = Image.LANCZOS
 except:
@@ -106,15 +106,18 @@ class ExeclSinkMixin:
             self.y_cache[filename_sheet]
 
     def close_execl(self, filename=None):
-        if filename in self.wb_cache.keys():
-            logger.info(f'Closing Execl: {filename}')
-            self.wb_cache.pop(filename, None).close()
-            for filename_sheet in list(self.ws_cache.keys()):
-                if not filename_sheet.startswith(filename):
-                    continue
-                self.ws_cache.pop(filename_sheet, None)
-                self.y_cache.pop(filename_sheet, None)
-                self.fields_cache.pop(filename_sheet, None)
+        if filename not in self.wb_cache:
+            return
+
+        logger.info(f'Closing Execl: {filename}')
+        if wb := self.wb_cache.pop(filename):
+            wb.close()
+        for filename_sheet in list(self.ws_cache.keys()):
+            if not filename_sheet.startswith(filename):
+                continue
+            self.ws_cache.pop(filename_sheet, None)
+            self.y_cache.pop(filename_sheet, None)
+            self.fields_cache.pop(filename_sheet, None)
 
     def close(self):
         for filename in list(self.wb_cache.keys()):
@@ -144,7 +147,6 @@ class ExeclPipeline(ExeclSinkMixin):
 
 
 if __name__ == '__main__':
-
     class TestSpider:
         name = 'TestSpider'
 

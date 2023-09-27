@@ -1,10 +1,9 @@
 # _*_ coding: utf-8 _*_
 
 import asyncio
-import logging
-from typing import Optional, AsyncGenerator, Union, Callable
 from asyncio import Queue
 from asyncio.queues import QueueEmpty
+from typing import Optional, AsyncGenerator, Union, Callable
 
 import aioscrapy
 from aioscrapy import Spider
@@ -17,9 +16,9 @@ from aioscrapy.http import Response
 from aioscrapy.http.request import Request
 from aioscrapy.utils.log import logformatter_adapter
 from aioscrapy.utils.misc import load_instance
-from aioscrapy.utils.tools import call_helper
+from aioscrapy.utils.tools import call_helper, create_task
 
-logger = logging.getLogger(__name__)
+from aioscrapy.utils.log import logger
 
 
 class Slot:
@@ -72,7 +71,7 @@ class ExecutionEngine(object):
         while not self.finish:
             self.running and await self._next_request()
             await asyncio.sleep(1)
-            self.enqueue_cache_num != 1 and asyncio.create_task(self._crawl())
+            self.enqueue_cache_num != 1 and create_task(self._crawl())
             self.running and await self._spider_idle(self.spider)
 
     async def stop(self, reason: str = 'shutdown') -> None:
@@ -83,7 +82,7 @@ class ExecutionEngine(object):
 
         while not self.is_idle():
             await asyncio.sleep(0.2)
-            self.enqueue_cache_num != 1 and asyncio.create_task(self._crawl())
+            self.enqueue_cache_num != 1 and create_task(self._crawl())
         await self.close_spider(self.spider, reason=reason)
         await self.signals.send_catch_log_deferred(signal=signals.engine_stopped)
         self.finish = True
@@ -93,7 +92,7 @@ class ExecutionEngine(object):
             spider: Spider,
             start_requests: Optional[AsyncGenerator] = None
     ) -> None:
-        logger.info("Spider opened", extra={'spider': spider})
+        logger.info("Spider opened")
 
         self.spider = spider
         await call_helper(self.crawler.stats.open_spider, spider)
@@ -145,7 +144,7 @@ class ExecutionEngine(object):
                 self.slot.start_requests = None
             except Exception as e:
                 self.slot.start_requests = None
-                logger.error('Error while obtaining start requests', exc_info=e, extra={'spider': self.spider})
+                logger.exception('Error while obtaining start requests')
             else:
                 request and await self.crawl(request)
             finally:
@@ -177,9 +176,7 @@ class ExecutionEngine(object):
 
             result.request = request
             if isinstance(result, Response):
-                logkws = self.logformatter.crawled(request, result, self.spider)
-                if logkws is not None:
-                    logger.log(*logformatter_adapter(logkws), extra={'spider': self.spider})
+                logger.log(** self.logformatter.crawled(request, result, self.spider))
                 await self.signals.send_catch_log(signals.response_received,
                                                   response=result, request=request, spider=self.spider)
             await self.scraper.enqueue_scrape(result, request)
@@ -207,7 +204,7 @@ class ExecutionEngine(object):
     async def crawl(self, request: Request) -> None:
         if self.enqueue_cache_num == 1:
             await self.scheduler.enqueue_request(request)
-            asyncio.create_task(self._next_request())
+            create_task(self._next_request())
         else:
             await self.enqueue_cache.put(request)
 
@@ -224,15 +221,13 @@ class ExecutionEngine(object):
                 break
         if requests:
             await call_helper(self.scheduler.enqueue_request_batch, requests)
-            asyncio.create_task(self._next_request())
+            create_task(self._next_request())
         self.enqueue_unlock = True
 
     async def close_spider(self, spider: Spider, reason: str = 'cancelled') -> None:
         """Close (cancel) spider and clear all its outstanding requests"""
 
-        logger.info("Closing spider (%(reason)s)",
-                    {'reason': reason},
-                    extra={'spider': spider})
+        logger.info(f"Closing spider ({reason})")
 
         async def close_handler(
                 callback: Callable,
@@ -243,11 +238,7 @@ class ExecutionEngine(object):
             try:
                 await call_helper(callback, *args, **kwargs)
             except (Exception, BaseException) as e:
-                logger.error(
-                    errmsg,
-                    exc_info=e,
-                    extra={'spider': spider}
-                )
+                logger.exception(errmsg)
 
         await close_handler(self.downloader.close, errmsg='Downloader close failure')
 
@@ -260,7 +251,7 @@ class ExecutionEngine(object):
 
         await close_handler(self.crawler.stats.close_spider, spider, reason=reason, errmsg='Stats close failure')
 
-        logger.info("Spider closed (%(reason)s)", {'reason': reason}, extra={'spider': spider})
+        logger.info(f"Spider closed ({reason})")
 
         await close_handler(setattr, self, 'slot', None, errmsg='Error while unassigning slot')
 

@@ -4,9 +4,9 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.getcwd())))
 from aioscrapy.process import multi_process_run, single_process_run
 
-from demo_memory import DemoMemorySpider
-from demo_httpx import DemoHttpxSpider
-from demo_playwright import DemoPlaywrightSpider
+from demo_queue_memory import DemoMemorySpider
+from demo_request_httpx import DemoHttpxSpider
+from demo_request_playwright import DemoPlaywrightSpider
 
 if __name__ == '__main__':
 

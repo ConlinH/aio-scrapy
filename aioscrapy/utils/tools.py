@@ -68,3 +68,11 @@ def exec_js_func(js_file_path, func_name, func_params=None, cwd_path=None, cmd_p
     js = ''.join(lines)
     js_context = execjs.get(name).compile(js, cwd=cwd_path)
     return js_context.call(func_name, *func_params)
+
+
+def create_task(coros, name=None):
+    """ 感染所有的协程函数 """
+    return asyncio.create_task(
+        coros, 
+        name=asyncio.current_task().get_name()
+    )

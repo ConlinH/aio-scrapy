@@ -1,10 +1,9 @@
-import logging
 import asyncio
 
-from aioscrapy.exceptions import NotConfigured
 from aioscrapy import signals
-
-logger = logging.getLogger(__name__)
+from aioscrapy.exceptions import NotConfigured
+from aioscrapy.utils.log import logger
+from aioscrapy.utils.tools import create_task
 
 
 class LogStats:
@@ -15,6 +14,8 @@ class LogStats:
         self.interval = interval
         self.multiplier = 60.0 / self.interval
         self.task = None
+        self.pagesprev = 0
+        self.itemsprev = 0
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -27,9 +28,7 @@ class LogStats:
         return o
 
     def spider_opened(self, spider):
-        self.pagesprev = 0
-        self.itemsprev = 0
-        self.task = asyncio.create_task(self.log(spider))
+        self.task = create_task(self.log(spider))
 
     async def log(self, spider):
         await asyncio.sleep(self.interval)
@@ -43,8 +42,8 @@ class LogStats:
                "scraped %(items)d items (at %(itemrate)d items/min)")
         log_args = {'pages': pages, 'pagerate': prate, 'spider_name': spider.name,
                     'items': items, 'itemrate': irate}
-        logger.info(msg, log_args, extra={'spider': spider})
-        self.task = asyncio.create_task(self.log(spider))
+        logger.info(msg % log_args)
+        self.task = create_task(self.log(spider))
 
     def spider_closed(self, spider, reason):
         if self.task and not self.task.done():

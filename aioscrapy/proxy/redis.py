@@ -1,12 +1,10 @@
 import asyncio
 import time
 from typing import Optional
-import logging
 
 from aioscrapy.db import db_manager
 from aioscrapy.proxy import AbsProxy
-
-logger = logging.getLogger('aioscrapy.proxy')
+from aioscrapy.utils.log import logger
 
 
 class RedisProxy(AbsProxy):

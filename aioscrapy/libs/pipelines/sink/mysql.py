@@ -1,9 +1,7 @@
-import logging
-
 from aioscrapy.db import db_manager
 from aioscrapy.libs.pipelines import DBPipelineBase
 
-logger = logging.getLogger(__name__)
+from aioscrapy.utils.log import logger
 
 
 class MysqlPipeline(DBPipelineBase):

@@ -1,5 +1,4 @@
 import asyncio
-import logging
 
 import requests
 
@@ -7,8 +6,7 @@ from aioscrapy import Request
 from aioscrapy.core.downloader.handlers import BaseDownloadHandler
 from aioscrapy.http import HtmlResponse
 from aioscrapy.settings import Settings
-
-logger = logging.getLogger(__name__)
+from aioscrapy.utils.log import logger
 
 
 class RequestsDownloadHandler(BaseDownloadHandler):

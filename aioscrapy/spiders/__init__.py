@@ -3,17 +3,16 @@ Base class for Scrapy spiders
 
 See documentation in docs/topics/spiders.rst
 """
-import logging
 import warnings
 from typing import Optional
 
 from aioscrapy import signals
+from aioscrapy.exceptions import DontCloseSpider
 from aioscrapy.http.request import Request
 from aioscrapy.http.response import Response
-from aioscrapy.utils.url import url_is_from_spider
 from aioscrapy.utils.deprecate import method_is_overridden
-from aioscrapy.exceptions import DontCloseSpider
 from aioscrapy.utils.tools import call_helper
+from aioscrapy.utils.url import url_is_from_spider
 
 
 class Spider(object):
@@ -34,20 +33,6 @@ class Spider(object):
         if not hasattr(self, 'start_urls'):
             self.start_urls = []
 
-    @property
-    def logger(self):
-        logger = logging.getLogger(self.name)
-        return logging.LoggerAdapter(logger, {'spider': self})
-
-    def log(self, message, level=logging.DEBUG, **kw):
-        """Log the given message at the given log level
-
-        This helper wraps a log call to the logger within the spider, but you
-        can use it directly (e.g. Spider.logger.info('msg')) or use any other
-        Python logger too.
-        """
-        self.logger.log(level, message, **kw)
-
     @classmethod
     async def from_crawler(cls, crawler, *args, **kwargs):
         spider = cls(*args, **kwargs)
@@ -62,34 +47,14 @@ class Spider(object):
         crawler.signals.connect(self.spider_idle, signal=signals.spider_idle)
 
     async def start_requests(self):
-        cls = self.__class__
         if not self.start_urls and hasattr(self, 'start_url'):
             raise AttributeError(
                 "Crawling could not start: 'start_urls' not found "
                 "or empty (but found 'start_url' attribute instead, "
                 "did you miss an 's'?)")
-        if method_is_overridden(cls, Spider, 'make_requests_from_url'):
-            warnings.warn(
-                "Spider.make_requests_from_url method is deprecated; it "
-                "won't be called in future Scrapy releases. Please "
-                "override Spider.start_requests method instead "
-                f"(see {cls.__module__}.{cls.__name__}).",
-            )
-            for url in self.start_urls:
-                yield self.make_requests_from_url(url)
-        else:
-            for url in self.start_urls:
-                yield Request(url)
 
-    def make_requests_from_url(self, url):
-        """ This method is deprecated. """
-        warnings.warn(
-            "Spider.make_requests_from_url method is deprecated: "
-            "it will be removed and not be called by the default "
-            "Spider.start_requests method in future Scrapy releases. "
-            "Please override Spider.start_requests method instead."
-        )
-        return Request(url, dont_filter=True)
+        for url in self.start_urls:
+            yield Request(url)
 
     async def _parse(self, response: Response, **kwargs):
         return await call_helper(self.parse, response)

@@ -106,7 +106,7 @@ EXTENSIONS_BASE = {
     'aioscrapy.libs.extensions.corestats.CoreStats': 0,
     'aioscrapy.libs.extensions.closespider.CloseSpider': 0,
     'aioscrapy.libs.extensions.logstats.LogStats': 0,
-    'aioscrapy.libs.extensions.throttle.AutoThrottle': 0,
+    # 'aioscrapy.libs.extensions.throttle.AutoThrottle': 0,
 }
 
 FILES_STORE_S3_ACL = 'private'
@@ -122,23 +122,17 @@ ITEM_PIPELINES_BASE = {}
 
 LOG_ENABLED = True
 LOG_ENCODING = 'utf-8'
-LOG_MAX_BYTES = 50 * 1024 * 1024
-LOG_BACKUP_COUNT = 10
+LOG_ROTATION = '20MB'
+LOG_RETENTION = 10
 LOG_FORMATTER = 'aioscrapy.logformatter.LogFormatter'
-LOG_FORMAT = '%(asctime)s %(process)d [%(name)s] %(levelname)s: %(message)s'
-LOG_DATEFORMAT = '%Y-%m-%d %H:%M:%S'
-LOG_STDOUT = False
+LOG_FORMAT = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{process}</cyan> | <cyan>{extra[spidername]}</cyan> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> | <level>{message}</level>"
+LOG_STDOUT = True
 LOG_LEVEL = 'DEBUG'
 LOG_FILE = None
-LOG_SHORT_NAMES = False
 
 SCHEDULER_DEBUG = False
 
 LOGSTATS_INTERVAL = 60.0
-
-METAREFRESH_ENABLED = True
-METAREFRESH_IGNORE_TAGS = []
-METAREFRESH_MAXDELAY = 100
 
 NEWSPIDER_MODULE = ''
 

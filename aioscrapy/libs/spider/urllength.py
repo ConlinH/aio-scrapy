@@ -4,12 +4,9 @@ Url Length Spider Middleware
 See documentation in docs/topics/spider-middleware.rst
 """
 
-import logging
-
-from aioscrapy.http import Request
 from aioscrapy.exceptions import NotConfigured
-
-logger = logging.getLogger(__name__)
+from aioscrapy.http import Request
+from aioscrapy.utils.log import logger
 
 
 class UrlLengthMiddleware:
@@ -28,9 +25,9 @@ class UrlLengthMiddleware:
         def _filter(request):
             if isinstance(request, Request) and len(request.url) > self.maxlength:
                 logger.info(
-                    "Ignoring link (url length > %(maxlength)d): %(url)s ",
-                    {'maxlength': self.maxlength, 'url': request.url},
-                    extra={'spider': spider}
+                    "Ignoring link (url length > %(maxlength)d): %(url)s " % {
+                        'maxlength': self.maxlength, 'url': request.url
+                    }
                 )
                 spider.crawler.stats.inc_value('urllength/request_ignored_count', spider=spider)
                 return False

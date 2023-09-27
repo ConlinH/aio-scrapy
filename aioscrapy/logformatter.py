@@ -1,5 +1,4 @@
 import os
-import logging
 
 from aioscrapy.utils.request import referer_str
 
@@ -19,9 +18,8 @@ class LogFormatter:
         request_flags = f' {str(request.flags)}' if request.flags else ''
         response_flags = f' {str(response.flags)}' if response.flags else ''
         return {
-            'level': logging.DEBUG,
-            'msg': CRAWLEDMSG,
-            'args': {
+            '_Logger__level': "DEBUG",
+            '_Logger__message': CRAWLEDMSG % {
                 'status': response.status,
                 'request': request,
                 'request_flags': request_flags,
@@ -36,9 +34,8 @@ class LogFormatter:
         """Logs a message when an item is scraped by a spider."""
         src = response
         return {
-            'level': logging.DEBUG,
-            'msg': SCRAPEDMSG,
-            'args': {
+            '_Logger__level': "DEBUG",
+            '_Logger__message': SCRAPEDMSG % {
                 'src': src,
                 'item': item,
             }
@@ -48,9 +45,8 @@ class LogFormatter:
     def dropped(item, exception, response, spider):
         """Logs a message when an item is dropped while it is passing through the item pipeline."""
         return {
-            'level': logging.WARNING,
-            'msg': DROPPEDMSG,
-            'args': {
+            '_Logger__level': "WARNING",
+            '_Logger__message': DROPPEDMSG % {
                 'exception': exception,
                 'item': item,
             }
@@ -64,9 +60,8 @@ class LogFormatter:
         .. versionadded:: 2.0
         """
         return {
-            'level': logging.ERROR,
-            'msg': ITEMERRORMSG,
-            'args': {
+            '_Logger__level': "ERROR",
+            '_Logger__message': ITEMERRORMSG % {
                 'item': item,
             }
         }
@@ -78,9 +73,8 @@ class LogFormatter:
         .. versionadded:: 2.0
         """
         return {
-            'level': logging.ERROR,
-            'msg': SPIDERERRORMSG,
-            'args': {
+            '_Logger__level': "ERROR",
+            '_Logger__message': SPIDERERRORMSG % {
                 'request': request,
                 'referer': referer_str(request),
             }
@@ -100,9 +94,8 @@ class LogFormatter:
         else:
             msg = DOWNLOADERRORMSG_SHORT
         return {
-            'level': logging.ERROR,
-            'msg': msg,
-            'args': args,
+            '_Logger__level': "ERROR",
+            '_Logger__message': msg % args,
         }
 
     @classmethod

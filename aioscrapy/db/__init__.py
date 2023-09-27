@@ -1,13 +1,11 @@
-import logging
 from importlib import import_module
 from typing import Any
 
 import aioscrapy
 from aioscrapy.db.absmanager import AbsDBPoolManager
 from aioscrapy.db.aioredis import redis_manager
+from aioscrapy.utils.log import logger
 from aioscrapy.utils.misc import load_object
-
-logger = logging.getLogger(__name__)
 
 __all__ = ['db_manager', 'get_pool', 'get_manager']
 

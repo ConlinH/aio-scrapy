@@ -3,11 +3,10 @@ HttpError Spider Middleware
 
 See documentation in docs/topics/spider-middleware.rst
 """
-import logging
 
 from aioscrapy.exceptions import IgnoreRequest
 
-logger = logging.getLogger(__name__)
+from aioscrapy.utils.log import logger
 
 
 class HttpError(IgnoreRequest):
@@ -49,8 +48,7 @@ class HttpErrorMiddleware:
             spider.crawler.stats.inc_value(
                 f'httperror/response_ignored_status_count/{response.status}'
             )
-            logger.info(
-                "Ignoring response %(response)r: HTTP status code is not handled or not allowed",
-                {'response': response}, extra={'spider': spider},
-            )
+            logger.info("Ignoring response %(response)r: HTTP status code is not handled or not allowed" % {
+                'response': response
+            })
             return []

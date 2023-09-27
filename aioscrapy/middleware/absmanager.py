@@ -1,13 +1,11 @@
-import logging
 import pprint
 from abc import ABCMeta, abstractmethod
 from collections import defaultdict, deque
 
 from aioscrapy.exceptions import NotConfigured
+from aioscrapy.utils.log import logger
 from aioscrapy.utils.misc import load_instance
 from aioscrapy.utils.tools import call_helper
-
-logger = logging.getLogger(__name__)
 
 
 class AbsMiddlewareManager(object, metaclass=ABCMeta):
@@ -38,14 +36,9 @@ class AbsMiddlewareManager(object, metaclass=ABCMeta):
             except NotConfigured as e:
                 if e.args:
                     clsname = clspath.split('.')[-1]
-                    logger.warning("Disabled %(clsname)s: %(eargs)s",
-                                   {'clsname': clsname, 'eargs': e.args[0]},
-                                   extra={'crawler': crawler})
+                    logger.warning("Disabled %(clsname)s: %(eargs)s" % {'clsname': clsname, 'eargs': e.args[0]})
 
-        logger.info("Enabled %(componentname)ss:\n%(enabledlist)s",
-                    {'componentname': cls.component_name,
-                     'enabledlist': pprint.pformat(enabled)},
-                    extra={'crawler': crawler})
+        logger.info(f"Enabled {cls.component_name}s:\n{pprint.pformat(enabled)}")
         return cls(*middlewares)
 
     @classmethod
