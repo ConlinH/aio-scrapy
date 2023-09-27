@@ -14,7 +14,6 @@ from aioscrapy.core.scraper import Scraper
 from aioscrapy.exceptions import DontCloseSpider
 from aioscrapy.http import Response
 from aioscrapy.http.request import Request
-from aioscrapy.utils.log import logformatter_adapter
 from aioscrapy.utils.misc import load_instance
 from aioscrapy.utils.tools import call_helper, create_task
 

@@ -30,6 +30,7 @@ class InfluxHttp(InfluxBase):
         influxdb_url = settings.get('METRIC_INFLUXDB_URL')
         token = settings.get('METRIC_INFLUXDB_TOKEN')
         location = settings.get('METRIC_LOCATION')
+        self.retry_times = settings.getint('METRIC_RETRY_TIMES', 5)
         self.location = location or f"{platform.node()}_{os.getpid()}"
         self.spider_name = spider_name
         self.session = ClientSession(headers={
@@ -54,11 +55,18 @@ class InfluxHttp(InfluxBase):
                     continue
                 cnt = current_cnt - obj.prev.get(metric_name, 0)
                 if cnt:
-                    data += self.format_metric(metric_name.replace('/', '-'), cnt, self.spider_name,
-                                               self.location) + '\n'
+                    data += self.format_metric(
+                        metric_name.replace('/', '-'), cnt, self.spider_name, self.location
+                    ) + '\n'
                 obj.prev[metric_name] = current_cnt
             if data:
-                await self.emit(data)
+                for _ in range(self.retry_times):
+                    try:
+                        await self.emit(data)
+                        return
+                    except:
+                        continue
+                logger.warning(f"emit metric failed:\n{data}")
 
     async def close(self):
         if self.session is not None:

@@ -13,7 +13,7 @@ class DemoMemorySpider(Spider):
         # 'DOWNLOAD_DELAY': 3,
         # 'RANDOMIZE_DOWNLOAD_DELAY': True,
         # 'CONCURRENT_REQUESTS': 1,
-        'LOG_LEVEL': 'INFO',
+        'LOG_LEVEL': 'DEBUG',
         "CLOSE_SPIDER_ON_IDLE": True,
     }
 
@@ -40,7 +40,6 @@ class DemoMemorySpider(Spider):
                 'author': quote.xpath('span/small/text()').get(),
                 'text': quote.css('span.text::text').get(),
             }
-            raise Exception(111)
 
         next_page = response.css('li.next a::attr("href")').get()
         if next_page is not None:

@@ -6,7 +6,6 @@ from typing import Type
 from loguru import logger as _logger
 
 from aioscrapy import Settings, Spider
-from aioscrapy.exceptions import AioScrapyDeprecationWarning
 
 _logger.remove(0)
 
@@ -32,34 +31,19 @@ def configure_logging(spider: Type[Spider], settings: Settings):
         )
 
 
-def logformatter_adapter(logkws):
-    """
-    Helper that takes the dictionary output from the methods in LogFormatter
-    and adapts it into a tuple of positional arguments for logger.log calls,
-    handling backward compatibility as well.
-    """
-    if not {'level', 'msg', 'args'} <= set(logkws):
-        warnings.warn('Missing keys in LogFormatter method',
-                      AioScrapyDeprecationWarning)
-
-    if 'format' in logkws:
-        warnings.warn('`format` key in LogFormatter methods has been '
-                      'deprecated, use `msg` instead',
-                      AioScrapyDeprecationWarning)
-
-    level = logkws.get('level', "INFO")
-    message = logkws.get('format', logkws.get('msg'))
-    # NOTE: This also handles 'args' being an empty dict, that case doesn't
-    # play well in logger.log calls
-    args = logkws if not logkws.get('args') else logkws['args']
-    return level, message, args
-
-
 class AioScrapyLogger:
+    __slots__ = (
+        'catch', 'complete', 'critical', 'debug', 'error', 'exception',
+        'info', 'log', 'patch', 'success', 'trace', 'warning'
+    )
 
-    def __getattr__(self, item):
-        spider_name = asyncio.current_task().get_name()
-        return getattr(_logger.bind(spidername=spider_name), item)
+    def __getattr__(self, method):
+        try:
+            spider_name = asyncio.current_task().get_name()
+            return getattr(_logger.bind(spidername=spider_name), method)
+        except Exception as e:
+            warnings.warn(f'Error on get logger: {e}')
+            return getattr(_logger, method)
 
 
-logger: Type[_logger] = AioScrapyLogger()
+logger = AioScrapyLogger()

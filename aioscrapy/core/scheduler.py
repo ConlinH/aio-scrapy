@@ -6,6 +6,7 @@ from aioscrapy.queue import AbsQueue
 from aioscrapy.statscollectors import StatsCollector
 from aioscrapy.utils.misc import load_instance
 from aioscrapy.utils.tools import call_helper
+from aioscrapy.utils.log import logger
 
 
 class BaseSchedulerMeta(type):
@@ -122,7 +123,7 @@ class Scheduler(BaseScheduler):
             await instance.flush()
 
         count = await call_helper(instance.queue.len)
-        count and crawler.spider.log("Resuming crawl (%d requests scheduled)" % count)
+        count and logger.info("Resuming crawl (%d requests scheduled)" % count)
 
         return instance
 
