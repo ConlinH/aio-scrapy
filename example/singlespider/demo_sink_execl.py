@@ -1,11 +1,4 @@
-import datetime
-import logging
-import time
-
-from aioscrapy import Request
-from aioscrapy.spiders import Spider
-
-logger = logging.getLogger(__name__)
+from aioscrapy import Spider, logger
 
 
 class DemoExeclSpider(Spider):
@@ -58,7 +51,7 @@ class DemoExeclSpider(Spider):
             }
 
     async def process_item(self, item):
-        print(item)
+        logger.info(item)
 
 
 if __name__ == '__main__':

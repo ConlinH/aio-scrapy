@@ -22,10 +22,10 @@ class DemoMetricSpider(Spider):
         },
 
         # http(侵入式) 使用http协议将监控指标写入influxdb2
-        # METRIC_INFLUXDB_URL="http://127.0.0.1:8086/api/v2/write?org=spiderman&bucket=spider-metric&precision=ns",
-        # METRIC_INFLUXDB_TOKEN="YequFPGDEuukHUG9l8l2nlaatufGQK_UOD7UBpo3KvB8jIg5-cFa89GLXYfgk76M2sHvEtERpAXK7_fMNsBjAA==",
+        # METRIC_INFLUXDB_URL="http://192.168.15.111:8086/api/v2/write?org=spiderman&bucket=spider-metric&precision=ns",
+        # METRIC_INFLUXDB_TOKEN="YequFPGDEuukHUG9l8l2nlaatufGQK_UOD7MBpo3KvB8jIg5-cFa89GLXYfgk76M2sHvEtERpAXK7_fMNsBjAA==",
 
-        # log + vector(非侵入式) 将监控指标写入单独的日志文件，利用vector收集日志写入influxdb2
+        # # log + vector(非侵入式) 将监控指标写入单独的日志文件，利用vector收集日志写入influxdb2
         METRIC_LOG_ARGS=dict(sink='DemoMetricSpider.metric', rotation='20MB', retention=3)
     )
 

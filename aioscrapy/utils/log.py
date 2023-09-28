@@ -5,7 +5,8 @@ from typing import Type
 
 from loguru import logger as _logger
 
-from aioscrapy import Settings, Spider
+from aioscrapy.spiders import Spider
+from aioscrapy.settings import Settings
 
 _logger.remove(0)
 

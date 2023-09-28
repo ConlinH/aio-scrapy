@@ -1,8 +1,5 @@
-import logging
 
-from aioscrapy.spiders import Spider
-
-logger = logging.getLogger(__name__)
+from aioscrapy import Spider, logger
 
 
 class DemoRabbitmqSpider(Spider):
@@ -56,7 +53,7 @@ class DemoRabbitmqSpider(Spider):
             yield response.follow(next_page, self.parse)
 
     async def process_item(self, item):
-        print(item)
+        logger.info(item)
 
 
 if __name__ == '__main__':

@@ -1,10 +1,6 @@
-import logging
 
-from aioscrapy import Request
-from aioscrapy.spiders import Spider
+from aioscrapy import Request, logger, Spider
 from aioscrapy.http import Response
-
-logger = logging.getLogger(__name__)
 
 
 class DemoPyhttpxSpider(Spider):
@@ -49,7 +45,7 @@ class DemoPyhttpxSpider(Spider):
         print(response.text)
 
     async def process_item(self, item):
-        print(item)
+        logger.info(item)
 
 
 if __name__ == '__main__':

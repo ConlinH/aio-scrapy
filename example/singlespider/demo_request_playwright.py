@@ -1,11 +1,6 @@
-import logging
-
-from aioscrapy import Request
-from aioscrapy.spiders import Spider
+from aioscrapy import Request, logger, Spider
 from aioscrapy.http import PlaywrightResponse
 from aioscrapy.core.downloader.handlers.playwright import PlaywrightDriver
-
-logger = logging.getLogger(__name__)
 
 
 class DemoPlaywrightSpider(Spider):
@@ -87,8 +82,8 @@ class DemoPlaywrightSpider(Spider):
         img_bytes = await driver.page.screenshot(type="jpeg", quality=50)
         return img_bytes
 
-    # async def process_item(self, item):
-    #     print(item)
+    async def process_item(self, item):
+        logger.info(item)
 
 
 if __name__ == '__main__':

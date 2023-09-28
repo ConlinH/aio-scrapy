@@ -1,9 +1,4 @@
-import logging
-
-from aioscrapy import Request
-from aioscrapy.spiders import Spider
-
-logger = logging.getLogger(__name__)
+from aioscrapy import Request, logger, Spider
 
 
 class DemoHttpxSpider(Spider):
@@ -53,8 +48,8 @@ class DemoHttpxSpider(Spider):
             # yield response.follow(next_page, self.parse)
             yield Request(f"https://quotes.toscrape.com/{next_page}", callback=self.parse)
 
-    # async def process_item(self, item):
-    #     print(item)
+    async def process_item(self, item):
+        logger.info(item)
 
 
 if __name__ == '__main__':

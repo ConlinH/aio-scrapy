@@ -1,9 +1,4 @@
-import logging
-
-from aioscrapy import Request
-from aioscrapy.spiders import Spider
-
-logger = logging.getLogger(__name__)
+from aioscrapy import Request, logger, Spider
 
 
 class DemoMemorySpider(Spider):
@@ -13,7 +8,7 @@ class DemoMemorySpider(Spider):
         # 'DOWNLOAD_DELAY': 3,
         # 'RANDOMIZE_DOWNLOAD_DELAY': True,
         # 'CONCURRENT_REQUESTS': 1,
-        'LOG_LEVEL': 'DEBUG',
+        'LOG_LEVEL': 'INFO',
         "CLOSE_SPIDER_ON_IDLE": True,
     }
 
@@ -46,8 +41,8 @@ class DemoMemorySpider(Spider):
             # yield response.follow(next_page, self.parse)
             yield Request(f"https://quotes.toscrape.com{next_page}", callback=self.parse)
 
-    # async def process_item(self, item):
-    #     print(item)
+    async def process_item(self, item):
+        logger.info(item)
 
 
 if __name__ == '__main__':

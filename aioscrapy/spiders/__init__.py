@@ -3,14 +3,12 @@ Base class for Scrapy spiders
 
 See documentation in docs/topics/spiders.rst
 """
-import warnings
 from typing import Optional
 
 from aioscrapy import signals
 from aioscrapy.exceptions import DontCloseSpider
 from aioscrapy.http.request import Request
 from aioscrapy.http.response import Response
-from aioscrapy.utils.deprecate import method_is_overridden
 from aioscrapy.utils.tools import call_helper
 from aioscrapy.utils.url import url_is_from_spider
 

@@ -1,8 +1,5 @@
-import logging
 
-from aioscrapy.spiders import Spider
-
-logger = logging.getLogger(__name__)
+from aioscrapy import Spider, logger
 
 
 class DemoRedisSpider(Spider):
@@ -69,7 +66,7 @@ class DemoRedisSpider(Spider):
             yield response.follow(next_page, self.parse, dont_filter=False)
 
     async def process_item(self, item):
-        print(item)
+        logger.info(item)
 
 
 if __name__ == '__main__':

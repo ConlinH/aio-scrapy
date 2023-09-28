@@ -1,9 +1,6 @@
-import logging
 import re
 
-from aioscrapy.spiders import Spider, Request
-
-logger = logging.getLogger(__name__)
+from aioscrapy import Spider, Request, logger
 
 
 class DemoDuplicateSpider(Spider):
@@ -13,10 +10,11 @@ class DemoDuplicateSpider(Spider):
         # 'DOWNLOAD_DELAY': 3,
         # 'RANDOMIZE_DOWNLOAD_DELAY': True,
         'CONCURRENT_REQUESTS': 2,
+        'LOG_LEVEL': 'INFO',
         "CLOSE_SPIDER_ON_IDLE": True,
         # 'LOG_FILE': 'test.log',
 
-        'DUPEFILTER_CLASS': 'aioscrapy.dupefilters.disk.RFPDupeFilter',   # 本地文件存储指纹去重
+        'DUPEFILTER_CLASS': 'aioscrapy.dupefilters.disk.RFPDupeFilter',  # 本地文件存储指纹去重
         # 'DUPEFILTER_CLASS': 'aioscrapy.dupefilters.redis.RFPDupeFilter',  # redis set去重
         # 'DUPEFILTER_CLASS': 'aioscrapy.dupefilters.redis.BloomDupeFilter',  # 布隆过滤器去重
 
@@ -61,7 +59,7 @@ class DemoDuplicateSpider(Spider):
             yield response.follow(next_page_url, self.parse, dont_filter=False, fingerprint=page_fingerprint)
 
     async def process_item(self, item):
-        print(item)
+        logger.info(item)
 
 
 if __name__ == '__main__':

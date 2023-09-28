@@ -10,10 +10,11 @@ from aioscrapy.spiders import Spider
 from aioscrapy.http import Request, FormRequest
 from aioscrapy.settings import Settings
 from aioscrapy.crawler import Crawler
+from aioscrapy.utils.log import logger
 
 
 __all__ = [
-    '__version__', 'version_info', 'Spider', 'Request', 'FormRequest', 'Crawler', 'Settings'
+    '__version__', 'version_info', 'Spider', 'Request', 'FormRequest', 'Crawler', 'Settings', 'logger'
 ]
 
 

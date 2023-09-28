@@ -1,9 +1,4 @@
-import logging
-
-from aioscrapy import Request
-from aioscrapy.spiders import Spider
-
-logger = logging.getLogger(__name__)
+from aioscrapy import Request, Spider, logger
 
 
 class DemoPGSpider(Spider):
@@ -63,7 +58,7 @@ class DemoPGSpider(Spider):
                     # update_insert：更新插入 出现on_conflict指定的冲突时，更新写入
                     # ignore_insert：忽略写入 写入时出现冲突 丢掉该条数据 不抛出异常
                     'insert_type': 'update_insert',
-                    'on_conflict': 'id',     # update_insert方式下的约束
+                    'on_conflict': 'id',  # update_insert方式下的约束
                 }
             }
         next_page = response.css('li.next a::attr("href")').get()
@@ -72,7 +67,7 @@ class DemoPGSpider(Spider):
             yield Request(f"https://quotes.toscrape.com{next_page}", callback=self.parse)
 
     async def process_item(self, item):
-        print(item)
+        logger.info(item)
 
 
 if __name__ == '__main__':
