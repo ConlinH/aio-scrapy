@@ -1,8 +1,8 @@
-from aioscrapy import Spider, logger
+from aioscrapy import Spider, logger, Request
 
 
-class DemoExeclSpider(Spider):
-    name = 'DemoExeclSpider'
+class DemoMongoSpider(Spider):
+    name = 'DemoMongoSpider'
     custom_settings = {
         "USER_AGENT": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36",
         # 'DOWNLOAD_DELAY': 3,
@@ -11,11 +11,17 @@ class DemoExeclSpider(Spider):
         # 'LOG_LEVEL': 'INFO'
         # 'DUPEFILTER_CLASS': 'aioscrapy.dupefilters.disk.RFPDupeFilter',
         "CLOSE_SPIDER_ON_IDLE": True,
-
-        "ITEM_PIPELINES": {
-            'aioscrapy.libs.pipelines.sink.ExeclPipeline': 100,
+        # mongo parameter
+        "MONGO_ARGS": {
+            'default': {
+                'host': 'mongodb://root:root@192.168.234.128:27017',
+                'db': 'test',
+            }
         },
-        "SAVE_CACHE_NUM": 1000,  # 每次存储1000条
+        "ITEM_PIPELINES": {
+            'aioscrapy.libs.pipelines.mongo.MongoPipeline': 100,
+        },
+        "SAVE_CACHE_NUM": 1000,      # 每次存储1000条
         "SAVE_CACHE_INTERVAL": 10,  # 每次10秒存储一次
     }
 
@@ -41,18 +47,21 @@ class DemoExeclSpider(Spider):
             yield {
                 'author': quote.xpath('span/small/text()').get(),
                 'text': quote.css('span.text::text').get(),
-                '__execl__': {
-                    'filename': 'article',  # 文件名 或 存储的路径及文件名 如：D:\article.xlsx
-                    'sheet': 'sheet1',  # 表格的sheet名字 不指定默认为sheet1
-
-                    # 'img_fields': ['img'],    # 图片字段 当指定图片字段时 自行下载图片 并保存到表格里
-                    # 'img_size': (100, 100)    # 指定图片大小时 自动将图片转换为指定大小
+                '__mongo__': {
+                    'db_alias': 'default',  # 要存储的mongo, 参数“MONGO_ARGS”的key
+                    'table_name': 'article',  # 要存储的表名字
+                    # 'db_name': 'xxx',     # 要存储的mongo的库名， 不指定则默认为“MONGO_ARGS”中的“db”值
                 }
             }
+
+        next_page = response.css('li.next a::attr("href")').get()
+        if next_page is not None:
+            # yield response.follow(next_page, self.parse)
+            yield Request(f"https://quotes.toscrape.com{next_page}", callback=self.parse)
 
     async def process_item(self, item):
         logger.info(item)
 
 
 if __name__ == '__main__':
-    DemoExeclSpider.start()
+    DemoMongoSpider.start()

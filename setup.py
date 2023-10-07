@@ -18,8 +18,8 @@ install_requires = [
 extras_require = {
     "all": [
         "aiomysql>=0.1.1", "httpx[http2]>=0.23.0", "aio-pika>=8.1.1",
-        "cryptography", "motor>=3.1.1", "playwright>=1.31.1", "pyhttpx>=2.10.1",
-        "asyncpg>=0.27.0", "XlsxWriter>=3.1.2", "pillow>=9.4.0", "requests>=2.28.2"
+        "cryptography", "motor>=3.1.1", "pyhttpx>=2.10.1", "asyncpg>=0.27.0",
+        "XlsxWriter>=3.1.2", "pillow>=9.4.0", "requests>=2.28.2"
     ],
     "aiomysql": ["aiomysql>=0.1.1", "cryptography"],
     "httpx": ["httpx[http2]>=0.23.0"],

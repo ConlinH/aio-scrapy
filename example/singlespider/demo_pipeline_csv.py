@@ -13,7 +13,7 @@ class DemoCsvSpider(Spider):
         "CLOSE_SPIDER_ON_IDLE": True,
 
         "ITEM_PIPELINES": {
-            'aioscrapy.libs.pipelines.sink.CsvPipeline': 100,
+            'aioscrapy.libs.pipelines.csv.CsvPipeline': 100,
         },
         "SAVE_CACHE_NUM": 1000,  # 每次存储1000条
         "SAVE_CACHE_INTERVAL": 10,  # 每次10秒存储一次

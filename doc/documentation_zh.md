@@ -134,7 +134,7 @@ csv存储中间件
 
 ```python
 ITEM_PIPELINES = {
-    'aioscrapy.libs.pipelines.sink.CsvPipeline': 100,
+    'aioscrapy.libs.pipelines.csv.CsvPipeline': 100,
 }
 """
 # item的格式要求如下
@@ -154,7 +154,7 @@ execl存储中间件
 
 ```python
 ITEM_PIPELINES = {
-    'aioscrapy.libs.pipelines.sink.ExeclPipeline': 100,
+    'aioscrapy.libs.pipelines.execl.ExeclPipeline': 100,
 }
 
 """
@@ -181,7 +181,7 @@ Mysql批量存储中间件
 
 ```python
 ITEM_PIPELINES = {
-    'aioscrapy.libs.pipelines.sink.MysqlPipeline': 100,
+    'aioscrapy.libs.pipelines.mysql.MysqlPipeline': 100,
 }
 
 # mysql parameter
@@ -238,7 +238,7 @@ Mongo批量存储中间件
 
 ```python
 ITEM_PIPELINES = {
-    'aioscrapy.libs.pipelines.sink.MongoPipeline': 100,
+    'aioscrapy.libs.pipelines.mongo.MongoPipeline': 100,
 }
 
 MONGO_ARGS = {
@@ -269,7 +269,7 @@ PostpreSQL批量存储中间件
 
 ```python
 ITEM_PIPELINES = {
-    'aioscrapy.libs.pipelines.sink.PGPipeline': 100,
+    'aioscrapy.libs.pipelines.pg.PGPipeline': 100,
 }
 PG_ARGS = {
     'default': {
