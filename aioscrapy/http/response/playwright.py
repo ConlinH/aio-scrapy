@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Any
 
 from aioscrapy.http.response.text import TextResponse
 
@@ -32,5 +32,5 @@ class PlaywrightResponse(TextResponse):
     def text(self, text):
         self._text = text
 
-    def get_response(self, url_regex):
-        return self.cache_response.get(url_regex)
+    def get_response(self, key) -> Any:
+        return self.cache_response.get(key)

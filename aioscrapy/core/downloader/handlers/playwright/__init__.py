@@ -1,10 +1,14 @@
+from functools import wraps
+
+from playwright.async_api._generated import Response as EventResponse
+
 from aioscrapy import Request
 from aioscrapy.core.downloader.handlers import BaseDownloadHandler
+from aioscrapy.core.downloader.handlers.playwright.driverpool import WebDriverPool
+from aioscrapy.core.downloader.handlers.playwright.webdriver import PlaywrightDriver
 from aioscrapy.http import PlaywrightResponse
 from aioscrapy.settings import Settings
 from aioscrapy.utils.tools import call_helper
-from .driverpool import WebDriverPool
-from .webdriver import PlaywrightDriver
 
 
 class PlaywrightHandler(BaseDownloadHandler):
@@ -26,47 +30,61 @@ class PlaywrightHandler(BaseDownloadHandler):
         user_agent = request.headers.get("User-Agent")
         proxy: str = request.meta.get("proxy")
         url = request.url
-        kwargs = dict(
-            on_event={
-                name.replace('on_event', ''): getattr(spider, name) for name in dir(spider) if
-                name.startswith('on_event')
-            }
-        )
+
+        cache_response = {}
+
+        # 为了获取监听事件中的响应结果
+        def on_event_wrap_handler(func):
+            @wraps(func)
+            async def inner(response):
+                ret = await func(response)
+                if ret:
+                    cache_response[ret[0]] = ret[1]
+
+            return inner
+
+        kwargs = dict()
         if proxy:
             kwargs['proxy'] = proxy
         if user_agent:
             kwargs['user_agent'] = user_agent
 
         driver: PlaywrightDriver = await self._webdriver_pool.get(**kwargs)
+
+        # 移除所有的事件监听事件后 重新添加
+        driver.page._events = dict()
+        for name in dir(spider):
+            if not name.startswith('on_event_'):
+                continue
+            driver.page.on(name.replace('on_event_', ''), on_event_wrap_handler(getattr(spider, name)))
+
         try:
             if cookies:
                 driver.url = url
                 await driver.set_cookies(cookies)
             await driver.page.goto(url, wait_until=request.meta.get('wait_until', self.wait_until), timeout=timeout)
-            cache_response = {}
 
             if process_action_fn := getattr(spider, 'process_action', None):
                 action_result = await call_helper(process_action_fn, driver)
-                cache_response['action_result'] = action_result
+                if action_result:
+                    cache_response[action_result[0]] = action_result[1]
 
-            for url_regex in self.url_regexes:
-                async with driver.page.expect_response(
-                        url_regex,
-                        timeout=int(timeout / len(self.url_regexes))
-                ) as result:
-                    res = await result.value
-                    cache_response[url_regex] = PlaywrightResponse(
-                        url=res.url,
+            for cache_key in list(cache_response.keys()):
+                if isinstance(cache_response[cache_key], EventResponse):
+                    cache_ret = cache_response[cache_key]
+                    cache_response[cache_key] = PlaywrightResponse(
+                        url=cache_ret.url,
                         request=request,
                         intercept_request=dict(
-                            url=res.request.url,
-                            headers=res.request.headers,
-                            data=res.request.post_data,
+                            url=cache_ret.request.url,
+                            headers=cache_ret.request.headers,
+                            data=cache_ret.request.post_data,
                         ),
-                        headers=res.headers,
-                        body=await res.body(),
-                        status=res.status,
+                        headers=cache_ret.headers,
+                        body=await cache_ret.body(),
+                        status=cache_ret.status,
                     )
+
             return PlaywrightResponse(
                 url=driver.page.url,
                 status=200,

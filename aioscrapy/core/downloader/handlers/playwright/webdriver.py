@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
-from typing import Dict, Optional, Tuple, Callable
+from typing import Dict, Optional, Tuple
 
 try:
     from typing import Literal  # python >= 3.8
@@ -23,10 +23,7 @@ class PlaywrightDriver:
             proxy: Optional[str] = None,
             browser_args: Optional[Dict] = None,
             context_args: Optional[Dict] = None,
-            on_event: Optional[Dict] = None,
-            on_response: Optional[Callable] = None,
             window_size: Optional[Tuple[int, int]] = None,
-            timout: int = 30 * 1000,
             user_agent: str = None,
             **kwargs
     ):
@@ -36,8 +33,6 @@ class PlaywrightDriver:
         self.viewport = window_size and ViewportSize(width=window_size[0], height=window_size[1])
         self.browser_args = browser_args or {}
         self.context_args = context_args or {}
-        self.on_event = on_event
-        self.on_response = on_response
         self.user_agent = user_agent
 
         self.driver: Optional[Playwright] = None
@@ -69,10 +64,6 @@ class PlaywrightDriver:
         self.browser: Browser = await getattr(self.driver, self.driver_type).launch(**browser_args)
         self.context = await self.browser.new_context(**context_args)
         self.page = await self.context.new_page()
-
-        for event, callback in self.on_event.items():
-            self.page.on(event, callback)
-        self.on_response and self.page.on("response", self.on_response)
 
     @staticmethod
     def format_context_proxy(proxy) -> ProxySettings:

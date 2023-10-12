@@ -1,6 +1,12 @@
+import random
+from typing import Any
+
+from playwright.async_api._generated import Response as EventResponse
+from playwright.async_api._generated import Request as EventRequest
+
 from aioscrapy import Request, logger, Spider
-from aioscrapy.http import PlaywrightResponse
 from aioscrapy.core.downloader.handlers.playwright import PlaywrightDriver
+from aioscrapy.http import PlaywrightResponse
 
 
 class DemoPlaywrightSpider(Spider):
@@ -22,7 +28,6 @@ class DemoPlaywrightSpider(Spider):
             driver_type="chromium",  # chromium、firefox、webkit
             wait_until="networkidle",  # 等待页面加载完成的事件,可选值："commit", "domcontentloaded", "load", "networkidle"
             window_size=(1024, 800),
-            # url_regexes=["xxxx"],
             # proxy='http://user:pwd@127.0.0.1:7890',
             browser_args=dict(
                 executable_path=None, channel=None, args=None, ignore_default_args=None, handle_sigint=None,
@@ -44,7 +49,8 @@ class DemoPlaywrightSpider(Spider):
 
     )
 
-    start_urls = ['https://hanyu.baidu.com/zici/s?wd=黄&query=黄']
+    # start_urls = ['https://hanyu.baidu.com/zici/s?wd=黄&query=黄']
+    start_urls = ["https://mall.jd.com/view_search-507915-3733265-99-1-24-1.html"]
 
     @staticmethod
     async def process_request(request, spider):
@@ -64,23 +70,52 @@ class DemoPlaywrightSpider(Spider):
     async def parse(self, response: PlaywrightResponse):
         # res = response.get_response("xxxx")
         # print(res.text[:100])
+        print(response.cache_response)
+        res: PlaywrightResponse = response.get_response('getModuleHtml_response')
+        print(res.text)
 
-        img_bytes = response.get_response('action_result')
-        yield {
-            'pingyin': response.xpath('//div[@id="pinyin"]/span/b/text()').get(),
-            'fan': response.xpath('//*[@id="traditional"]/span/text()').get(),
-            'img': img_bytes,
-        }
+        # img_bytes = response.get_response('action_result')
+        # yield {
+        #     'pingyin': response.xpath('//div[@id="pinyin"]/span/b/text()').get(),
+        #     'fan': response.xpath('//*[@id="traditional"]/span/text()').get(),
+        #     'img_bytes': img_bytes,
+        # }
+        #
+        # new_character = response.xpath('//a[@class="img-link"]/@href').getall()
+        # for character in new_character:
+        #     new_url = 'https://hanyu.baidu.com/zici' + character
+        #     yield Request(new_url, callback=self.parse, dont_filter=True)
 
-        new_character = response.xpath('//a[@class="img-link"]/@href').getall()
-        for character in new_character:
-            new_url = 'https://hanyu.baidu.com/zici' + character
-            yield Request(new_url, callback=self.parse, dont_filter=True)
+    async def on_event_request(self, result: EventRequest) -> Any:
+        """
+        具体使用参考playwright的page.on('request', lambda req: print(req))
+        """
+        # print(result)
 
-    async def process_action(self, driver: PlaywrightDriver):
+    async def on_event_response(self, result: EventResponse) -> Any:
+        """
+        具体使用参考playwright的page.on('response', lambda res: print(res))
+        """
+
+        # 如果事件中有需要传递回 parse函数的内容，则按如下返回，结果将在self.parse的response.cache_response中,
+
+        if 'getModuleHtml' in result.url:
+            return 'getModuleHtml_response', result
+
+        if 'xxx1' in result.url:
+            return 'xxx_response', await result.text()
+
+        if 'xxx2' in result.url:
+            return 'xxx2', {'data': 'aaa'}
+
+    async def process_action(self, driver: PlaywrightDriver) -> Any:
         """ Do some operations after function page.goto """
-        img_bytes = await driver.page.screenshot(type="jpeg", quality=50)
-        return img_bytes
+        # img_bytes = await driver.page.screenshot(type="jpeg", quality=50)
+
+        # TODO: 点击 选择元素等操作
+
+        # 如果有需要传递回 parse函数的内容，则按如下返回，结果将在self.parse的response.cache_response中，
+        # return 'img_bytes', img_bytes
 
     async def process_item(self, item):
         logger.info(item)

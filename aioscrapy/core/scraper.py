@@ -148,7 +148,7 @@ class Scraper:
         if isinstance(exc, CloseSpider):
             create_task(self.crawler.engine.close_spider(self.spider, exc.reason or 'cancelled'))
             return
-        logger.log(**self.logformatter.spider_error(exc, request, response, self.spider))
+        logger.exception(self.logformatter.spider_error(exc, request, response, self.spider))
         await self.signals.send_catch_log(
             signal=signals.spider_error,
             failure=exc, response=response,
@@ -201,7 +201,7 @@ class Scraper:
     ) -> None:
         """Process and record errors"""
         if isinstance(download_exception, BaseException) and not isinstance(download_exception, IgnoreRequest):
-            logger.log(**self.logformatter.download_error(download_exception, request, self.spider))
+            logger.exception(self.logformatter.download_error(download_exception, request, self.spider))
 
         if spider_exception is not download_exception:
             raise spider_exception
@@ -216,7 +216,7 @@ class Scraper:
                     signal=signals.item_dropped, item=item, response=response,
                     spider=self.spider, exception=output)
             else:
-                logger.log(**self.logformatter.item_error(item, output, response, self.spider))
+                logger.exception(self.logformatter.item_error(item, output, response, self.spider))
                 return await self.signals.send_catch_log_deferred(
                     signal=signals.item_error, item=item, response=response,
                     spider=self.spider, failure=output)

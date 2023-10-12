@@ -23,7 +23,7 @@ class RedisProxy(AbsProxy):
     async def from_crawler(cls, crawler) -> "RedisProxy":
         settings = crawler.settings
         proxy_key = settings.get('PROXY_KEY')
-        assert proxy_key is not None, f"Not configured：'ROXY_KEY'"
+        assert proxy_key is not None, "Not configured：'PROXY_KEY'"
         alias = settings.get("PROXY_QUEUE_ALIAS", 'proxy')
         proxy_queue = db_manager.redis(alias)
         return cls(

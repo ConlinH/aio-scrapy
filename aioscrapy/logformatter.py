@@ -59,11 +59,8 @@ class LogFormatter:
 
         .. versionadded:: 2.0
         """
-        return {
-            '_Logger__level': "ERROR",
-            '_Logger__message': ITEMERRORMSG % {
-                'item': item,
-            }
+        return ITEMERRORMSG % {
+            'item': item,
         }
 
     @staticmethod
@@ -72,12 +69,9 @@ class LogFormatter:
 
         .. versionadded:: 2.0
         """
-        return {
-            '_Logger__level': "ERROR",
-            '_Logger__message': SPIDERERRORMSG % {
-                'request': request,
-                'referer': referer_str(request),
-            }
+        return SPIDERERRORMSG % {
+            'request': request,
+            'referer': referer_str(request),
         }
 
     @staticmethod
@@ -93,10 +87,7 @@ class LogFormatter:
             args['errmsg'] = errmsg
         else:
             msg = DOWNLOADERRORMSG_SHORT
-        return {
-            '_Logger__level': "ERROR",
-            '_Logger__message': msg % args,
-        }
+        return msg % args
 
     @classmethod
     def from_crawler(cls, crawler):
