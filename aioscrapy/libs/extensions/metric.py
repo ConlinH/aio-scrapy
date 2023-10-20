@@ -81,19 +81,21 @@ class InfluxLog(InfluxBase):
         self.spider_name = spider_name
 
         log_args = settings.getdict('METRIC_LOG_ARGS')
-        log_args.update(dict(
-            filter=lambda record: record["extra"].get("metric") is not None,
-            format="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> <level>{message}</level>",
-            encoding="utf-8"
-        ))
-        for k, v in dict(
-                sink=f'{spider_name}.metric', level="INFO", rotation='20MB',
-                retention=3
-        ).items():
-            log_args.setdefault(k, v)
+        if log_args:
+            log_args.update(dict(
+                filter=lambda record: record["extra"].get("metric") is not None,
+                encoding="utf-8"
+            ))
+            for k, v in dict(
+                    sink=f'{spider_name}.metric', level="INFO", rotation='20MB', retention=3,
+                    format="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> <level>{message}</level>",
+            ).items():
+                log_args.setdefault(k, v)
 
-        _logger.add(**log_args)
-        self.log = _logger.bind(metric="metric")
+            _logger.add(**log_args)
+            self.log = _logger.bind(metric="metric")
+        else:
+            self.log = logger
 
     async def record(self, obj: "Metric"):
         for metric_name in obj.metrics.keys():
@@ -104,8 +106,7 @@ class InfluxLog(InfluxBase):
             cnt = current_cnt - prev_cnt
             if cnt:
                 msg = self.format_metric(metric_name.replace('/', '-'), cnt, self.spider_name, self.location)
-                self.log.info(msg)
-                logger.debug(msg)
+                self.log.info(f'METRIC: {msg}')
             obj.prev[metric_name] = current_cnt
 
 
