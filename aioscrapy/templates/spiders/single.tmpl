@@ -1,4 +1,4 @@
-from aioscrapy import Spider
+from aioscrapy import Spider, logger
 
 
 class $classname(Spider):
@@ -6,7 +6,7 @@ class $classname(Spider):
     custom_settings = {
         "CLOSE_SPIDER_ON_IDLE": True
     }
-    start_urls = []
+    start_urls = ["https://quotes.toscrape.com"]
 
     @staticmethod
     async def process_request(request, spider):
@@ -25,14 +25,14 @@ class $classname(Spider):
 
     async def parse(self, response):
         item = {
-            'title': '\n'.join(response.xpath('//title/text()').extract()),
+            'author': quote.xpath('span/small/text()').get(),
+            'text': quote.css('span.text::text').get(),
         }
         yield item
 
     async def process_item(self, item):
-        print(item)
+        logger.info(item)
 
 
 if __name__ == '__main__':
-    dome = $classname()
-    dome.start()
+    $classname.start()

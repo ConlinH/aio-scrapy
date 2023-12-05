@@ -1,6 +1,5 @@
 
-from aioscrapy import signals
-from aioscrapy.utils.log import logger
+from aioscrapy import signals, logger
 
 class ${ProjectName}SpiderMiddleware:
     # Not all methods need to be defined. If a method is not defined,
@@ -26,7 +25,7 @@ class ${ProjectName}SpiderMiddleware:
         # it has processed the response.
 
         # Must return an iterable of Request, or item objects.
-        for i in result:
+        async for i in result:
             yield i
 
     async def process_spider_exception(self, response, exception, spider):
@@ -42,7 +41,7 @@ class ${ProjectName}SpiderMiddleware:
         # that it doesn’t have a response associated.
 
         # Must return only requests (not items).
-        for r in start_requests:
+        async for r in start_requests:
             yield r
 
     async def spider_opened(self, spider):

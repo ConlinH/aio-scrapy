@@ -1,4 +1,7 @@
+from aioscrapy import logger
+
 
 class ${ProjectName}Pipeline:
     def process_item(self, item, spider):
+        logger.info(f"Get item {item}" )
         return item

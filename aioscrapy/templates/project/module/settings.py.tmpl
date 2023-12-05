@@ -17,51 +17,36 @@ NEWSPIDER_MODULE = '$project_name.spiders'
 
 # ITEM_PIPELINES = {
 #     '$project_name.pipelines.${ProjectName}Pipeline': 300,
-#     # 'aioscrapy.pipelines.sink.MysqlPipeline': 100,
 # }
 
-# REDIS_ARGS = {
-#     # "default"为该链接池别名 (只从该redis获取任务队列)
-#     'default': {
-#         'url': 'redis://127.0.0.1:6379/1',
-#         'max_connections': 4,
-#         'retry_on_timeout': True,
-#         'health_check_interval': 30,
-#     },
-#
-#     # 'proxy': {
-#     #     'url': 'redis://username:password@127.0.0.1:6379/2',
-#     #     'max_connections': 4,
-#     #     'retry_on_timeout': True,
-#     #     'health_check_interval': 30,
-#     # }
+DOWNLOAD_HANDLERS_TYPE = "aiohttp"  # aiohttp httpx pyhttpx requests playwright 不配置则默认为aiohttp
+# 自定义发包方式请用scrapy的形式，例如：
+# DOWNLOAD_HANDLERS={
+#     'http': 'aioscrapy.core.downloader.handlers.aiohttp.AioHttpDownloadHandler',
+#     'https': 'aioscrapy.core.downloader.handlers.aiohttp.AioHttpDownloadHandler',
 # }
 
-# MYSQL_ARGS = {
-#     'default': {
-#         'db': 'test',
-#         'user': 'root',
-#         'password': 'password',
-#         'host': '127.0.0.1',
-#         'port': 3306,
-#         'charset': 'utf8mb4',
-#     },
-#
-#     # 'mysql2': {
-#     #     'db': 'test2',
-#     #     'user': 'root',
-#     #     'password': 'password',
-#     #     'host': '127.0.0.1',
-#     #     'port': 3306,
-#     #     'charset': 'utf8mb4',
-#     # }
-# }
-# SAVE_CACHE_NUM = 1000        # Trigger mysql storage every 1000 item.
-# SAVE_CACHE_INTERVAL = 10    # Trigger mysql storage every 10 seconds.
-
-CLOSE_SPIDER_ON_IDLE = True
-
-# CONCURRENT_REQUESTS = 32
 # DOWNLOAD_DELAY = 3
-# CONCURRENT_REQUESTS_PER_DOMAIN = 16
-# CONCURRENT_REQUESTS_PER_IP = 16
+# RANDOMIZE_DOWNLOAD_DELAY = True
+CONCURRENT_REQUESTS = 16
+CONCURRENT_REQUESTS_PER_DOMAIN = 8
+
+CLOSE_SPIDER_ON_IDLE = False
+
+# LOG_FILE = './log/info.log'
+LOG_STDOUT = True
+LOG_LEVEL = 'DEBUG'
+
+SCHEDULER_QUEUE_CLASS = 'aioscrapy.queue.redis.SpiderPriorityQueue'
+# SCHEDULER_FLUSH_ON_START = False
+REDIS_ARGS = {
+    'queue': {
+        'url': 'redis://:@127.0.0.1:6379/0',
+        'max_connections': 2,
+        'timeout': None,
+        'retry_on_timeout': True,
+        'health_check_interval': 30,
+    }
+}
+
+# 本框架基本实现了scrapy/scrapy-redis的功能 想要配置更多参数，请参考scrapy

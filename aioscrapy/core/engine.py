@@ -14,10 +14,9 @@ from aioscrapy.core.scraper import Scraper
 from aioscrapy.exceptions import DontCloseSpider
 from aioscrapy.http import Response
 from aioscrapy.http.request import Request
+from aioscrapy.utils.log import logger
 from aioscrapy.utils.misc import load_instance
 from aioscrapy.utils.tools import call_helper, create_task
-
-from aioscrapy.utils.log import logger
 
 
 class Slot:
@@ -121,8 +120,8 @@ class ExecutionEngine(object):
             self.downloader.close()
 
     async def _next_request(self) -> None:
-        assert self.slot is not None  # typing
-        assert self.spider is not None  # typing
+        if self.slot is None or self.spider is None:
+            return
 
         while self.unlock and not self._needs_backout() and self.unlock:
             self.unlock = False
@@ -175,7 +174,7 @@ class ExecutionEngine(object):
 
             result.request = request
             if isinstance(result, Response):
-                logger.log(** self.logformatter.crawled(request, result, self.spider))
+                logger.log(**self.logformatter.crawled(request, result, self.spider))
                 await self.signals.send_catch_log(signals.response_received,
                                                   response=result, request=request, spider=self.spider)
             await self.scraper.enqueue_scrape(result, request)

@@ -1,53 +1,77 @@
-
-# SCHEDULER_QUEUE_CLASS = 'aioscrapy.queue.redis.SpiderPriorityQueue'
-# SCHEDULER_QUEUE_CLASS = 'aioscrapy.queue.rabbitmq.SpiderPriorityQueue'
-
-# DUPEFILTER_CLASS = 'aioscrapy.dupefilters.disk.RFPDupeFilter'
-# DUPEFILTER_CLASS = 'aioscrapy.dupefilters.redis.RFPDupeFilter'
-# DUPEFILTER_CLASS = 'aioscrapy.dupefilters.redis.BloomDupeFilter'
-
-# SCHEDULER_SERIALIZER = 'aioscrapy.serializer.JsonSerializer'
-# SCHEDULER_SERIALIZER = 'aioscrapy.serializer.PickleSerializer'
-
-ITEM_PIPELINES = {
-    # 'aioscrapy.libs.pipelines.sink.MysqlPipeline': 100,
-    'aioscrapy.libs.pipelines.sink.MongoPipeline': 100,
-}
-
 BOT_NAME = 'redisdemo'
 
 SPIDER_MODULES = ['redisdemo.spiders']
 NEWSPIDER_MODULE = 'redisdemo.spiders'
 
-# DOWNLOAD_DELAY = 3
-# RANDOMIZE_DOWNLOAD_DELAY = True
-# CONCURRENT_REQUESTS = 1
+# 是否配置去重及去重的方式
+# DUPEFILTER_CLASS = 'aioscrapy.dupefilters.disk.RFPDupeFilter'
+# DUPEFILTER_CLASS = 'aioscrapy.dupefilters.redis.RFPDupeFilter'
+# DUPEFILTER_CLASS = 'aioscrapy.dupefilters.redis.BloomDupeFilter'
 
-# SCHEDULER_FLUSH_ON_START = True
+# 配置队列任务的序列化
+# SCHEDULER_SERIALIZER = 'aioscrapy.serializer.JsonSerializer'      # 默认
+# SCHEDULER_SERIALIZER = 'aioscrapy.serializer.PickleSerializer'
 
-RABBITMQ_ARGS = {
-    'queue': {
-        'url': "amqp://guest:guest@192.168.234.128:5673/",
-        'connection_max_size': 2,
-        'channel_max_size': 10,
-    }
+# 下载中间件
+DOWNLOADER_MIDDLEWARES = {
+    'redisdemo.middlewares.DemoDownloaderMiddleware': 543,
 }
 
-# redis parameter
+# 爬虫中间件
+SPIDER_MIDDLEWARES = {
+    'redisdemo.middlewares.DemoSpiderMiddleware': 543,
+}
+
+# item的处理方式
+ITEM_PIPELINES = {
+    'redisdemo.pipelines.DemoPipeline': 100,
+}
+
+# 扩展
+# EXTENSIONS = {
+# }
+
+# 使用什么包发送请求
+DOWNLOAD_HANDLERS_TYPE = "aiohttp"  # aiohttp httpx pyhttpx requests playwright 不配置则默认为aiohttp
+# 自定义发包方式请用scrapy的形式，例如：
+# DOWNLOAD_HANDLERS={
+#     'http': 'aioscrapy.core.downloader.handlers.aiohttp.AioHttpDownloadHandler',
+#     'https': 'aioscrapy.core.downloader.handlers.aiohttp.AioHttpDownloadHandler',
+# }
+
+# 下载延迟
+# DOWNLOAD_DELAY = 3
+
+# 随机下载延迟
+# RANDOMIZE_DOWNLOAD_DELAY = True
+
+# 并发数
+CONCURRENT_REQUESTS = 16  # 总并发的个数 默认为16
+CONCURRENT_REQUESTS_PER_DOMAIN = 8  # 按域名并发的个数 默认为8
+
+# 爬虫空闲时是否关闭
+CLOSE_SPIDER_ON_IDLE = False  # 默认为True
+
+# 日志
+# LOG_FILE = './log/info.log'            # 保存日志的位置及名称
+LOG_STDOUT = True  # 是否将日志输出到控制台 默认为True
+LOG_LEVEL = 'DEBUG'  # 日志等级
+
+# 用redis当作任务队列
+SCHEDULER_QUEUE_CLASS = 'aioscrapy.queue.redis.SpiderPriorityQueue'  # 配置redis的优先级队列
+# SCHEDULER_FLUSH_ON_START = False                                   # 重启爬虫时是否清空任务队列 默认False
+# redis 参数配置
 REDIS_ARGS = {
-    # "queue" is alias of the redis pool, Put the Request inside
-    # Use:
-    #       from aioscrapy.db import db_manager
-    #       await db_manager.redis.queue.set('test', 1)
+    # "queue" 队列存放的别名, 用于存放求情到改redis连接池中
     'queue': {
-        'url': 'redis://192.168.234.128:6379/1',
+        'url': 'redis://:@192.168.43.165:6379/10',
         'max_connections': 2,
         'timeout': None,
         'retry_on_timeout': True,
         'health_check_interval': 30,
     },
 
-    # "proxy" is alias of the redis pool
+    # "proxy"是代理池的别名， 用以存放代理ip到改redis连接池中
     # 'proxy': {
     #     'url': 'redis://username:password@192.168.234.128:6379/2',
     #     'max_connections': 2,
@@ -57,39 +81,9 @@ REDIS_ARGS = {
     # }
 }
 
-# mysql parameter
-MYSQL_ARGS = {
-    # "default" is alias of the mysql pool
-    # Use:
-    #       from aioscrapy.db import db_manager
-    #       async with db_manager.get('default') as (conn, cur):
-    #             print(await cur.execute('select 1'))
-    'default': {
-        'db': 'test',
-        'user': 'root',
-        'password': '123456',
-        'host': '192.168.234.128',
-        'port': 3306,
-        'charset': 'utf8mb4',
-    },
+# 代理配置
+USE_PROXY = True  # 是否使用代理 默认为 False
+PROXY_HANDLER = 'redisdemo.proxy.MyProxy'  # 代理类的加载路径 可参考aioscrapy.proxy.redis.RedisProxy代理的实现
 
-    # # "mysql2" is alias of the mysql pool
-    # 'mysql2': {
-    #     'db': 'test2',
-    #     'user': 'root',
-    #     'password': 'root',
-    #     'host': '127.0.0.1',
-    #     'port': 3306,
-    #     'charset': 'utf8mb4',
-    # }
-}
 
-# mongo parameter
-MONGO_ARGS = {
-    'default': {
-        'host': 'mongodb://root:root@192.168.234.128:27017',
-        'db': 'test',
-    },
-}
-
-# LOG_FILE = 'test.log'
+# 本框架基本实现了scrapy/scrapy-redis的功能 想要配置更多参数，请参考scrapy
