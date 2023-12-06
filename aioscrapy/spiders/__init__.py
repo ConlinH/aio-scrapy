@@ -11,6 +11,7 @@ from aioscrapy.http.request import Request
 from aioscrapy.http.response import Response
 from aioscrapy.utils.tools import call_helper
 from aioscrapy.utils.url import url_is_from_spider
+from aioscrapy.statscollectors import StatsCollector
 
 
 class Spider(object):
@@ -21,6 +22,7 @@ class Spider(object):
     name: Optional[str] = None
     proxy: Optional["aioscrapy.proxy.AbsProxy"] = None
     custom_settings: Optional[dict] = None
+    stats: Optional[StatsCollector] = None
 
     def __init__(self, name=None, **kwargs):
         if name is not None:

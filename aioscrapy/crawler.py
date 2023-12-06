@@ -68,6 +68,7 @@ class Crawler:
             logger.info(f"Overridden settings:\n{pprint.pformat(dict(overridden_settings(self.settings)))}")
 
             self.spider = await self.spidercls.from_crawler(self, *args, **kwargs)
+            self.spider.stats = self.stats
             self.logformatter = await load_instance(self.settings['LOG_FORMATTER'], crawler=self)
             self.extensions = await ExtensionManager.from_crawler(self)
             self.engine = ExecutionEngine(self)

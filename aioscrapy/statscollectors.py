@@ -2,7 +2,6 @@
 aioscrapy extension for collecting scraping stats
 """
 import pprint
-import logging
 
 from aioscrapy.utils.log import logger
 

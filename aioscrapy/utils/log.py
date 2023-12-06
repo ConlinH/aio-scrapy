@@ -5,13 +5,12 @@ from typing import Type
 
 from loguru import logger as _logger
 
-from aioscrapy.spiders import Spider
 from aioscrapy.settings import Settings
 
 _logger.remove(0)
 
 
-def configure_logging(spider: Type[Spider], settings: Settings):
+def configure_logging(spider: Type["Spider"], settings: Settings):
     formatter = settings.get('LOG_FORMAT')
     level = settings.get('LOG_LEVEL', 'INFO')
     enqueue = settings.get('ENQUEUE', True)
