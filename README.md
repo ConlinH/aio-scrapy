@@ -156,6 +156,8 @@ aioscrapy runspider quotes.py
 aioscrapy -h
 ```
 
+#### [more example](./example)
+
 ### Documentation
 [doc](./doc/documentation.md)
 
