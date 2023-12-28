@@ -56,6 +56,10 @@ class Spider(object):
         for url in self.start_urls:
             yield Request(url)
 
+    def request_from_dict(self, d: dict):
+        """集成后重写改方法，将队列中的json根据情况构建成Request对象"""
+        pass
+
     async def _parse(self, response: Response, **kwargs):
         return await call_helper(self.parse, response)
 

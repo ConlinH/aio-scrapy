@@ -61,6 +61,9 @@ class DemoMysqlSpider(Spider):
                     # update_insert：更新插入 出现主键或唯一键冲突时，更新写入
                     # ignore_insert：忽略写入 写入时出现冲突 丢掉该条数据 不抛出异常
                     'insert_type': 'update_insert',
+
+                    # 更新指定字段（只能在update_insert的时候使用）
+                    # 'update_fields': ['text']
                 }
             }
 

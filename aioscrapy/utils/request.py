@@ -45,6 +45,10 @@ def request_from_dict(d: dict, *, spider: Optional[Spider] = None) -> Request:
     If a spider is given, it will try to resolve the callbacks looking at the
     spider for methods with the same name.
     """
+    d = spider.request_from_dict(d) or d
+    if isinstance(d, Request):
+        return d
+
     request_cls = load_object(d["_class"]) if "_class" in d else Request
     kwargs = {key: value for key, value in d.items() if key in request_cls.attributes}
     if d.get("callback") and spider:
