@@ -3,15 +3,16 @@ Base class for Scrapy spiders
 
 See documentation in docs/topics/spiders.rst
 """
-from typing import Optional
+import time
+from typing import Optional, Union
 
 from aioscrapy import signals
 from aioscrapy.exceptions import DontCloseSpider
 from aioscrapy.http.request import Request
 from aioscrapy.http.response import Response
+from aioscrapy.statscollectors import StatsCollector
 from aioscrapy.utils.tools import call_helper
 from aioscrapy.utils.url import url_is_from_spider
-from aioscrapy.statscollectors import StatsCollector
 
 
 class Spider(object):
@@ -24,6 +25,9 @@ class Spider(object):
     custom_settings: Optional[dict] = None
     stats: Optional[StatsCollector] = None
 
+    pause: bool = False
+    _pause_time: Optional[Union[int, float]] = None
+
     def __init__(self, name=None, **kwargs):
         if name is not None:
             self.name = name
@@ -32,6 +36,22 @@ class Spider(object):
         self.__dict__.update(kwargs)
         if not hasattr(self, 'start_urls'):
             self.start_urls = []
+
+    @property
+    def pause_time(self) -> int:
+        if self._pause_time is None:
+            self._pause_time = 600 + int(time.time())
+        return self._pause_time
+
+    @pause_time.setter
+    def pause_time(self, value: Union[int, float]):
+        self.pause = True
+        if value is None:
+            self._pause_time = float('inf')
+        elif value < time.time():
+            self._pause_time = value + int(time.time())
+        else:
+            self._pause_time = value
 
     @classmethod
     async def from_crawler(cls, crawler, *args, **kwargs):

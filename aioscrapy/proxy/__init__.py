@@ -35,10 +35,10 @@ class AbsProxy(metaclass=ABCMeta):
             return
 
         if response and response.status >= 400 and response.status not in self.allow_status_code:
-            self.remove(request.meta['proxy'], f"Don't allow response status code:{response.status}")
+            self.remove(request.meta.get('proxy'), f"Don't allow response status code:{response.status}")
 
         if exception and isinstance(exception, BaseException):
-            self.remove(request.meta['proxy'], exception)
+            self.remove(request.meta.get('proxy'), exception)
 
     @classmethod
     @abstractmethod

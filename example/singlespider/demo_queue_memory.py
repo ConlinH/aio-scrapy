@@ -22,6 +22,8 @@ class DemoMemorySpider(Spider):
     @staticmethod
     async def process_response(request, response, spider):
         """ response middleware """
+        # spider.pause = True
+        # spider.pause_time = 60 * 10
         return response
 
     @staticmethod

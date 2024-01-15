@@ -10,13 +10,14 @@ Failed pages are collected on the scraping process and rescheduled at the end,
 once the spider has finished crawling all regular (non failed) pages.
 """
 from typing import Optional, Union
+from aioscrapy.exceptions import ProxyException
 
 try:
     from asyncio.exceptions import TimeoutError
 except:
     from concurrent.futures._base import TimeoutError
 
-NEED_RETRY_ERROR = (TimeoutError, ConnectionRefusedError, IOError)
+NEED_RETRY_ERROR = (TimeoutError, ConnectionRefusedError, IOError, ProxyException)
 
 try:
     from aiohttp.client_exceptions import ClientError

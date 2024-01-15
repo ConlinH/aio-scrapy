@@ -3,18 +3,22 @@ import time
 from typing import Optional
 
 from aioscrapy.db import db_manager
+from aioscrapy.exceptions import ProxyException
 from aioscrapy.proxy import AbsProxy
 from aioscrapy.utils.log import logger
+from aioscrapy.utils.tools import create_task
 
 
 class RedisProxy(AbsProxy):
     def __init__(
             self,
             settings,
+            crawler,
             proxy_queue: Optional["Redis"] = None,
             proxy_key: Optional[str] = None
     ):
         super().__init__(settings)
+        self.crawler = crawler
         self.proxy_queue = proxy_queue
         self.proxy_key = proxy_key
         self.lock = asyncio.Lock()
@@ -28,6 +32,7 @@ class RedisProxy(AbsProxy):
         proxy_queue = db_manager.redis(alias)
         return cls(
             settings,
+            crawler,
             proxy_queue=proxy_queue,
             proxy_key=proxy_key
         )
@@ -57,6 +62,11 @@ class RedisProxy(AbsProxy):
         if len(self.cache) < self.min_count:
             async with self.lock:
                 len(self.cache) < self.min_count and await self.fill_proxy(self.proxy_key, self.max_count - len(self.cache))
-        proxy = self.cache.pop(0)
-        self.cache.append(proxy)
-        return proxy
+        try:
+            proxy = self.cache.pop(0)
+            self.cache.append(proxy)
+            return proxy
+        except IndexError:
+            logger.warning("Not available proxy, Closing spider")
+            create_task(self.crawler.engine.stop(reason="Not available proxy"))
+            raise ProxyException("Not available proxy")

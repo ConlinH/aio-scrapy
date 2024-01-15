@@ -1,6 +1,7 @@
 # _*_ coding: utf-8 _*_
 
 import asyncio
+import time
 from asyncio import Queue
 from asyncio.queues import QueueEmpty
 from typing import Optional, AsyncGenerator, Union, Callable
@@ -121,6 +122,17 @@ class ExecutionEngine(object):
 
     async def _next_request(self) -> None:
         if self.slot is None or self.spider is None:
+            return
+
+        if self.spider.pause:
+            now = int(time.time())
+            last_log_time = getattr(self.spider, "last_log_time", None)
+            if last_log_time is None or (now - last_log_time) >= 5:
+                setattr(self.spider, "last_log_time", now)
+                logger.info(f"The spider has been suspended, and will resume in "
+                            f"{self.spider.pause_time - now} seconds")
+            if self.spider.pause_time and self.spider.pause_time <= now:
+                self.spider.pause = False
             return
 
         while self.unlock and not self._needs_backout() and self.unlock:

@@ -87,3 +87,7 @@ class AioScrapyDeprecationWarning(Warning):
 class ContractFail(AssertionError):
     """Error raised in case of a failing contract"""
     pass
+
+
+class ProxyException(Exception):
+    pass
