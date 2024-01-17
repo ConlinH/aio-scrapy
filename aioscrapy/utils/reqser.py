@@ -11,5 +11,5 @@ def request_to_dict(request: "aioscrapy.Request", spider: Optional["aioscrapy.Sp
     return request.to_dict(spider=spider)
 
 
-def request_from_dict(d: dict, spider: Optional["aioscrapy.Spider"] = None) -> "aioscrapy.Request":
-    return _from_dict(d, spider=spider)
+async def request_from_dict(d: dict, spider: Optional["aioscrapy.Spider"] = None) -> "aioscrapy.Request":
+    return await _from_dict(d, spider=spider)

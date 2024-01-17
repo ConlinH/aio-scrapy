@@ -58,7 +58,7 @@ class MemoryQueueBase(AbsQueue):
                 data = self.container.get_nowait()
             except QueueEmpty:
                 break
-            yield self._decode_request(data)
+            yield await self._decode_request(data)
 
     async def clear(self, timeout: int = 0) -> None:
         self.container = self.get_queue(self.max_size)
@@ -93,7 +93,7 @@ class MemoryPriorityQueue(MemoryFifoQueue):
                 score, data = self.container.get_nowait()
             except QueueEmpty:
                 break
-            yield self._decode_request(data)
+            yield await self._decode_request(data)
 
 
 SpiderQueue = MemoryFifoQueue

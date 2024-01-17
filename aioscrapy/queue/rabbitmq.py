@@ -57,7 +57,7 @@ class RabbitMqPriorityQueue(AbsQueue):
     async def pop(self, count: int = 1) -> Optional[aioscrapy.Request]:
         result = await self.container.get_message(self.key)
         if result:
-            yield self._decode_request(result)
+            yield await self._decode_request(result)
 
     async def clear(self) -> None:
         await self.container.clean_message_queue(self.key)

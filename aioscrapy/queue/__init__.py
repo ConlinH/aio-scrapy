@@ -37,10 +37,10 @@ class AbsQueue(metaclass=ABCMeta):
         obj = request.to_dict(spider=self.spider)
         return self.serializer.dumps(obj)
 
-    def _decode_request(self, encoded_request: Any) -> aioscrapy.Request:
+    async def _decode_request(self, encoded_request: Any) -> aioscrapy.Request:
         """Decode an request previously encoded"""
         obj = self.serializer.loads(encoded_request)
-        return request_from_dict(obj, spider=self.spider)
+        return await request_from_dict(obj, spider=self.spider)
 
     def __len__(self) -> None:
         """Return the length of the queue"""

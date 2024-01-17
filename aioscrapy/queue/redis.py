@@ -67,7 +67,7 @@ class RedisFifoQueue(RedisQueueBase):
             results = await pipe.execute()
         for result in results:
             if result:
-                yield self._decode_request(result)
+                yield await self._decode_request(result)
 
 
 class RedisPriorityQueue(RedisQueueBase):
@@ -97,7 +97,7 @@ class RedisPriorityQueue(RedisQueueBase):
                 .execute()
             )
         for result in results:
-            yield self._decode_request(result)
+            yield await self._decode_request(result)
 
 
 class RedisLifoQueue(RedisQueueBase):
@@ -124,7 +124,7 @@ class RedisLifoQueue(RedisQueueBase):
             results = await pipe.execute()
         for result in results:
             if result:
-                yield self._decode_request(result)
+                yield await self._decode_request(result)
 
 
 SpiderQueue = RedisFifoQueue

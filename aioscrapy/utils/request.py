@@ -39,13 +39,13 @@ def referer_str(request: Request) -> Optional[str]:
     return to_unicode(referrer, errors='replace')
 
 
-def request_from_dict(d: dict, *, spider: Optional[Spider] = None) -> Request:
+async def request_from_dict(d: dict, *, spider: Optional[Spider] = None) -> Request:
     """Create a :class:`~scrapy.Request` object from a dict.
 
     If a spider is given, it will try to resolve the callbacks looking at the
     spider for methods with the same name.
     """
-    d = spider.request_from_dict(d) or d
+    d = await spider.request_from_dict(d) or d
     if isinstance(d, Request):
         return d
 
