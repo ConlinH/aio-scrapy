@@ -27,6 +27,13 @@ except ImportError:
     pass
 
 try:
+    from anyio import EndOfStream
+
+    NEED_RETRY_ERROR += (EndOfStream,)
+except ImportError:
+    pass
+
+try:
     from httpx import HTTPError as HttpxError
 
     NEED_RETRY_ERROR += (HttpxError,)
