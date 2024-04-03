@@ -2,8 +2,6 @@ from aioscrapy import Request
 from aioscrapy.db import db_manager
 from aioscrapy.dupefilters import DupeFilterBase
 
-from aioscrapy.utils.log import logger
-
 
 class RedisRFPDupeFilter(DupeFilterBase):
     """Request Fingerprint duplicates filter built with Set of Redis"""
@@ -13,13 +11,15 @@ class RedisRFPDupeFilter(DupeFilterBase):
             server: "redis.asyncio.Redis",
             key: str,
             debug: bool = False,
-            keep_on_close: bool = True
+            keep_on_close: bool = True,
+            info: bool = False,
     ):
         self.server = server
         self.key = key
         self.debug = debug
         self.keep_on_close = keep_on_close
         self.logdupes: bool = True
+        self.info: bool = info
 
     @classmethod
     def from_crawler(cls, crawler: "aioscrapy.crawler.Crawler"):
@@ -28,7 +28,8 @@ class RedisRFPDupeFilter(DupeFilterBase):
         keep_on_close = crawler.settings.getbool("KEEP_DUPEFILTER_DATA_ON_CLOSE", True)
         key = dupefilter_key % {'spider': crawler.spider.name}
         debug = crawler.settings.getbool('DUPEFILTER_DEBUG', False)
-        instance = cls(server, key=key, debug=debug, keep_on_close=keep_on_close)
+        info = crawler.settings.getbool('DUPEFILTER_DEBUG', False)
+        instance = cls(server, key=key, debug=debug, keep_on_close=keep_on_close, info=info)
         return instance
 
     async def request_seen(self, request: Request):
@@ -40,17 +41,6 @@ class RedisRFPDupeFilter(DupeFilterBase):
 
     async def clear(self):
         await self.server.delete(self.key)
-
-    def log(self, request, spider):
-        if self.debug:
-            logger.debug("Filtered duplicate request: %(request)s" % {'request': request})
-        elif self.logdupes:
-            msg = ("Filtered duplicate request %(request)s"
-                   " - no more duplicates will be shown"
-                   " (see DUPEFILTER_DEBUG to show all duplicates)")
-            logger.debug(msg % {'request': request})
-            self.logdupes = False
-        spider.crawler.stats.inc_value('dupefilter/filtered', spider=spider)
 
 
 class HashMap(object):

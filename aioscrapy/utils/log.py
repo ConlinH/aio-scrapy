@@ -7,7 +7,9 @@ from loguru import logger as _logger
 
 from aioscrapy.settings import Settings
 
-_logger.remove(0)
+for _handler in _logger._core.handlers.values():
+    if _handler._name == '<stderr>':
+        _logger.remove(_handler._id)
 
 
 def configure_logging(spider: Type["Spider"], settings: Settings):
