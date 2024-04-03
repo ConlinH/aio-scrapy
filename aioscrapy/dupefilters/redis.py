@@ -28,7 +28,7 @@ class RedisRFPDupeFilter(DupeFilterBase):
         keep_on_close = crawler.settings.getbool("KEEP_DUPEFILTER_DATA_ON_CLOSE", True)
         key = dupefilter_key % {'spider': crawler.spider.name}
         debug = crawler.settings.getbool('DUPEFILTER_DEBUG', False)
-        info = crawler.settings.getbool('DUPEFILTER_DEBUG', False)
+        info = crawler.settings.getbool('DUPEFILTER_INFO', False)
         instance = cls(server, key=key, debug=debug, keep_on_close=keep_on_close, info=info)
         return instance
 
