@@ -102,8 +102,8 @@ class BloomFilter(object):
 class RedisBloomDupeFilter(RedisRFPDupeFilter):
     """Bloom filter built with the bitis bitmap of redis"""
 
-    def __init__(self, server, key, debug, bit, hash_number, keep_on_close):
-        super().__init__(server, key, debug, keep_on_close)
+    def __init__(self, server, key, debug, bit, hash_number, keep_on_close, info):
+        super().__init__(server, key, debug, keep_on_close, info)
         self.bit = bit
         self.hash_number = hash_number
         self.bf = BloomFilter(server, self.key, bit, hash_number)
@@ -115,9 +115,10 @@ class RedisBloomDupeFilter(RedisRFPDupeFilter):
         keep_on_close = crawler.settings.getbool("KEEP_DUPEFILTER_DATA_ON_CLOSE", True)
         key = dupefilter_key % {'spider': crawler.spider.name}
         debug = crawler.settings.getbool('DUPEFILTER_DEBUG', False)
+        info = crawler.settings.getbool('DUPEFILTER_INFO', False)
         bit = crawler.settings.getint('BLOOMFILTER_BIT', 30)
         hash_number = crawler.settings.getint('BLOOMFILTER_HASH_NUMBER', 6)
-        return cls(server, key=key, debug=debug, bit=bit, hash_number=hash_number, keep_on_close=keep_on_close)
+        return cls(server, key=key, debug=debug, bit=bit, hash_number=hash_number, keep_on_close=keep_on_close, info=info)
 
     async def request_seen(self, request: Request) -> bool:
         fp = await self.bf.exists(request.fingerprint)
