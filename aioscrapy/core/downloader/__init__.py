@@ -126,6 +126,7 @@ class Downloader(BaseDownloader):
         self.dupefilter = dupefilter
 
         self.total_concurrency: int = self.settings.getint('CONCURRENT_REQUESTS')
+        self.get_requests_count: int = self.settings.getint('GET_REQUESTS_COUNT') or self.total_concurrency
         self.domain_concurrency: int = self.settings.getint('CONCURRENT_REQUESTS_PER_DOMAIN')
         self.ip_concurrency: int = self.settings.getint('CONCURRENT_REQUESTS_PER_IP')
         self.randomize_delay: bool = self.settings.getbool('RANDOMIZE_DOWNLOAD_DELAY')

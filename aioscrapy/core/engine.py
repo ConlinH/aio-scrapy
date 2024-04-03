@@ -138,7 +138,7 @@ class ExecutionEngine(object):
         while self.unlock and not self._needs_backout() and self.unlock:
             self.unlock = False
             try:
-                async for request in self.scheduler.next_request(self.downloader.total_concurrency):
+                async for request in self.scheduler.next_request(self.downloader.get_requests_count):
                     if request:
                         self.slot.add_request(request)
                         await self.downloader.fetch(request)
