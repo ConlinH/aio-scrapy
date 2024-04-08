@@ -42,8 +42,6 @@ class ExecutionEngine(object):
         self.signals = crawler.signals
         self.logformatter = crawler.logformatter
 
-        self.enqueue_cache_num = self.settings.getint("ENQUEUE_CACHE_NUM")
-        self.enqueue_cache: Queue = Queue(self.enqueue_cache_num)
         self.slot: Optional[Slot] = None
         self.spider: Optional[Spider] = None
         self.downloader: Optional[DownloaderTV] = None
@@ -53,7 +51,6 @@ class ExecutionEngine(object):
         self.running: bool = False
         self.unlock: bool = True
         self.finish: bool = False
-        self.enqueue_unlock: bool = True
 
     async def start(
             self,
@@ -70,7 +67,6 @@ class ExecutionEngine(object):
         while not self.finish:
             self.running and await self._next_request()
             await asyncio.sleep(1)
-            self.enqueue_cache_num != 1 and create_task(self._crawl())
             self.running and await self._spider_idle(self.spider)
 
     async def stop(self, reason: str = 'shutdown') -> None:
@@ -81,7 +77,6 @@ class ExecutionEngine(object):
 
         while not self.is_idle():
             await asyncio.sleep(0.2)
-            self.enqueue_cache_num != 1 and create_task(self._crawl())
         await self.close_spider(self.spider, reason=reason)
         await self.signals.send_catch_log_deferred(signal=signals.engine_stopped)
         self.finish = True
@@ -212,27 +207,8 @@ class ExecutionEngine(object):
         return True
 
     async def crawl(self, request: Request) -> None:
-        if self.enqueue_cache_num == 1:
-            await self.scheduler.enqueue_request(request)
-            create_task(self._next_request())
-        else:
-            await self.enqueue_cache.put(request)
-
-    async def _crawl(self) -> None:
-        if not self.enqueue_unlock:
-            return
-        self.enqueue_unlock = False
-        requests = []
-        for _ in range(self.enqueue_cache.qsize()):
-            try:
-                request = self.enqueue_cache.get_nowait()
-                requests.append(request)
-            except QueueEmpty:
-                break
-        if requests:
-            await call_helper(self.scheduler.enqueue_request_batch, requests)
-            create_task(self._next_request())
-        self.enqueue_unlock = True
+        await self.scheduler.enqueue_request(request)
+        # create_task(self._next_request())
 
     async def close_spider(self, spider: Spider, reason: str = 'cancelled') -> None:
         """Close (cancel) spider and clear all its outstanding requests"""
@@ -276,7 +252,6 @@ class ExecutionEngine(object):
         # method of 'has_pending_requests' has IO, so method of 'is_idle' execute twice
         if self.is_idle() \
                 and self.slot.start_requests is None \
-                and self.enqueue_unlock and self.enqueue_cache.empty() \
                 and not await self.scheduler.has_pending_requests() \
                 and self.is_idle():
             await self.stop(reason='finished')

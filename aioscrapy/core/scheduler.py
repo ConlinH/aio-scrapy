@@ -31,7 +31,7 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
     @classmethod
     async def from_crawler(cls, crawler: "aioscrapy.Crawler") -> "BaseScheduler":
         """
-        Factory method which receives the current :class:`~scrapy.crawler.Crawler` object as argument.
+        Factory method which receives the current :class:`~aioscrapy.crawler.Crawler` object as argument.
         """
         return cls()
 
@@ -103,20 +103,27 @@ class Scheduler(BaseScheduler):
             queue: AbsQueue,
             spider: aioscrapy.Spider,
             stats=Optional[StatsCollector],
-            persist: bool = True
+            persist: bool = True,
+            cache_queue: Optional[AbsQueue] = None
     ):
+
         self.queue = queue
+        self.cache_queue = cache_queue
         self.spider = spider
         self.stats = stats
         self.persist = persist
 
     @classmethod
     async def from_crawler(cls: Type[SchedulerTV], crawler: "aioscrapy.Crawler") -> SchedulerTV:
+        cache_queue = None
+        if crawler.settings.getbool('USE_SCHEDULER_QUEUE_CACHE', False):
+            cache_queue = await load_instance('aioscrapy.queue.memory.SpiderPriorityQueue', spider=crawler.spider)
         instance = cls(
             await load_instance(crawler.settings['SCHEDULER_QUEUE_CLASS'], spider=crawler.spider),
             crawler.spider,
             stats=crawler.stats,
-            persist=crawler.settings.getbool('SCHEDULER_PERSIST', True)
+            persist=crawler.settings.getbool('SCHEDULER_PERSIST', True),
+            cache_queue=cache_queue
         )
 
         if crawler.settings.getbool('SCHEDULER_FLUSH_ON_START', False):
@@ -128,8 +135,20 @@ class Scheduler(BaseScheduler):
         return instance
 
     async def close(self, reason: str) -> None:
+
         if not self.persist:
             await self.flush()
+            return
+
+        # 如果持久化，将缓存中的任务放回到redis等分布式队列中
+        if self.cache_queue is not None:
+            while True:
+                temp = []
+                async for request in self.cache_queue.pop(2000):
+                    temp.append(request)
+                temp and await self.queue.push_batch(temp)
+                if len(temp) < 2000:
+                    break
 
     async def flush(self) -> None:
         await call_helper(self.queue.clear)
@@ -141,16 +160,38 @@ class Scheduler(BaseScheduler):
         return True
 
     async def enqueue_request(self, request: aioscrapy.Request) -> bool:
-        await call_helper(self.queue.push, request)
+        """
+        如果启用了缓存队列(USE_SCHEDULER_QUEUE_CACHE)，则优先将任务放到缓存队列中
+        """
+        if self.cache_queue is not None:
+            await call_helper(self.cache_queue.push, request)
+        else:
+            await call_helper(self.queue.push, request)
         if self.stats:
             self.stats.inc_value(self.queue.inc_key, spider=self.spider)
         return True
 
     async def next_request(self, count: int = 1) -> Optional[aioscrapy.Request]:
+        """
+        如果启用了缓存队列(USE_SCHEDULER_QUEUE_CACHE)，则优先从缓存队列中获取任务，然后从redis等分布式队列中获取任务
+        """
+        flag = False
+        if self.cache_queue is not None:
+            async for request in self.cache_queue.pop(count):
+                if request and self.stats:
+                    self.stats.inc_value(self.queue.inc_key, spider=self.spider)
+                yield request
+                flag = True
+
+        if flag:
+            return
+
         async for request in self.queue.pop(count):
             if request and self.stats:
                 self.stats.inc_value(self.queue.inc_key, spider=self.spider)
             yield request
 
+
     async def has_pending_requests(self) -> bool:
-        return await call_helper(self.queue.len) > 0
+        return await call_helper(self.queue.len) if self.cache_queue is None \
+            else (await call_helper(self.queue.len) + await call_helper(self.cache_queue.len)) > 0
