@@ -1,5 +1,5 @@
 from aioscrapy import Spider, logger
-from aioscrapy.http import Response, Request
+from aioscrapy.http import Response, Request, FormRequest, JsonRequest
 
 
 class DemoCurlCffiSpider(Spider):
@@ -20,11 +20,14 @@ class DemoCurlCffiSpider(Spider):
         DOWNLOAD_HANDLERS_TYPE="curl_cffi",
     )
 
-    start_urls = ["https://tools.scrapfly.io/api/fp/ja3"]
+    start_urls = ["https://quotes.toscrape.com"]
 
     async def start_requests(self):
-        for url in self.start_urls:
-            yield Request(url, meta=dict(impersonate="chrome110"))
+        # for url in self.start_urls:
+        #     yield Request(url)
+        yield Request("https://tools.scrapfly.io/api/fp/ja3", meta=dict(impersonate="chrome110"))
+        yield FormRequest("https://httpbin.org/post", formdata=dict(test="test"), meta=dict(impersonate="chrome110"))
+        yield JsonRequest("https://httpbin.org/post", data=dict(test="test"), meta=dict(impersonate="chrome110"))
 
     @staticmethod
     async def process_request(request, spider):
