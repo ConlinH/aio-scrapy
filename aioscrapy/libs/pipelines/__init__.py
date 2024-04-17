@@ -8,15 +8,13 @@ class SqlFormat:
 
     @staticmethod
     def pg_insert(table: str, fields: list, *args) -> str:
-        fields = ','.join(fields)
         placeholder = ','.join([f'${i + 1}' for i in range(len(fields))])
-        return f'''INSERT INTO {table} ({fields}) VALUES ({placeholder})'''
+        return f'''INSERT INTO {table} ({",".join(fields)}) VALUES ({placeholder})'''
 
     @staticmethod
     def pg_ignore_insert(table: str, fields: list, *args) -> str:
         placeholder = ','.join([f'${i + 1}' for i in range(len(fields))])
-        fields = ','.join(fields)
-        return f'INSERT INTO {table} ({fields}) VALUES ({placeholder}) ON CONFLICT DO NOTHING'
+        return f'''INSERT INTO {table} ({",".join(fields)}) VALUES ({placeholder}) ON CONFLICT DO NOTHING'''
 
     @staticmethod
     def pg_update_insert(table: str, fields: list, update_fields: list, on_conflict: str, *args) -> str:
@@ -25,8 +23,7 @@ class SqlFormat:
         if not update_fields:
             update_fields = fields
         update_fields = ','.join([f"{key} = excluded.{key}" for key in update_fields])
-        fields = ','.join(fields)
-        return f'INSERT INTO {table} ({fields}) VALUES ({placeholder}) ON CONFLICT({on_conflict}) DO UPDATE SET {update_fields}'
+        return f'''INSERT INTO {table} ({",".join(fields)}) VALUES ({placeholder}) ON CONFLICT({on_conflict}) DO UPDATE SET {update_fields}'''
 
     @staticmethod
     def mysql_insert(table: str, fields: list, *args) -> str:
