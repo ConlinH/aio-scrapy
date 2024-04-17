@@ -61,6 +61,14 @@ try:
 except ImportError:
     pass
 
+
+try:
+    from curl_cffi.curl import CurlError
+
+    NEED_RETRY_ERROR += (CurlError,)
+except ImportError:
+    pass
+
 from aioscrapy.exceptions import NotConfigured
 from aioscrapy.http.request import Request
 from aioscrapy.spiders import Spider

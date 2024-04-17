@@ -19,7 +19,7 @@ extras_require = {
     "all": [
         "aiomysql>=0.1.1", "httpx[http2]>=0.23.0", "aio-pika>=8.1.1",
         "cryptography", "motor>=3.1.1", "pyhttpx>=2.10.1", "asyncpg>=0.27.0",
-        "XlsxWriter>=3.1.2", "pillow>=9.4.0", "requests>=2.28.2"
+        "XlsxWriter>=3.1.2", "pillow>=9.4.0", "requests>=2.28.2", "curl_cffi"
     ],
     "aiomysql": ["aiomysql>=0.1.1", "cryptography"],
     "httpx": ["httpx[http2]>=0.23.0"],
@@ -27,6 +27,7 @@ extras_require = {
     "mongo": ["motor>=3.1.1"],
     "playwright": ["playwright>=1.31.1"],
     "pyhttpx": ["pyhttpx>=2.10.4"],
+    "curl_cffi": ["curl_cffi>=0.6.1"],
     "requests": ["requests>=2.28.2"],
     "pg": ["asyncpg>=0.27.0"],
     "execl": ["XlsxWriter>=3.1.2", "pillow>=9.4.0"],
