@@ -72,6 +72,10 @@ DOWNLOAD_HANDLERS_MAP = {
         'http': 'aioscrapy.core.downloader.handlers.playwright.PlaywrightHandler',
         'https': 'aioscrapy.core.downloader.handlers.playwright.PlaywrightHandler',
     },
+    'curl_cffi': {
+        'http': 'aioscrapy.core.downloader.handlers.curl_cffi.CurlCffiDownloadHandler',
+        'https': 'aioscrapy.core.downloader.handlers.curl_cffi.CurlCffiDownloadHandler',
+    },
 }
 
 DOWNLOAD_TIMEOUT = 180  # 3mins
