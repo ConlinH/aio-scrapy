@@ -16,7 +16,7 @@ class DemoCurlCffiSpider(Spider):
         #     'http': 'aioscrapy.core.downloader.handlers.curl_cffi.CurlCffiDownloadHandler',
         #     'https': 'aioscrapy.core.downloader.handlers.curl_cffi.CurlCffiDownloadHandler',
         # },
-        # CURL_CFFI_CLIENT_SESSION_ARGS={},
+        # CURL_CFFI_CLIENT_SESSION_ARGS={impersonate="chrome110"},
         DOWNLOAD_HANDLERS_TYPE="curl_cffi",
     )
 
