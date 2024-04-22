@@ -24,11 +24,12 @@ class $classname(Spider):
         pass
 
     async def parse(self, response):
-        item = {
-            'author': response.xpath('span/small/text()').get(),
-            'text': response.css('span.text::text').get(),
-        }
-        yield item
+        for quote in response.css('div.quote'):
+            item = {
+                'author': quote.xpath('span/small/text()').get(),
+                'text': quote.css('span.text::text').get(),
+            }
+            yield item
 
     async def process_item(self, item):
         logger.info(item)
