@@ -88,7 +88,7 @@ aioscrapy crawl quotes
 #### 创建单个爬虫脚本:
 
 ```shell
-aioscrapy singlespider single_quotes
+aioscrapy genspider single_quotes -t single
 ```
 
 single_quotes.py:
