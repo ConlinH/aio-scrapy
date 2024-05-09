@@ -48,7 +48,7 @@ class RequestsDownloadHandler(BaseDownloadHandler):
             status=response.status_code,
             headers=response.headers,
             body=response.content,
-            cookies=dict(response.cookies),
+            cookies={k: v or '' for k, v in response.cookies.items()},
             encoding=response.encoding
         )
 

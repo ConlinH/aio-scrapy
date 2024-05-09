@@ -68,7 +68,7 @@ class HttpxDownloadHandler(BaseDownloadHandler):
             status=response.status_code,
             headers=response.headers,
             body=content,
-            cookies=dict(response.cookies),
+            cookies={j.name: j.value or '' for j in response.cookies.jar},
             encoding=response.encoding
         )
 
