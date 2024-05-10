@@ -24,7 +24,7 @@ The quick way:
 
 ```shell
 # Install the latest aio-scrapy
-pip install git+https://github.com/conlin-huang/aio-scrapy
+pip install git+https://github.com/ConlinH/aio-scrapy
 
 # default
 pip install aio-scrapy
