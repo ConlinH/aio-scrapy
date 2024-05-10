@@ -26,7 +26,7 @@
 
 ```shell
 # 安装最新的代码
-pip install git+https://github.com/conlin-huang/aio-scrapy
+pip install git+https://github.com/ConlinH/aio-scrapy
 
 # default
 pip install aio-scrapy
