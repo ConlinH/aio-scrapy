@@ -138,14 +138,14 @@ class Downloader(BaseDownloader):
 
     @classmethod
     async def from_crawler(cls, crawler) -> "Downloader":
+        df = crawler.settings.get('DUPEFILTER_CLASS') and await load_instance(crawler.settings['DUPEFILTER_CLASS'], crawler=crawler)
+        crawler.spider.dupefilter = df  # 将指纹绑定到Spider 在解析成功的时候 调用DUPEFILTER_CLASS的success方法
         return cls(
             crawler,
             await call_helper(DownloadHandlerManager.for_crawler, crawler),
             await call_helper(DownloaderMiddlewareManager.from_crawler, crawler),
-            proxy=crawler.settings.get("PROXY_HANDLER") and await load_instance(crawler.settings["PROXY_HANDLER"],
-                                                                                crawler=crawler),
-            dupefilter=crawler.settings.get('DUPEFILTER_CLASS') and await load_instance(
-                crawler.settings['DUPEFILTER_CLASS'], crawler=crawler)
+            proxy=crawler.settings.get("PROXY_HANDLER") and await load_instance(crawler.settings["PROXY_HANDLER"], crawler=crawler),
+            dupefilter=df
         )
 
     async def fetch(self, request: Request) -> None:

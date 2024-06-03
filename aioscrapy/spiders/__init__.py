@@ -22,6 +22,7 @@ class Spider(object):
 
     name: Optional[str] = None
     proxy: Optional["aioscrapy.proxy.AbsProxy"] = None
+    dupefilter: Optional["aioscrapy.dupefilters.DupeFilterBase"] = None
     custom_settings: Optional[dict] = None
     stats: Optional[StatsCollector] = None
 
@@ -77,11 +78,14 @@ class Spider(object):
             yield Request(url)
 
     async def request_from_dict(self, d: dict):
-        """集成后重写改方法，将队列中的json根据情况构建成Request对象"""
+        """继承成后重写改方法，将队列中的json根据情况构建成Request对象"""
         pass
 
     async def _parse(self, response: Response, **kwargs):
-        return await call_helper(self.parse, response)
+        ret = await call_helper(self.parse, response)
+        if not response.request.dont_filter and self.dupefilter is not None:
+            await self.dupefilter.success(response.request)
+        return ret
 
     async def parse(self, response: Response):
         raise NotImplementedError(f'{self.__class__.__name__}.parse callback is not defined')
@@ -106,7 +110,7 @@ class Spider(object):
     __repr__ = __str__
 
     @classmethod
-    def start(cls, setting_path=None, use_windows_selector_eventLoop: bool = False):
+    def start(cls, setting_path=None):
         from aioscrapy.crawler import CrawlerProcess
         from aioscrapy.utils.project import get_project_settings
 
@@ -115,7 +119,7 @@ class Spider(object):
             settings.setmodule(setting_path)
         cp = CrawlerProcess(settings)
         cp.crawl(cls)
-        cp.start(use_windows_selector_eventLoop)
+        cp.start()
 
     def spider_idle(self):
         if not self.close_on_idle:

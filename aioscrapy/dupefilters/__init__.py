@@ -37,3 +37,6 @@ class DupeFilterBase(metaclass=ABCMeta):
             self.logdupes = False
 
         spider.crawler.stats.inc_value('dupefilter/filtered', spider=spider)
+
+    async def success(self, request: Request) -> None:
+        """ deal fingerprint on task successful """

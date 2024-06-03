@@ -128,5 +128,47 @@ class RedisBloomDupeFilter(RedisRFPDupeFilter):
         return False
 
 
+class RedisBloomSetDupeFilter(RedisBloomDupeFilter):
+
+    def __init__(self, server, key, key_set, ttl, debug, bit, hash_number, keep_on_close, info):
+        super().__init__(server, key, debug, bit, hash_number, keep_on_close, info)
+        self.key_set = key_set
+        self.ttl = ttl
+
+    @classmethod
+    async def from_crawler(cls, crawler: "aioscrapy.crawler.Crawler"):
+        server = db_manager.redis.queue
+        dupefilter_key = crawler.settings.get("SCHEDULER_DUPEFILTER_KEY", '%(spider)s:bloomfilter')
+        keep_on_close = crawler.settings.getbool("KEEP_DUPEFILTER_DATA_ON_CLOSE", True)
+        key = dupefilter_key % {'spider': crawler.spider.name}
+        debug = crawler.settings.getbool('DUPEFILTER_DEBUG', False)
+        info = crawler.settings.getbool('DUPEFILTER_INFO', False)
+        bit = crawler.settings.getint('BLOOMFILTER_BIT', 30)
+        hash_number = crawler.settings.getint('BLOOMFILTER_HASH_NUMBER', 6)
+        ttl = crawler.settings.getint('DUPEFILTER_SET_KEY_TTL', 180)
+        return cls(server, key=key, key_set=key + "_set", ttl=ttl, debug=debug, bit=bit, hash_number=hash_number,
+                   keep_on_close=keep_on_close, info=info)
+
+    async def request_seen(self, request: Request) -> bool:
+        fp = await self.bf.exists(request.fingerprint)
+        if fp:
+            return True
+        async with self.server.pipeline() as pipe:
+            pipe.sadd(self.key_set, request.fingerprint)
+            pipe.expire(self.key_set, self.ttl)
+            ret, _ = await pipe.execute()
+        return ret == 0
+
+    async def success(self, request: Request):
+        await self.bf.insert(request.fingerprint)
+        await self.server.srem(self.key_set, request.fingerprint)
+
+    async def close(self, reason=''):
+        if not self.keep_on_close:
+            await self.clear()
+        await self.server.delete(self.key_set)
+
+
 RFPDupeFilter = RedisRFPDupeFilter
 BloomDupeFilter = RedisBloomDupeFilter
+BloomSetDupeFilter = RedisBloomSetDupeFilter

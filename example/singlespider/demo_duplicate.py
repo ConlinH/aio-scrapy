@@ -12,20 +12,30 @@ class DemoDuplicateSpider(Spider):
         'CONCURRENT_REQUESTS': 2,
         'LOG_LEVEL': 'INFO',
         "CLOSE_SPIDER_ON_IDLE": True,
+
+        "DUPEFILTER_INFO": True,   # 是否以info级别的日志输出过滤器的信息
+
         # 'LOG_FILE': 'test.log',
 
-        'DUPEFILTER_CLASS': 'aioscrapy.dupefilters.disk.RFPDupeFilter',  # 本地文件存储指纹去重
+        # 'DUPEFILTER_CLASS': 'aioscrapy.dupefilters.disk.RFPDupeFilter',  # 本地文件存储指纹去重
         # 'DUPEFILTER_CLASS': 'aioscrapy.dupefilters.redis.RFPDupeFilter',  # redis set去重
         # 'DUPEFILTER_CLASS': 'aioscrapy.dupefilters.redis.BloomDupeFilter',  # 布隆过滤器去重
 
+        # 布隆过滤器去重增强版：添加一个临时的Set集合缓存请求中的请求 在解析成功后再将指纹加入到布隆过滤器同时将Set中的清除
+        'DUPEFILTER_CLASS': 'aioscrapy.dupefilters.redis.BloomSetDupeFilter',
+        "DUPEFILTER_SET_KEY_TTL": 60 * 3,  # BloomSetDupeFilter过滤器的临时Redis Set集合的过期时间
+
         # 'SCHEDULER_QUEUE_CLASS': 'aioscrapy.queue.redis.SpiderPriorityQueue',
         'SCHEDULER_SERIALIZER': 'aioscrapy.serializer.JsonSerializer',
-        # 'REDIS_ARGS': {
-        #     'queue': {
-        #         'url': 'redis://:@192.168.43.165:6379/10',
-        #         'max_connections': 2,
-        #     }
-        # }
+        'REDIS_ARGS': {
+            'queue': {
+                'url': 'redis://127.0.0.1:6379/10',
+                'max_connections': 2,
+                'timeout': None,
+                'retry_on_timeout': True,
+                'health_check_interval': 30
+            }
+        }
     }
 
     async def start_requests(self):
