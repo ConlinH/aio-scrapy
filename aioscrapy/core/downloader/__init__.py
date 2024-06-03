@@ -204,6 +204,7 @@ class Downloader(BaseDownloader):
             slot.transferring.remove(request)
             slot.active.remove(request)
             self.active.remove(request)
+            self.dupefilter and not request.dont_filter and await self.dupefilter.done(request, done_type="request_done")
             if isinstance(result, Response):
                 await self.signals.send_catch_log(signal=signals.response_downloaded,
                                                   response=result,

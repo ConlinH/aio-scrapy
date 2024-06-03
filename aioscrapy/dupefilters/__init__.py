@@ -1,3 +1,4 @@
+from typing import Literal
 from abc import ABCMeta, abstractmethod
 
 from aioscrapy import Request, Spider
@@ -38,5 +39,5 @@ class DupeFilterBase(metaclass=ABCMeta):
 
         spider.crawler.stats.inc_value('dupefilter/filtered', spider=spider)
 
-    async def success(self, request: Request) -> None:
+    async def done(self, request: Request, done_type: Literal["request_done", "parse_done"]) -> None:
         """ deal fingerprint on task successful """

@@ -110,8 +110,8 @@ class Scraper:
                     await self.handle_spider_error(e, request, result)
                 else:
                     await self.handle_spider_output(output, request, result)
-            except BaseException:
-                logger.exception('Scraper bug processing %(request)s' % {'request': request})
+            except BaseException as e:
+                await self.handle_spider_error(e, request, result)
             finally:
                 if isinstance(result, PlaywrightResponse):
                     await result.release()
@@ -161,16 +161,22 @@ class Scraper:
         """Iter each Request/Item (given in the output parameter) returned from the given spider"""
         if not result:
             return
-
+        parser_successful = True
         while True:
             try:
                 output = await result.__anext__()
             except StopAsyncIteration:
                 break
             except Exception as e:
+                parser_successful = False
                 await self.handle_spider_error(e, request, response)
             else:
                 await self._process_spidermw_output(output, request, response)
+
+        self.spider.dupefilter and \
+        not request.dont_filter and \
+        parser_successful and \
+        await self.spider.dupefilter.done(request, done_type="parse_done")
 
     async def _process_spidermw_output(self, output: Any, request: Request, response: Response) -> None:
         """Process each Request/Item (given in the output parameter) returned from the given spider"""

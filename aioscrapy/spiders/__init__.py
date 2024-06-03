@@ -82,10 +82,7 @@ class Spider(object):
         pass
 
     async def _parse(self, response: Response, **kwargs):
-        ret = await call_helper(self.parse, response)
-        if not response.request.dont_filter and self.dupefilter is not None:
-            await self.dupefilter.success(response.request)
-        return ret
+        return await call_helper(self.parse, response)
 
     async def parse(self, response: Response):
         raise NotImplementedError(f'{self.__class__.__name__}.parse callback is not defined')

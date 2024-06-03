@@ -1,3 +1,5 @@
+from typing import Literal
+
 from aioscrapy import Request
 from aioscrapy.db import db_manager
 from aioscrapy.dupefilters import DupeFilterBase
@@ -159,9 +161,12 @@ class RedisBloomSetDupeFilter(RedisBloomDupeFilter):
             ret, _ = await pipe.execute()
         return ret == 0
 
-    async def success(self, request: Request):
-        await self.bf.insert(request.fingerprint)
-        await self.server.srem(self.key_set, request.fingerprint)
+    async def done(self, request: Request, done_type: Literal["request_done", "parse_done"]):
+        print(done_type)
+        if done_type == "request_done":
+            await self.server.srem(self.key_set, request.fingerprint)
+        elif done_type == "parse_done":
+            await self.bf.insert(request.fingerprint)
 
     async def close(self, reason=''):
         if not self.keep_on_close:
