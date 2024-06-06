@@ -1,5 +1,3 @@
-import ssl
-
 from curl_cffi.requests import AsyncSession
 
 from aioscrapy import Request
@@ -52,7 +50,7 @@ class CurlCffiDownloadHandler(BaseDownloadHandler):
             str(response.url),
             status=response.status_code,
             headers=response.headers,
-            body=response.text,
+            body=response.content,
             cookies=dict(response.cookies),
             encoding=response.encoding
         )
