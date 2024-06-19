@@ -191,7 +191,6 @@ class Scheduler(BaseScheduler):
                 self.stats.inc_value(self.queue.inc_key, spider=self.spider)
             yield request
 
-
     async def has_pending_requests(self) -> bool:
         return await call_helper(self.queue.len) if self.cache_queue is None \
             else (await call_helper(self.queue.len) + await call_helper(self.cache_queue.len)) > 0

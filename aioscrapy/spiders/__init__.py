@@ -107,7 +107,7 @@ class Spider(object):
     __repr__ = __str__
 
     @classmethod
-    def start(cls, setting_path=None):
+    def start(cls, setting_path=None, use_windows_selector_eventLoop: bool = False):
         from aioscrapy.crawler import CrawlerProcess
         from aioscrapy.utils.project import get_project_settings
 
@@ -116,7 +116,7 @@ class Spider(object):
             settings.setmodule(setting_path)
         cp = CrawlerProcess(settings)
         cp.crawl(cls)
-        cp.start()
+        cp.start(use_windows_selector_eventLoop)
 
     def spider_idle(self):
         if not self.close_on_idle:
