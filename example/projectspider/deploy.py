@@ -1,5 +1,6 @@
 #!d:\program files\python\python37\python.exe
 
+import errno
 import glob
 import json
 import netrc
@@ -16,13 +17,24 @@ from six.moves.urllib.parse import urlparse, urljoin
 from six.moves.urllib.request import (build_opener, install_opener,
                                       HTTPRedirectHandler as UrllibHTTPRedirectHandler,
                                       Request, urlopen)
-from w3lib.form import encode_multipart
+from urllib3.filepost import encode_multipart_formdata
 # from scrapy.utils.http import basic_auth_header
 from w3lib.http import basic_auth_header
 
 from aioscrapy.utils.conf import get_config, closest_aioscrapy_cfg
 from aioscrapy.utils.project import inside_project
-from aioscrapy.utils.python import retry_on_eintr
+# from aioscrapy.utils.python import retry_on_eintr
+
+
+def retry_on_eintr(function, *args, **kw):
+    """Run a function and retry it while getting EINTR errors."""
+    while True:
+        try:
+            return function(*args, **kw)
+        except IOError as e:
+            if e.errno != errno.EINTR:
+                raise
+
 
 _SETUP_PY_TEMPLATE = \
     """# Automatically created by: scrapyd-deploy
@@ -215,10 +227,10 @@ def _upload_egg(target, eggpath, project, version):
         'version': version,
         'egg': ('project.egg', eggdata),
     }
-    body, boundary = encode_multipart(data)
+    body, content_type = encode_multipart_formdata(data)
     url = _url(target, 'addversion.json')
     headers = {
-        'Content-Type': 'multipart/form-data; boundary=%s' % boundary,
+        'Content-Type': content_type,
         'Content-Length': str(len(body)),
     }
     req = Request(url, body, headers)

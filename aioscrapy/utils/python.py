@@ -1,16 +1,12 @@
 """
 This module contains essential stuff that should've come with Python itself ;)
 """
-import errno
 import gc
-import inspect
 import re
 import sys
-import warnings
 import weakref
-from functools import partial, wraps
+from functools import wraps
 
-from aioscrapy.exceptions import AioScrapyDeprecationWarning
 from aioscrapy.utils.decorators import deprecated
 
 
@@ -150,4 +146,3 @@ if hasattr(sys, "pypy_version_info"):
 else:
     def garbage_collect():
         gc.collect()
-
