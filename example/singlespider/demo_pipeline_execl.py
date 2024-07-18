@@ -47,6 +47,9 @@ class DemoExeclSpider(Spider):
 
                     # 'img_fields': ['img'],    # 图片字段 当指定图片字段时 自行下载图片 并保存到表格里
                     # 'img_size': (100, 100)    # 指定图片大小时 自动将图片转换为指定大小
+
+                    # 传递给Workbook的参数 xlsxwriter.Workbook(filename, {'strings_to_urls': False})
+                    'strings_to_urls': False
                 }
             }
 

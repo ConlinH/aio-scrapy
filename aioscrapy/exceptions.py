@@ -91,3 +91,8 @@ class ContractFail(AssertionError):
 
 class ProxyException(Exception):
     pass
+
+
+class DownloadError(Exception):
+    """下载页面时发生的错误"""
+    pass

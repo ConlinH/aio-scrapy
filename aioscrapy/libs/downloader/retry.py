@@ -10,70 +10,21 @@ Failed pages are collected on the scraping process and rescheduled at the end,
 once the spider has finished crawling all regular (non failed) pages.
 """
 from typing import Optional, Union
-from aioscrapy.exceptions import ProxyException
+
+from anyio import EndOfStream
 
 try:
     from asyncio.exceptions import TimeoutError
 except:
     from concurrent.futures._base import TimeoutError
 
-NEED_RETRY_ERROR = (TimeoutError, ConnectionRefusedError, IOError, ProxyException)
-
-try:
-    from aiohttp.client_exceptions import ClientError
-
-    NEED_RETRY_ERROR += (ClientError,)
-except ImportError:
-    pass
-
-try:
-    from anyio import EndOfStream
-
-    NEED_RETRY_ERROR += (EndOfStream,)
-except ImportError:
-    pass
-
-try:
-    from httpx import HTTPError as HttpxError
-
-    NEED_RETRY_ERROR += (HttpxError,)
-except ImportError:
-    pass
-
-try:
-    from pyhttpx.exception import BaseExpetion as PyHttpxError
-
-    NEED_RETRY_ERROR += (PyHttpxError,)
-except ImportError:
-    pass
-
-try:
-    from requests.exceptions import RequestException as RequestsError
-
-    NEED_RETRY_ERROR += (RequestsError,)
-except ImportError:
-    pass
-
-try:
-    from playwright._impl._api_types import Error as PlaywrightError
-
-    NEED_RETRY_ERROR += (PlaywrightError,)
-except ImportError:
-    pass
-
-
-try:
-    from curl_cffi.curl import CurlError
-
-    NEED_RETRY_ERROR += (CurlError,)
-except ImportError:
-    pass
-
-from aioscrapy.exceptions import NotConfigured
+from aioscrapy.exceptions import ProxyException, DownloadError, NotConfigured
 from aioscrapy.http.request import Request
 from aioscrapy.spiders import Spider
-from aioscrapy.utils.python import global_object_name
 from aioscrapy.utils.log import logger as retry_logger
+from aioscrapy.utils.python import global_object_name
+
+NEED_RETRY_ERROR = (TimeoutError, ConnectionRefusedError, IOError, ProxyException, DownloadError, EndOfStream)
 
 
 def get_retry_request(

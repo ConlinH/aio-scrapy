@@ -1,7 +1,9 @@
+from curl_cffi.curl import CurlError
 from curl_cffi.requests import AsyncSession
 
 from aioscrapy import Request
 from aioscrapy.core.downloader.handlers import BaseDownloadHandler
+from aioscrapy.exceptions import DownloadError
 from aioscrapy.http import HtmlResponse
 from aioscrapy.settings import Settings
 from aioscrapy.utils.log import logger
@@ -19,6 +21,12 @@ class CurlCffiDownloadHandler(BaseDownloadHandler):
         return cls(settings)
 
     async def download_request(self, request: Request, _) -> HtmlResponse:
+        try:
+            return await self._download_request(request)
+        except CurlError as e:
+            raise DownloadError from e
+
+    async def _download_request(self, request: Request) -> HtmlResponse:
         kwargs = {
             'timeout': self.settings.get('DOWNLOAD_TIMEOUT'),
             'cookies': dict(request.cookies),

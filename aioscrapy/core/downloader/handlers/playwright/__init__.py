@@ -1,11 +1,13 @@
 from functools import wraps
 
+from playwright._impl._api_types import Error
 from playwright.async_api._generated import Response as EventResponse
 
-from aioscrapy import Request
+from aioscrapy import Request, Spider
 from aioscrapy.core.downloader.handlers import BaseDownloadHandler
 from aioscrapy.core.downloader.handlers.playwright.driverpool import WebDriverPool
 from aioscrapy.core.downloader.handlers.playwright.webdriver import PlaywrightDriver
+from aioscrapy.exceptions import DownloadError
 from aioscrapy.http import PlaywrightResponse
 from aioscrapy.settings import Settings
 from aioscrapy.utils.tools import call_helper
@@ -24,7 +26,13 @@ class PlaywrightHandler(BaseDownloadHandler):
     def from_settings(cls, settings: Settings):
         return cls(settings)
 
-    async def download_request(self, request: Request, spider) -> PlaywrightResponse:
+    async def download_request(self, request: Request, spider: Spider) -> PlaywrightResponse:
+        try:
+            return await self._download_request(request, spider)
+        except Error as e:
+            raise DownloadError from e
+
+    async def _download_request(self, request: Request, spider) -> PlaywrightResponse:
         cookies = dict(request.cookies)
         timeout = request.meta.get('download_timeout', 30) * 1000
         user_agent = request.headers.get("User-Agent")

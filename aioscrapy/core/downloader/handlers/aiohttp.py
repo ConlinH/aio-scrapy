@@ -4,9 +4,11 @@ import ssl
 from typing import Optional
 
 import aiohttp
+from aiohttp.client_exceptions import ClientError
 
 from aioscrapy import Request
 from aioscrapy.core.downloader.handlers import BaseDownloadHandler
+from aioscrapy.exceptions import DownloadError
 from aioscrapy.http import HtmlResponse
 from aioscrapy.settings import Settings
 from aioscrapy.utils.log import logger
@@ -32,6 +34,12 @@ class AioHttpDownloadHandler(BaseDownloadHandler):
         return self.session
 
     async def download_request(self, request: Request, _) -> HtmlResponse:
+        try:
+            return await self._download_request(request)
+        except ClientError as e:
+            raise DownloadError from e
+
+    async def _download_request(self, request: Request) -> HtmlResponse:
         kwargs = {
             'verify_ssl': request.meta.get('verify_ssl', self.verify_ssl),
             'timeout': request.meta.get('download_timeout', 180),
