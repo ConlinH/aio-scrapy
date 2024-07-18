@@ -3,7 +3,7 @@ from pymongo.errors import NetworkTimeout
 
 import aioscrapy
 from aioscrapy.db.absmanager import AbsDBPoolManager
-from aioscrapy import logger
+from loguru import logger
 
 
 class MongoExecutor:
