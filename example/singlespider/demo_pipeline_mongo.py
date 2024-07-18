@@ -51,6 +51,7 @@ class DemoMongoSpider(Spider):
                     'db_alias': 'default',  # 要存储的mongo, 参数“MONGO_ARGS”的key
                     'table_name': 'article',  # 要存储的表名字
                     # 'db_name': 'xxx',     # 要存储的mongo的库名， 不指定则默认为“MONGO_ARGS”中的“db”值
+                    # 'ordered': False,   # 批量写入时 单条数据异常是否影响整体写入 默认是False不影响其他数据写入
                 }
             }
 

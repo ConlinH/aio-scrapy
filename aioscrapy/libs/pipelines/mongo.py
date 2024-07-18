@@ -9,6 +9,7 @@ class MongoPipeline(DBPipelineBase):
     def __init__(self, settings, db_type: str):
         super().__init__(settings, db_type)
         self.db_cache = {}
+        self.ordered_cache = {}
 
     @classmethod
     def from_settings(cls, settings):
@@ -17,17 +18,19 @@ class MongoPipeline(DBPipelineBase):
     def parse_item_to_cache(self, item: dict, save_info: dict):
         db_name = save_info.get('db_name')
         table_name = save_info.get('table_name')
+        ordered = save_info.get('ordered', False)
         assert table_name is not None, 'please set table_name'
         db_alias = save_info.get('db_alias', ['default'])
         if isinstance(db_alias, str):
             db_alias = [db_alias]
 
-        cache_key = ''.join(db_alias) + (db_name or '') + table_name
+        cache_key = ''.join(db_alias) + (db_name or '') + table_name + str(ordered)
 
         if self.table_cache.get(cache_key) is None:
             self.db_alias_cache[cache_key] = db_alias
             self.table_cache[cache_key] = table_name
             self.db_cache[cache_key] = db_name
+            self.ordered_cache[cache_key] = ordered
             self.item_cache[cache_key] = []
 
         self.item_cache[cache_key].append(item)
@@ -40,7 +43,8 @@ class MongoPipeline(DBPipelineBase):
                 try:
                     executor = db_manager.mongo.executor(alias)
                     result = await executor.insert(
-                        table_name, self.item_cache[cache_key], db_name=self.db_cache[cache_key]
+                        table_name, self.item_cache[cache_key], db_name=self.db_cache[cache_key],
+                        ordered=self.ordered_cache[cache_key]
                     )
                     logger.info(
                         f'table:{alias}->{table_name} sum:{len(self.item_cache[cache_key])} ok:{len(result.inserted_ids)}'
