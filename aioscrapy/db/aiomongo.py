@@ -1,7 +1,9 @@
 from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo.errors import NetworkTimeout
 
 import aioscrapy
 from aioscrapy.db.absmanager import AbsDBPoolManager
+from aioscrapy import logger
 
 
 class MongoExecutor:
@@ -9,10 +11,16 @@ class MongoExecutor:
         self.alias = alias
         self.pool_manager = pool_manager
 
-    async def insert(self, table_name, values, db_name=None, ordered=False):
+    async def insert(self, table_name, values, db_name=None, ordered=False, retry_times=3):
         client, db_name_default = self.pool_manager.get_pool(self.alias)
         db_name = db_name or db_name_default
-        return await client[f'{db_name}'][f'{table_name}'].insert_many(values, ordered=ordered)
+        for _ in range(retry_times):
+            try:
+                return await client[f'{db_name}'][f'{table_name}'].insert_many(values, ordered=ordered)
+            except NetworkTimeout:
+                logger.warning("mongo insert error by NetworkTimeout, retrying...")
+
+        raise NetworkTimeout
 
     def __getattr__(self, table_name: str):
         client, db_name_default = self.pool_manager.get_pool(self.alias)

@@ -11,6 +11,7 @@ class DemoMongoSpider(Spider):
         # 'LOG_LEVEL': 'INFO'
         # 'DUPEFILTER_CLASS': 'aioscrapy.dupefilters.disk.RFPDupeFilter',
         "CLOSE_SPIDER_ON_IDLE": True,
+        "MONGO_TIMEOUT_RETRY_TIMES": 3,  # mongo写入时发生NetworkTimeout错误重试次数
         # mongo parameter
         "MONGO_ARGS": {
             'default': {

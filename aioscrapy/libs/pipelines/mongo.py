@@ -10,6 +10,7 @@ class MongoPipeline(DBPipelineBase):
         super().__init__(settings, db_type)
         self.db_cache = {}
         self.ordered_cache = {}
+        self.retry_times = settings.getint("MONGO_TIMEOUT_RETRY_TIMES", 3)
 
     @classmethod
     def from_settings(cls, settings):
@@ -44,7 +45,7 @@ class MongoPipeline(DBPipelineBase):
                     executor = db_manager.mongo.executor(alias)
                     result = await executor.insert(
                         table_name, self.item_cache[cache_key], db_name=self.db_cache[cache_key],
-                        ordered=self.ordered_cache[cache_key]
+                        ordered=self.ordered_cache[cache_key], retry_times=self.retry_times
                     )
                     logger.info(
                         f'table:{alias}->{table_name} sum:{len(self.item_cache[cache_key])} ok:{len(result.inserted_ids)}'
