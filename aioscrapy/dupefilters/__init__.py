@@ -39,5 +39,9 @@ class DupeFilterBase(metaclass=ABCMeta):
 
         spider.crawler.stats.inc_value('dupefilter/filtered', spider=spider)
 
-    async def done(self, request: Request, done_type: Literal["request_done", "parse_done"]) -> None:
-        """ deal fingerprint on task successful """
+    async def done(
+            self,
+            request: Request,
+            done_type: Literal["request_ok", "request_err", "parse_ok", "parse_err"]
+    ) -> None:
+        """ 根据done_type的状态 控制指纹的移除 """

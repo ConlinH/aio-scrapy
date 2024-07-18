@@ -16,7 +16,6 @@ class RequestsDownloadHandler(BaseDownloadHandler):
     def __init__(self, settings):
         self.settings: Settings = settings
         self.verify_ssl: bool = self.settings.get("VERIFY_SSL", True)
-        self.loop = asyncio.get_running_loop()
 
     @classmethod
     def from_settings(cls, settings: Settings):

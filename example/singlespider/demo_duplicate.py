@@ -21,8 +21,11 @@ class DemoDuplicateSpider(Spider):
         # 'DUPEFILTER_CLASS': 'aioscrapy.dupefilters.redis.RFPDupeFilter',  # redis set去重
         # 'DUPEFILTER_CLASS': 'aioscrapy.dupefilters.redis.BloomDupeFilter',  # 布隆过滤器去重
 
+        # RFPDupeFilter去重的增强版: 当请求失败或解析失败时 从Set中移除指纹
+        # 'DUPEFILTER_CLASS': 'aioscrapy.dupefilters.redis.ExRFPDupeFilter',
+
         # 布隆过滤器去重增强版：添加一个临时的Set集合缓存请求中的请求 在解析成功后再将指纹加入到布隆过滤器同时将Set中的清除
-        'DUPEFILTER_CLASS': 'aioscrapy.dupefilters.redis.BloomSetDupeFilter',
+        'DUPEFILTER_CLASS': 'aioscrapy.dupefilters.redis.ExBloomDupeFilter',
         "DUPEFILTER_SET_KEY_TTL": 60 * 3,  # BloomSetDupeFilter过滤器的临时Redis Set集合的过期时间
 
         # 'SCHEDULER_QUEUE_CLASS': 'aioscrapy.queue.redis.SpiderPriorityQueue',
@@ -39,7 +42,14 @@ class DemoDuplicateSpider(Spider):
     }
 
     async def start_requests(self):
-        yield Request('https://quotes.toscrape.com/page/1', dont_filter=False, fingerprint='1')
+        yield Request(
+            'https://quotes.toscrape.com/page/1',
+            dont_filter=False,
+            fingerprint='1',    # 不使用默认的指纹计算规则 而是指定去重指纹值
+            meta=dict(
+                dupefilter_msg="page_1"  # 当Request被去重时 指定日志输出的内容为"page_1" 不设置则默认为request对象
+            )
+        )
 
     @staticmethod
     async def process_request(request, spider):

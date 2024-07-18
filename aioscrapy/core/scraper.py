@@ -113,6 +113,11 @@ class Scraper:
             except BaseException as e:
                 await self.handle_spider_error(e, request, result)
             finally:
+                # 控制指纹是否移除
+                self.spider.dupefilter and \
+                    not request.dont_filter and \
+                    await self.spider.dupefilter.done(request, done_type="parse_ok" if getattr(request, "parse_ok", False) else "parse_err")
+
                 if isinstance(result, PlaywrightResponse):
                     await result.release()
 
@@ -161,22 +166,22 @@ class Scraper:
         """Iter each Request/Item (given in the output parameter) returned from the given spider"""
         if not result:
             return
-        parser_successful = True
+
+        parse_ok = True
         while True:
             try:
                 output = await result.__anext__()
             except StopAsyncIteration:
                 break
             except Exception as e:
-                parser_successful = False
+                parse_ok = False
                 await self.handle_spider_error(e, request, response)
             else:
                 await self._process_spidermw_output(output, request, response)
 
         self.spider.dupefilter and \
-        not request.dont_filter and \
-        parser_successful and \
-        await self.spider.dupefilter.done(request, done_type="parse_done")
+            not request.dont_filter and \
+            setattr(request, "parse_ok", parse_ok)
 
     async def _process_spidermw_output(self, output: Any, request: Request, response: Response) -> None:
         """Process each Request/Item (given in the output parameter) returned from the given spider"""

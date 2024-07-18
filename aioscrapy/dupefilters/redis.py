@@ -130,7 +130,7 @@ class RedisBloomDupeFilter(RedisRFPDupeFilter):
         return False
 
 
-class RedisBloomSetDupeFilter(RedisBloomDupeFilter):
+class ExRedisBloomDupeFilter(RedisBloomDupeFilter):
 
     def __init__(self, server, key, key_set, ttl, debug, bit, hash_number, keep_on_close, info):
         super().__init__(server, key, debug, bit, hash_number, keep_on_close, info)
@@ -161,11 +161,14 @@ class RedisBloomSetDupeFilter(RedisBloomDupeFilter):
             ret, _ = await pipe.execute()
         return ret == 0
 
-    async def done(self, request: Request, done_type: Literal["request_done", "parse_done"]):
-        print(done_type)
-        if done_type == "request_done":
+    async def done(
+            self,
+            request: Request,
+            done_type: Literal["request_ok", "request_err", "parse_ok", "parse_err"]
+    ):
+        if done_type == "request_ok" or done_type == "request_err":
             await self.server.srem(self.key_set, request.fingerprint)
-        elif done_type == "parse_done":
+        elif done_type == "parse_ok":
             await self.bf.insert(request.fingerprint)
 
     async def close(self, reason=''):
@@ -174,6 +177,21 @@ class RedisBloomSetDupeFilter(RedisBloomDupeFilter):
         await self.server.delete(self.key_set)
 
 
+class ExRedisRFPDupeFilter(RedisRFPDupeFilter):
+
+    async def done(
+            self,
+            request: Request,
+            done_type: Literal["request_ok", "request_err", "parse_ok", "parse_err"]
+    ):
+        # 当请求失败或解析失败的时候 从Redis的Set中移除指纹
+        if done_type == "request_err" or done_type == "parse_err":
+            await self.server.srem(self.key, request.fingerprint)
+
+
 RFPDupeFilter = RedisRFPDupeFilter
+ExRFPDupeFilter = ExRedisRFPDupeFilter
 BloomDupeFilter = RedisBloomDupeFilter
-BloomSetDupeFilter = RedisBloomSetDupeFilter
+ExBloomDupeFilter = ExRedisBloomDupeFilter
+BloomSetDupeFilter = ExRedisBloomDupeFilter
+

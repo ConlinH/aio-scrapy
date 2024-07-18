@@ -138,13 +138,15 @@ class Downloader(BaseDownloader):
 
     @classmethod
     async def from_crawler(cls, crawler) -> "Downloader":
-        df = crawler.settings.get('DUPEFILTER_CLASS') and await load_instance(crawler.settings['DUPEFILTER_CLASS'], crawler=crawler)
+        df = crawler.settings.get('DUPEFILTER_CLASS') and await load_instance(crawler.settings['DUPEFILTER_CLASS'],
+                                                                              crawler=crawler)
         crawler.spider.dupefilter = df  # 将指纹绑定到Spider 在解析成功的时候 调用DUPEFILTER_CLASS的success方法
         return cls(
             crawler,
             await call_helper(DownloadHandlerManager.for_crawler, crawler),
             await call_helper(DownloaderMiddlewareManager.from_crawler, crawler),
-            proxy=crawler.settings.get("PROXY_HANDLER") and await load_instance(crawler.settings["PROXY_HANDLER"], crawler=crawler),
+            proxy=crawler.settings.get("PROXY_HANDLER") and await load_instance(crawler.settings["PROXY_HANDLER"],
+                                                                                crawler=crawler),
             dupefilter=df
         )
 
@@ -204,12 +206,17 @@ class Downloader(BaseDownloader):
             slot.transferring.remove(request)
             slot.active.remove(request)
             self.active.remove(request)
-            self.dupefilter and not request.dont_filter and await self.dupefilter.done(request, done_type="request_done")
+
             if isinstance(result, Response):
                 await self.signals.send_catch_log(signal=signals.response_downloaded,
                                                   response=result,
                                                   request=request,
                                                   spider=self.spider)
+            #  控制指纹是否移除
+            self.dupefilter and \
+                not request.dont_filter and \
+                await self.dupefilter.done(request, done_type="request_ok" if isinstance(result, Response) else "request_err")
+
             await self._call_engine(result, request)
             await self._process_queue(slot)
 
