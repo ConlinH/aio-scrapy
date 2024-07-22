@@ -25,7 +25,7 @@ class RequestsDownloadHandler(BaseDownloadHandler):
         try:
             return await self._download_request(request)
         except RequestsError as e:
-            raise DownloadError from e
+            raise DownloadError(e) from e
 
     async def _download_request(self, request: Request) -> HtmlResponse:
         kwargs = {
