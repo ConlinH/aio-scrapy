@@ -51,7 +51,7 @@ def get_retry_request(
         if callable(reason):
             reason = reason()
         if isinstance(reason, Exception):
-            reason = global_object_name(reason.__class__)
+            reason = global_object_name((getattr(reason, "real_error", None) or reason).__class__)
 
         logger.info(
             "Retrying %(request)s (failed %(retry_times)d times): %(reason)s" % {

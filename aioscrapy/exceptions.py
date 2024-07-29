@@ -5,6 +5,7 @@ These exceptions are documented in docs/topics/exceptions.rst. Please don't add
 new exceptions here without documenting them there.
 """
 
+
 # Internal
 
 
@@ -95,4 +96,21 @@ class ProxyException(Exception):
 
 class DownloadError(Exception):
     """下载页面时发生的错误"""
-    pass
+
+    def __init__(self, *args, real_error=None):
+        self.real_error = real_error
+        super().__init__(*args)
+
+    def __str__(self):
+        if not self.real_error:
+            return "DownloadError"
+
+        return f"{self.real_error.__class__.__module__}.{self.real_error.__class__.__name__}: {str(self.real_error)}"
+
+
+if __name__ == '__main__':
+    e = Exception("xxx")
+    reason = DownloadError(real_error=e)
+    print(reason)
+    obj = reason.real_error.__class__
+    print(f"{obj.__module__}.{obj.__name__}")

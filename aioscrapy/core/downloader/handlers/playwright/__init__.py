@@ -30,7 +30,7 @@ class PlaywrightHandler(BaseDownloadHandler):
         try:
             return await self._download_request(request, spider)
         except Error as e:
-            raise DownloadError(e) from e
+            raise DownloadError(real_error=e) from e
 
     async def _download_request(self, request: Request, spider) -> PlaywrightResponse:
         cookies = dict(request.cookies)

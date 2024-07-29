@@ -14,6 +14,7 @@ install_requires = [
     "redis>=4.3.1",
     "aiomultiprocess>=0.9.0",
     "loguru>=0.7.0",
+    "anyio>=3.6.2"
 ]
 extras_require = {
     "all": [
