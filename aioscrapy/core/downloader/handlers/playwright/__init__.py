@@ -1,6 +1,10 @@
 from functools import wraps
 
-from playwright._impl._api_types import Error
+try:
+    from playwright._impl._errors import Error
+except ImportError:
+    from playwright._impl._api_types import Error
+
 from playwright.async_api._generated import Response as EventResponse
 
 from aioscrapy import Request, Spider
@@ -17,10 +21,11 @@ class PlaywrightHandler(BaseDownloadHandler):
     def __init__(self, settings: Settings):
         self.settings = settings
         playwright_client_args = settings.getdict('PLAYWRIGHT_CLIENT_ARGS')
+        use_pool = settings.getbool('PLAYWRIGHT_USE_POOL', True)
         self.wait_until = playwright_client_args.get('wait_until', 'domcontentloaded')
         self.url_regexes = playwright_client_args.pop('url_regexes', [])
         pool_size = playwright_client_args.pop('pool_size', settings.getint("CONCURRENT_REQUESTS", 1))
-        self._webdriver_pool = WebDriverPool(pool_size=pool_size, driver_cls=PlaywrightDriver, **playwright_client_args)
+        self._webdriver_pool = WebDriverPool(use_pool=use_pool, pool_size=pool_size, driver_cls=PlaywrightDriver, **playwright_client_args)
 
     @classmethod
     def from_settings(cls, settings: Settings):

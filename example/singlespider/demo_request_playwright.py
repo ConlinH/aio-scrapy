@@ -24,6 +24,7 @@ class DemoPlaywrightSpider(Spider):
         #     'https': 'aioscrapy.core.downloader.handlers.playwright.PlaywrightHandler',
         # },
         DOWNLOAD_HANDLERS_TYPE="playwright",
+        PLAYWRIGHT_USE_POOL=False,
         PLAYWRIGHT_CLIENT_ARGS=dict(
             driver_type="chromium",  # chromium、firefox、webkit
             wait_until="networkidle",  # 等待页面加载完成的事件,可选值："commit", "domcontentloaded", "load", "networkidle"
@@ -49,8 +50,8 @@ class DemoPlaywrightSpider(Spider):
 
     )
 
-    # start_urls = ['https://hanyu.baidu.com/zici/s?wd=黄&query=黄']
-    start_urls = ["https://mall.jd.com/view_search-507915-3733265-99-1-24-1.html"]
+    start_urls = ['https://hanyu.baidu.com/zici/s?wd=黄&query=黄']
+    # start_urls = ["https://mall.jd.com/view_search-507915-3733265-99-1-24-1.html"]
 
     @staticmethod
     async def process_request(request, spider):
@@ -68,23 +69,23 @@ class DemoPlaywrightSpider(Spider):
         pass
 
     async def parse(self, response: PlaywrightResponse):
-        # res = response.get_response("xxxx")
-        # print(res.text[:100])
-        print(response.cache_response)
-        res: PlaywrightResponse = response.get_response('getModuleHtml_response')
-        print(res.text)
+        # # res = response.get_response("xxxx")
+        # # print(res.text[:100])
+        # print(response.cache_response)
+        # res: PlaywrightResponse = response.get_response('getModuleHtml_response')
+        # print(res.text)
 
-        # img_bytes = response.get_response('action_result')
-        # yield {
-        #     'pingyin': response.xpath('//div[@id="pinyin"]/span/b/text()').get(),
-        #     'fan': response.xpath('//*[@id="traditional"]/span/text()').get(),
-        #     'img_bytes': img_bytes,
-        # }
-        #
-        # new_character = response.xpath('//a[@class="img-link"]/@href').getall()
-        # for character in new_character:
-        #     new_url = 'https://hanyu.baidu.com/zici' + character
-        #     yield Request(new_url, callback=self.parse, dont_filter=True)
+        img_bytes = response.get_response('action_result')
+        yield {
+            'pingyin': response.xpath('//div[@id="pinyin"]/span/b/text()').get(),
+            'fan': response.xpath('//*[@id="traditional"]/span/text()').get(),
+            'img_bytes': img_bytes,
+        }
+
+        new_character = response.xpath('//a[@class="img-link"]/@href').getall()
+        for character in new_character:
+            new_url = 'https://hanyu.baidu.com/zici' + character
+            yield Request(new_url, callback=self.parse, dont_filter=True)
 
     async def on_event_request(self, result: EventRequest) -> Any:
         """

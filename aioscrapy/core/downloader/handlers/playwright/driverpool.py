@@ -9,8 +9,9 @@ from aioscrapy.utils.tools import singleton
 @singleton
 class WebDriverPool:
     def __init__(
-            self, pool_size=5, driver_cls=None, **kwargs
+            self, use_pool=True, pool_size=5, driver_cls=None, **kwargs
     ):
+        self.use_pool = use_pool
         self.pool_size = pool_size
         self.driver_cls = driver_cls
         self.kwargs = kwargs
@@ -32,6 +33,8 @@ class WebDriverPool:
 
     async def get(self, **kwargs):
         async with self.lock:
+            if not self.use_pool:
+                return await self.create_driver(**kwargs)
             if not self.is_full:
                 driver = await self.create_driver(**kwargs)
                 self.driver_count += 1
@@ -40,6 +43,9 @@ class WebDriverPool:
         return driver
 
     async def release(self, driver):
+        if not self.use_pool:
+            await driver.quit()
+            return
         await self.queue.put(driver)
 
     async def remove(self, driver):

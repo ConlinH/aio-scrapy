@@ -37,7 +37,7 @@ class DownloadHandlerManager:
         crawler.signals.connect(self._close, signals.engine_stopped)
 
     @classmethod
-    def for_crawler(cls, crawler) -> "DownloadHandlerManager":
+    def from_crawler(cls, crawler) -> "DownloadHandlerManager":
         return cls(crawler)
 
     async def _get_handler(self, scheme: str) -> Optional[BaseDownloadHandler]:
