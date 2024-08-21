@@ -70,8 +70,8 @@ class PlaywrightDriver:
         parsed_url = urlparse(proxy)
         return ProxySettings(
             server=urlunparse(parsed_url._replace(netloc=parsed_url.netloc.split('@')[-1])),
-            username=parsed_url.username,
-            password=parsed_url.password,
+            username=parsed_url.username or '',
+            password=parsed_url.password or '',
         )
 
     async def quit(self):
