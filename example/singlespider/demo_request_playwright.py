@@ -109,7 +109,7 @@ class DemoPlaywrightSpider(Spider):
         if 'xxx2' in result.url:
             return 'xxx2', {'data': 'aaa'}
 
-    async def process_action(self, driver: PlaywrightDriver) -> Any:
+    async def process_action(self, driver: PlaywrightDriver, request: Request) -> Any:
         """ Do some operations after function page.goto """
         # img_bytes = await driver.page.screenshot(type="jpeg", quality=50)
 

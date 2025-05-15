@@ -78,7 +78,7 @@ class PlaywrightHandler(BaseDownloadHandler):
             await driver.page.goto(url, wait_until=request.meta.get('wait_until', self.wait_until), timeout=timeout)
 
             if process_action_fn := getattr(spider, 'process_action', None):
-                action_result = await call_helper(process_action_fn, driver)
+                action_result = await call_helper(process_action_fn, driver, request)
                 if action_result:
                     cache_response[action_result[0]] = action_result[1]
 
