@@ -25,6 +25,7 @@ class PlaywrightDriver:
             context_args: Optional[Dict] = None,
             window_size: Optional[Tuple[int, int]] = None,
             user_agent: str = None,
+            destroy_after_uses_cnt: Optional[int] = None,
             **kwargs
     ):
 
@@ -40,6 +41,7 @@ class PlaywrightDriver:
         self.context: Optional[BrowserContext] = None
         self.page: Optional[Page] = None
         self.url = None
+        self.destroy_after_uses_cnt = destroy_after_uses_cnt
 
     async def setup(self):
         browser_args = self.browser_args.copy()
@@ -70,8 +72,8 @@ class PlaywrightDriver:
         parsed_url = urlparse(proxy)
         return ProxySettings(
             server=urlunparse(parsed_url._replace(netloc=parsed_url.netloc.split('@')[-1])),
-            username=parsed_url.username or '',
-            password=parsed_url.password or '',
+            username=parsed_url.username,
+            password=parsed_url.password,
         )
 
     async def quit(self):

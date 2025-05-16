@@ -8,9 +8,7 @@ from aioscrapy.utils.tools import singleton
 
 @singleton
 class WebDriverPool:
-    def __init__(
-            self, use_pool=True, pool_size=5, driver_cls=None, **kwargs
-    ):
+    def __init__(self, use_pool=True, pool_size=1, driver_cls=None, **kwargs):
         self.use_pool = use_pool
         self.pool_size = pool_size
         self.driver_cls = driver_cls
@@ -40,6 +38,13 @@ class WebDriverPool:
                 self.driver_count += 1
             else:
                 driver = await self.queue.get()
+
+        # 如果driver达到指定使用次数，则销毁，重新启动一个driver（处理有些driver使用次数变多则变卡的情况）
+        if driver.destroy_after_uses_cnt is not None:
+            driver.destroy_after_uses_cnt -= 1
+            if driver.destroy_after_uses_cnt <= 0:
+                await self.remove(driver)
+                return await self.get(**kwargs)
         return driver
 
     async def release(self, driver):

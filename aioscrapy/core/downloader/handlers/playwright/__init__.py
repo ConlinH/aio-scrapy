@@ -21,11 +21,9 @@ class PlaywrightHandler(BaseDownloadHandler):
     def __init__(self, settings: Settings):
         self.settings = settings
         playwright_client_args = settings.getdict('PLAYWRIGHT_CLIENT_ARGS')
-        use_pool = settings.getbool('PLAYWRIGHT_USE_POOL', True)
         self.wait_until = playwright_client_args.get('wait_until', 'domcontentloaded')
-        self.url_regexes = playwright_client_args.pop('url_regexes', [])
         pool_size = playwright_client_args.pop('pool_size', settings.getint("CONCURRENT_REQUESTS", 1))
-        self._webdriver_pool = WebDriverPool(use_pool=use_pool, pool_size=pool_size, driver_cls=PlaywrightDriver, **playwright_client_args)
+        self._webdriver_pool = WebDriverPool(pool_size=pool_size, driver_cls=PlaywrightDriver, **playwright_client_args)
 
     @classmethod
     def from_settings(cls, settings: Settings):
@@ -35,6 +33,8 @@ class PlaywrightHandler(BaseDownloadHandler):
         try:
             return await self._download_request(request, spider)
         except Error as e:
+            raise DownloadError(real_error=e) from e
+        except Exception as e:
             raise DownloadError(real_error=e) from e
 
     async def _download_request(self, request: Request, spider) -> PlaywrightResponse:

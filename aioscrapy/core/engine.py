@@ -2,8 +2,6 @@
 
 import asyncio
 import time
-from asyncio import Queue
-from asyncio.queues import QueueEmpty
 from typing import Optional, AsyncGenerator, Union, Callable
 
 import aioscrapy
@@ -17,7 +15,7 @@ from aioscrapy.http import Response
 from aioscrapy.http.request import Request
 from aioscrapy.utils.log import logger
 from aioscrapy.utils.misc import load_instance
-from aioscrapy.utils.tools import call_helper, create_task
+from aioscrapy.utils.tools import call_helper
 
 
 class Slot:
