@@ -29,7 +29,7 @@ pip install git+https://github.com/ConlinH/aio-scrapy
 # default
 pip install aio-scrapy
 
-# Install all dependencies 
+# Install all dependencies
 pip install aio-scrapy[all]
 
 # When you need to use mysql/httpx/rabbitmq/mongo
@@ -46,7 +46,7 @@ aioscrapy startproject project_quotes
 
 ```
 cd project_quotes
-aioscrapy genspider quotes 
+aioscrapy genspider quotes
 ```
 
 quotes.py
@@ -163,7 +163,7 @@ aioscrapy -h
 
 ### Ready
 
-please submit your sugguestion to owner by issue
+Please submit your suggestions to the owner by creating an issue
 
 ## Thanks
 

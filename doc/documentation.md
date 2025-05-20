@@ -128,12 +128,12 @@ item = {
 """
 ```
 
-##### ExeclPipeline
+##### ExcelPipeline
 Execl Bulk Storage Middleware
 
 ```python
 ITEM_PIPELINES = {
-    'aioscrapy.libs.pipelines.execl.ExeclPipeline': 100,
+    'aioscrapy.libs.pipelines.execl.ExcelPipeline': 100,
 }
 
 """

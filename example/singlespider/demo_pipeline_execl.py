@@ -13,7 +13,7 @@ class DemoExeclSpider(Spider):
         "CLOSE_SPIDER_ON_IDLE": True,
 
         "ITEM_PIPELINES": {
-            'aioscrapy.libs.pipelines.execl.ExeclPipeline': 100,
+            'aioscrapy.libs.pipelines.execl.ExcelPipeline': 100,
         },
         "SAVE_CACHE_NUM": 1000,  # 每次存储1000条
         "SAVE_CACHE_INTERVAL": 10,  # 每次10秒存储一次
