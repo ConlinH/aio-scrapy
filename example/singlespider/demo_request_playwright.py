@@ -5,8 +5,8 @@ from playwright.async_api._generated import Response as EventResponse
 from playwright.async_api._generated import Request as EventRequest
 
 from aioscrapy import Request, logger, Spider
-from aioscrapy.core.downloader.handlers.playwright import PlaywrightDriver
-from aioscrapy.http import PlaywrightResponse
+from aioscrapy.core.downloader.handlers.webdriver import PlaywrightDriver
+from aioscrapy.http import WebDriverResponse
 
 
 class DemoPlaywrightSpider(Spider):
@@ -19,14 +19,14 @@ class DemoPlaywrightSpider(Spider):
         CONCURRENT_REQUESTS=1,
         LOG_LEVEL='INFO',
         CLOSE_SPIDER_ON_IDLE=True,
-        # DOWNLOAD_HANDLERS={
-        #     'http': 'aioscrapy.core.downloader.handlers.playwright.PlaywrightHandler',
-        #     'https': 'aioscrapy.core.downloader.handlers.playwright.PlaywrightHandler',
-        # },
-        DOWNLOAD_HANDLERS_TYPE="playwright",
+        DOWNLOAD_HANDLERS={
+            'http': 'aioscrapy.core.downloader.handlers.webdriver.playwright.PlaywrightHandler',
+            'https': 'aioscrapy.core.downloader.handlers.webdriver.playwright.PlaywrightHandler',
+        },
+        # DOWNLOAD_HANDLERS_TYPE="playwright",
         PLAYWRIGHT_CLIENT_ARGS=dict(
             use_pool=True,  # use_pool=True时 使用完driver后不销毁 重复使用 提供效率
-            destroy_after_uses_cnt=None,  # 在use_pool=True时生效，如果driver达到指定使用次数，则销毁，重新启动一个driver（处理有些driver使用次数变多则变卡的情况）
+            max_uses=None,  # 在use_pool=True时生效，如果driver达到指定使用次数，则销毁，重新启动一个driver（处理有些driver使用次数变多则变卡的情况）
             driver_type="chromium",  # chromium、firefox、webkit
             wait_until="networkidle",  # 等待页面加载完成的事件,可选值："commit", "domcontentloaded", "load", "networkidle"
             window_size=(1024, 800),
@@ -69,18 +69,10 @@ class DemoPlaywrightSpider(Spider):
         """ exception middleware """
         pass
 
-    async def parse(self, response: PlaywrightResponse):
-        # # res = response.get_response("xxxx")
-        # # print(res.text[:100])
-        # print(response.cache_response)
-        # res: PlaywrightResponse = response.get_response('getModuleHtml_response')
-        # print(res.text)
-
-        img_bytes = response.get_response('action_result')
+    async def parse(self, response: WebDriverResponse):
         yield {
-            'pingyin': response.xpath('//div[@id="pinyin"]/span/b/text()').get(),
-            'fan': response.xpath('//*[@id="traditional"]/span/text()').get(),
-            'img_bytes': img_bytes,
+            'pingyin': response.xpath('//div[@class="pinyin-text"]/text()').get(),
+            'img_bytes': response.get_response('img_bytes'),
         }
 
         new_character = response.xpath('//a[@class="img-link"]/@href').getall()
@@ -112,12 +104,12 @@ class DemoPlaywrightSpider(Spider):
 
     async def process_action(self, driver: PlaywrightDriver, request: Request) -> Any:
         """ Do some operations after function page.goto """
-        # img_bytes = await driver.page.screenshot(type="jpeg", quality=50)
+        img_bytes = await driver.page.screenshot(type="jpeg", quality=50)
 
         # TODO: 点击 选择元素等操作
 
         # 如果有需要传递回 parse函数的内容，则按如下返回，结果将在self.parse的response.cache_response中，
-        # return 'img_bytes', img_bytes
+        return 'img_bytes', img_bytes
 
     async def process_item(self, item):
         logger.info(item)

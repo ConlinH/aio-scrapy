@@ -35,7 +35,7 @@ from typing import Any, AsyncGenerator, Set, Union, Optional
 import aioscrapy
 from aioscrapy import signals, Spider
 from aioscrapy.exceptions import CloseSpider, DropItem, IgnoreRequest
-from aioscrapy.http import PlaywrightResponse
+from aioscrapy.http import WebDriverResponse
 from aioscrapy.http import Request, Response
 from aioscrapy.logformatter import LogFormatter
 from aioscrapy.middleware import ItemPipelineManager, SpiderMiddlewareManager
@@ -357,9 +357,9 @@ class Scraper:
                     not request.dont_filter and \
                     await self.spider.dupefilter.done(request, done_type="parse_ok" if getattr(request, "parse_ok", False) else "parse_err")
 
-                # Release playwright response resources if applicable
-                # 如果适用，释放playwright响应资源
-                if isinstance(result, PlaywrightResponse):
+                # Release playwright/drissionpage response resources if applicable
+                # 如果适用，释放playwright/drissionpage等响应资源
+                if isinstance(result, WebDriverResponse):
                     await result.release()
 
                 # Delete the cache result from the slot

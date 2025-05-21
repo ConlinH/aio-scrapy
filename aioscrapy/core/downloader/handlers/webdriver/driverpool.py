@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-WebDriver pool implementation for Playwright browsers.
-Playwright浏览器的WebDriver池实现。
+WebDriver pool implementation for Playwright/DrissionPage browsers.
+Playwright/DrissionPage浏览器的WebDriver池实现。
 
 This module provides a pool of Playwright browser instances that can be reused
 across multiple requests, improving performance by avoiding the overhead of
@@ -14,6 +14,15 @@ from asyncio import Lock
 from asyncio.queues import Queue
 
 from aioscrapy.utils.tools import singleton
+
+
+class WebDriverBase:
+
+    async def setup(self):
+        raise NotImplementedError
+
+    async def quit(self):
+        raise NotImplementedError
 
 
 @singleton
@@ -32,7 +41,13 @@ class WebDriverPool:
     @singleton装饰器确保每个进程只存在一个池。
     """
 
-    def __init__(self, use_pool=True, pool_size=1, driver_cls=None, **kwargs):
+    def __init__(
+            self,
+            driver_cls: WebDriverBase,
+            use_pool: bool = True,
+            pool_size: int = 1,
+            **kwargs
+    ):
         """
         Initialize the WebDriverPool.
         初始化WebDriverPool。
@@ -78,7 +93,7 @@ class WebDriverPool:
         """
         return self.driver_count >= self.pool_size
 
-    async def create_driver(self, **args):
+    async def create_driver(self, **kw):
         """
         Create a new WebDriver instance.
         创建一个新的WebDriver实例。
@@ -98,7 +113,7 @@ class WebDriverPool:
         # Merge default arguments with request-specific arguments
         # 将默认参数与请求特定参数合并
         kwargs = self.kwargs.copy()
-        kwargs.update(args)
+        kwargs.update(kw)
 
         # Create the driver instance
         # 创建驱动程序实例
@@ -150,9 +165,9 @@ class WebDriverPool:
         # Handle browser recycling based on usage count
         # 根据使用计数处理浏览器回收
         # 如果driver达到指定使用次数，则销毁，重新启动一个driver（处理有些driver使用次数变多则变卡的情况）
-        if driver.destroy_after_uses_cnt is not None:
-            driver.destroy_after_uses_cnt -= 1
-            if driver.destroy_after_uses_cnt <= 0:
+        if driver.max_uses is not None:
+            driver.max_uses -= 1
+            if driver.max_uses <= 0:
                 # Browser has reached its maximum usage count, recycle it
                 # 浏览器已达到其最大使用计数，回收它
                 await self.remove(driver)

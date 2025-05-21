@@ -1,11 +1,11 @@
 """
 Playwright response implementation for aioscrapy.
-aioscrapy的Playwright响应实现。
+aioscrapy的WebDriverResponse响应实现。
 
 This module provides the PlaywrightResponse class, which is a specialized TextResponse
 for handling responses from Playwright browser automation. It adds support for
 browser driver management and response caching.
-此模块提供了PlaywrightResponse类，这是一个专门用于处理来自Playwright浏览器自动化的响应的TextResponse。
+此模块提供了WebDriverResponse类，这是一个专门用于处理来自Playwright/DrissionPage等浏览器自动化的响应的TextResponse。
 它添加了对浏览器驱动程序管理和响应缓存的支持。
 """
 
@@ -14,7 +14,7 @@ from typing import Optional, Any
 from aioscrapy.http.response.text import TextResponse
 
 
-class PlaywrightResponse(TextResponse):
+class WebDriverResponse(TextResponse):
     """
     A Response subclass for handling Playwright browser automation responses.
     用于处理Playwright浏览器自动化响应的Response子类。
@@ -39,7 +39,7 @@ class PlaywrightResponse(TextResponse):
             *args,
             text: str = '',
             cache_response: Optional[dict] = None,
-            driver: Optional["PlaywrightDriver"] = None,
+            driver: Optional["WebDriverBase"] = None,
             driver_pool: Optional["WebDriverPool"] = None,
             intercept_request: Optional[dict] = None,
             **kwargs

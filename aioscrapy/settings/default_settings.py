@@ -167,8 +167,15 @@ DOWNLOAD_HANDLERS_MAP = {
     # playwright handlers (for JavaScript rendering)
     # playwright处理程序（用于JavaScript渲染）
     'playwright': {
-        'http': 'aioscrapy.core.downloader.handlers.playwright.PlaywrightHandler',
-        'https': 'aioscrapy.core.downloader.handlers.playwright.PlaywrightHandler',
+        'http': 'aioscrapy.core.downloader.handlers.webdriver.playwright.PlaywrightHandler',
+        'https': 'aioscrapy.core.downloader.handlers.webdriver.playwright.PlaywrightHandler',
+    },
+
+    # DrissionPageHandler handlers (for JavaScript rendering)
+    # DrissionPageHandler处理程序（用于JavaScript渲染）
+    'dp': {
+        'http': 'aioscrapy.core.downloader.handlers.webdriver.drissionpage.DrissionPageHandler',
+        'https': 'aioscrapy.core.downloader.handlers.webdriver.drissionpage.DrissionPageHandler',
     },
 
     # curl_cffi handlers

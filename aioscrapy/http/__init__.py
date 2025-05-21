@@ -10,6 +10,6 @@ from aioscrapy.http.request.form import FormRequest
 from aioscrapy.http.request.json_request import JsonRequest
 from aioscrapy.http.response import Response
 from aioscrapy.http.response.html import HtmlResponse
-from aioscrapy.http.response.playwright import PlaywrightResponse
+from aioscrapy.http.response.web_driver import WebDriverResponse
 from aioscrapy.http.response.text import TextResponse
 from aioscrapy.http.response.xml import XmlResponse
