@@ -1,64 +1,62 @@
 # 请求过滤器 | Request Filters
 
-请求过滤器（也称为重复过滤器或指纹过滤器）是AioScrapy中用于避免多次爬取相同URL的组件。它们通过跟踪请求的指纹来实现这一功能。
+请求过滤器（也称为重复过滤器或指纹过滤器）是AioScrapy中用于避免多次爬取相同URL的组件。它们通过跟踪请求的指纹来实现这一功能。</br>
 Request filters (also known as duplicate filters or fingerprint filters) are components in AioScrapy used to avoid crawling the same URL multiple times. They achieve this by tracking request fingerprints.
 
 ## 过滤器架构 | Filter Architecture
 
-AioScrapy的请求过滤器系统基于一个抽象基类`DupeFilterBase`，所有具体的过滤器实现都必须继承自这个基类。过滤器系统支持多种存储后端，包括内存、磁盘和Redis。
+AioScrapy的请求过滤器系统基于一个抽象基类`DupeFilterBase`，所有具体的过滤器实现都必须继承自这个基类。过滤器系统支持多种存储后端，包括内存、磁盘和Redis。</br>
 AioScrapy's request filter system is based on an abstract base class `DupeFilterBase`, and all concrete filter implementations must inherit from this base class. The filter system supports multiple storage backends, including memory, disk, and Redis.
 
 ## 过滤器类型 | Filter Types
 
-AioScrapy提供了多种类型的请求过滤器，每种都有其特点和适用场景：
+AioScrapy提供了多种类型的请求过滤器，每种都有其特点和适用场景：</br>
 AioScrapy provides multiple types of request filters, each with its own characteristics and use cases:
 
 ##### 磁盘过滤器 | Disk Filters
 
-磁盘过滤器将请求指纹存储在磁盘上，适用于需要持久化的场景。
+磁盘过滤器将请求指纹存储在磁盘上，适用于需要持久化的场景。</br>
 Disk filters store request fingerprints on disk, suitable for scenarios requiring persistence.
 
 ##### DiskRFPDupeFilter
 
-基本的磁盘请求指纹过滤器，将请求指纹存储在磁盘文件中。
+基本的磁盘请求指纹过滤器，将请求指纹存储在磁盘文件中。</br>
 Basic disk request fingerprint filter, storing request fingerprints in a disk file.
 
 ```python
 # 在settings.py中设置 | Set in settings.py
-
 DUPEFILTER_CLASS = 'aioscrapy.dupefilters.disk.DiskRFPDupeFilter'
 
 # 作业目录，用于存储请求指纹文件 | Job directory, used to store request fingerprint files
-
 JOBDIR = './job_dir'
 ```
 
 ### Redis过滤器 | Redis Filters
 
-Redis过滤器将请求指纹存储在Redis数据库中，适用于分布式爬取和需要跨进程共享过滤器的场景。
+Redis过滤器将请求指纹存储在Redis数据库中，适用于分布式爬取和需要跨进程共享过滤器的场景。</br>
 Redis filters store request fingerprints in a Redis database, suitable for distributed crawling and scenarios requiring cross-process filter sharing.
 
 ##### RedisRFPDupeFilter
 
-基本的Redis请求指纹过滤器，使用Redis SET存储请求指纹。
+基本的Redis请求指纹过滤器，使用Redis SET存储请求指纹。</br>
 Basic Redis request fingerprint filter, using Redis SET to store request fingerprints.
 
 ##### RedisBloomDupeFilter
 
-基于布隆过滤器的Redis请求指纹过滤器，使用Redis位图实现布隆过滤器来存储请求指纹。这种过滤器比简单的基于SET的过滤器更节省空间，但有小概率出现假阳性。
+基于布隆过滤器的Redis请求指纹过滤器，使用Redis位图实现布隆过滤器来存储请求指纹。这种过滤器比简单的基于SET的过滤器更节省空间，但有小概率出现假阳性。</br>
 Bloom filter-based Redis request fingerprint filter, using Redis bitmaps to implement a Bloom filter for storing request fingerprints. This filter is more space-efficient than the simple SET-based filter, but has a small probability of false positives.
 
 ##### ExRedisRFPDupeFilter
 
-加强版的过滤器添加了在请求失败时从过滤器中移除指纹的功能，这对于重试失败的请求很有用。
+加强版的过滤器添加了在请求失败时从过滤器中移除指纹的功能，这对于重试失败的请求很有用。</br>
 Extended filters add the ability to remove fingerprints from the filter when requests fail, which is useful for retrying failed requests.
 
-加强版的Redis SET基于的请求指纹过滤器，具有指纹移除功能。
+加强版的Redis SET基于的请求指纹过滤器，具有指纹移除功能。</br>
 Extended Redis SET-based request fingerprint filter with fingerprint removal capability.
 
 ##### ExRedisBloomDupeFilter
 
-加强版的基于布隆过滤器的Redis请求指纹过滤器，具有临时SET存储和指纹移除功能。
+加强版的基于布隆过滤器的Redis请求指纹过滤器，具有临时SET存储和指纹移除功能。</br>
 Extended Bloom filter-based Redis request fingerprint filter with temporary SET storage and fingerprint removal capability.
 
 
@@ -95,7 +93,7 @@ BLOOMFILTER_HASH_NUMBER = 6  # 哈希函数数量，影响假阳性率 | Number 
 
 ## 自定义过滤器 | Custom Filters
 
-您可以创建自己的请求过滤器，只需继承`DupeFilterBase`类并实现必要的方法：
+您可以创建自己的请求过滤器，只需继承`DupeFilterBase`类并实现必要的方法：</br>
 You can create your own request filter by inheriting from the `DupeFilterBase` class and implementing the necessary methods:
 
 ```python
@@ -136,7 +134,7 @@ class MyCustomDupeFilter(DupeFilterBase):
             self.fingerprints.discard(request.fingerprint)
 ```
 
-然后在设置中注册您的过滤器：
+然后在设置中注册您的过滤器：</br>
 Then register your filter in the settings:
 
 ```python

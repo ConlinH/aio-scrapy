@@ -1,17 +1,19 @@
 # 下载器 | Downloaders
 
-下载器是AioScrapy的核心组件之一，负责从互联网获取网页和其他资源。AioScrapy支持多种下载处理程序，可以根据需要选择不同的HTTP客户端。
+下载器是AioScrapy的核心组件之一，负责从互联网获取网页和其他资源。AioScrapy支持多种下载处理程序，可以根据需要选择不同的HTTP客户端。</br>
 Downloaders are one of the core components of AioScrapy, responsible for fetching web pages and other resources from the internet. AioScrapy supports multiple download handlers, allowing you to choose different HTTP clients as needed.
 
 ## 下载器架构 | Downloader Architecture
 
-AioScrapy的下载器系统由以下主要组件组成：
+AioScrapy的下载器系统由以下主要组件组成：</br>
 The AioScrapy downloader system consists of the following main components:
 
 1. **Downloader**：主下载器类，管理请求队列和并发
 2. **DownloadHandlerManager**：管理不同URL方案的下载处理程序
 3. **BaseDownloadHandler**：下载处理程序的基类
 4. **具体下载处理程序**：如AioHttpDownloadHandler、HttpxDownloadHandler等
+
+</br>
 
 1. **Downloader**: Main downloader class, manages request queues and concurrency
 2. **DownloadHandlerManager**: Manages download handlers for different URL schemes
@@ -20,12 +22,12 @@ The AioScrapy downloader system consists of the following main components:
 
 ## 支持的下载处理程序 | Supported Download Handlers
 
-AioScrapy支持多种下载处理程序，每种都有其特点和适用场景：
+AioScrapy支持多种下载处理程序，每种都有其特点和适用场景：</br>
 AioScrapy supports multiple download handlers, each with its own characteristics and use cases:
 
 ### aiohttp（默认） | aiohttp (Default)
 
-基于aiohttp库的异步HTTP客户端，是AioScrapy的默认下载处理程序。
+基于aiohttp库的异步HTTP客户端，是AioScrapy的默认下载处理程序。</br>
 An asynchronous HTTP client based on the aiohttp library, which is the default download handler for AioScrapy.
 
 **特点 | Features**：
@@ -55,7 +57,7 @@ AIOHTTP_ARGS = {
 
 ### httpx
 
-基于httpx库的现代HTTP客户端，支持HTTP/2。
+基于httpx库的现代HTTP客户端，支持HTTP/2。</br>
 A modern HTTP client based on the httpx library, with HTTP/2 support.
 
 **特点 | Features**：
@@ -89,7 +91,7 @@ HTTPX_ARGS = {
 
 ### pyhttpx
 
-基于pyhttpx库的HTTP客户端，支持HTTP/2和TLS指纹修改。
+基于pyhttpx库的HTTP客户端，支持HTTP/2和TLS指纹修改。</br>
 An HTTP client based on the pyhttpx library, with HTTP/2 and TLS fingerprint modification support.
 
 **特点 | Features**：
@@ -122,7 +124,7 @@ PYHTTPX_ARGS = {
 
 ### requests
 
-基于requests库的同步HTTP客户端，在线程池中运行。
+基于requests库的同步HTTP客户端，在线程池中运行。</br>
 A synchronous HTTP client based on the requests library, running in a thread pool.
 
 **特点 | Features**：
@@ -150,7 +152,7 @@ DOWNLOAD_HANDLERS_TYPE = "requests"
 
 ### curl_cffi
 
-基于curl_cffi的HTTP客户端，支持自定义TLS指纹。
+基于curl_cffi的HTTP客户端，支持自定义TLS指纹。</br>
 An HTTP client based on curl_cffi, with custom TLS fingerprint support.
 
 **特点 | Features**：
@@ -183,7 +185,7 @@ CURL_CFFI_ARGS = {
 
 ### playwright
 
-基于Playwright的浏览器自动化工具，支持JavaScript渲染。
+基于Playwright的浏览器自动化工具，支持JavaScript渲染。</br>
 A browser automation tool based on Playwright, with JavaScript rendering support.
 
 **特点 | Features**：
@@ -236,7 +238,7 @@ PLAYWRIGHT_ARGS = {
 
 ### DrissionPage
 
-基于DrissionPage的浏览器自动化工具，支持JavaScript渲染。
+基于DrissionPage的浏览器自动化工具，支持JavaScript渲染。</br>
 A browser automation tool based on DrissionPage, with JavaScript rendering support.
 
 **特点 | Features**：
@@ -272,7 +274,7 @@ DP_ARGS = {
 
 ## 自定义下载处理程序 | Custom Download Handlers
 
-您可以创建自己的下载处理程序，只需继承`BaseDownloadHandler`类并实现必要的方法：
+您可以创建自己的下载处理程序，只需继承`BaseDownloadHandler`类并实现必要的方法：</br>
 You can create your own download handler by inheriting from the `BaseDownloadHandler` class and implementing the necessary methods:
 
 ```python
@@ -296,7 +298,7 @@ class MyCustomDownloadHandler(BaseDownloadHandler):
         pass
 ```
 
-然后在设置中注册您的处理程序：
+然后在设置中注册您的处理程序：</br>
 Then register your handler in the settings:
 
 ```python
@@ -308,5 +310,5 @@ DOWNLOAD_HANDLERS = {
 
 ## 下载器中间件 | Downloader Middleware
 
-下载器中间件允许您在请求被发送到下载处理程序之前和响应被返回给爬虫之后处理它们。详细信息请参见[中间件](middlewares.md)文档。
+下载器中间件允许您在请求被发送到下载处理程序之前和响应被返回给爬虫之后处理它们。详细信息请参见[中间件](middlewares.md)文档。</br>
 Downloader middleware allows you to process requests before they are sent to the download handler and responses after they are returned to the spider. See the [Middlewares](middlewares.md) documentation for details.

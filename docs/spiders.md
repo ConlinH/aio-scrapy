@@ -1,11 +1,11 @@
 # 爬虫指南 | Spider Guide
 
-爬虫是AioScrapy的核心组件，负责定义如何爬取网站和提取数据。
+爬虫是AioScrapy的核心组件，负责定义如何爬取网站和提取数据。</br>
 Spiders are the core components of AioScrapy, responsible for defining how to crawl websites and extract data.
 
 ## 爬虫类 | Spider Class
 
-所有AioScrapy爬虫必须继承自`Spider`基类：
+所有AioScrapy爬虫必须继承自`Spider`基类：</br>
 All AioScrapy spiders must inherit from the `Spider` base class:
 
 ```python
@@ -30,6 +30,8 @@ class MySpider(Spider):
 - **pause**：爬虫是否暂停
 - **start_urls**：开始爬取的URL列表
 
+</br>
+
 - **name**: The unique identifier for the spider, must be unique
 - **proxy**: Optional proxy handler
 - **dupefilter**: Optional duplicate filter
@@ -41,7 +43,7 @@ class MySpider(Spider):
 ### 主要方法 | Main Methods
 #### `__init__(self, name=None, **kwargs)`
 
-初始化爬虫。
+初始化爬虫。</br>
 Initialize the spider.
 
 ```python
@@ -57,7 +59,7 @@ def __init__(self, name=None, **kwargs):
 
 #### `async parse(self, response)`
 
-处理下载的响应并提取数据。这是爬虫的主要方法，必须在子类中实现。
+处理下载的响应并提取数据。这是爬虫的主要方法，必须在子类中实现。</br>
 Process downloaded responses and extract data. This is the main method of the spider and must be implemented in subclasses.
 
 ```python
@@ -74,7 +76,7 @@ async def parse(self, response):
 
 #### `@classmethod update_settings(cls, settings)`
 
-使用爬虫自定义设置更新设置。
+使用爬虫自定义设置更新设置。</br>
 Update settings with spider custom settings.
 
 ```python
@@ -85,7 +87,7 @@ def update_settings(cls, settings):
 
 #### `@classmethod start(cls, setting_path=None, use_windows_selector_eventLoop: bool = False)`
 
-使用此爬虫开始爬取。这是一个便捷方法，它创建一个CrawlerProcess，添加爬虫，并启动爬取过程。
+使用此爬虫开始爬取。这是一个便捷方法，它创建一个CrawlerProcess，添加爬虫，并启动爬取过程。</br>
 Start crawling using this spider. This is a convenience method that creates a CrawlerProcess, adds the spider, and starts the crawling process.
 
 ```python
@@ -105,7 +107,7 @@ def start(cls, setting_path=None, use_windows_selector_eventLoop: bool = False):
 ## 爬虫类型 | Spider Types
 ### 基本爬虫 | Basic Spider
 
-最简单的爬虫类型，适用于简单的爬取任务：
+最简单的爬虫类型，适用于简单的爬取任务：</br>
 The simplest type of spider, suitable for simple crawling tasks:
 
 ```python
@@ -115,20 +117,18 @@ class BasicSpider(Spider):
     name = 'basic'
     start_urls = ['https://example.com']
 
+    # 提取数据 | Extract data
     async def parse(self, response):
-# 提取数据 | Extract data
-
         yield {'title': response.css('title::text').get()}
         
-# 跟随链接 | Follow links
-
+        # 跟随链接 | Follow links
         for href in response.css('a::attr(href)'):
             yield response.follow(href, self.parse)
 ```
 
 ### 单文件爬虫 | Single-File Spider
 
-包含所有必要组件的独立爬虫：
+包含所有必要组件的独立爬虫：</br>
 A standalone spider that contains all necessary components:
 
 ```python
@@ -177,6 +177,8 @@ class SingleSpider(Spider):
 5. **生成新请求**：根据需要生成新的请求
 6. **关闭**：爬取完成后关闭爬虫
 
+</br>
+
 1. **Initialization**: The spider instance is created
 2. **Start Requests**: Initial requests are generated
 3. **Process Responses**: Responses are processed using callback functions
@@ -191,25 +193,21 @@ class SingleSpider(Spider):
 from aioscrapy import Request
 
 # 基本请求 | Basic request
-
 request = Request(url='https://example.com')
 
 # 带回调的请求 | Request with callback
-
 request = Request(
     url='https://example.com',
     callback=self.parse_item
 )
 
 # 带元数据的请求 | Request with metadata
-
 request = Request(
     url='https://example.com',
     meta={'key': 'value'}
 )
 
 # 带请求头的请求 | Request with headers
-
 request = Request(
     url='https://example.com',
     headers={'User-Agent': 'Custom User Agent'}
@@ -242,6 +240,8 @@ async def parse(self, response):
 4. **处理错误**：实现错误处理逻辑
 5. **限制请求速率**：使用设置控制爬取速度
 6. **遵守robots.txt**：尊重网站的爬取规则
+
+</br>
 
 1. **Use Descriptive Names**: Use descriptive names for spiders and callback functions
 2. **Separate Concerns**: Use different callback functions for different types of pages

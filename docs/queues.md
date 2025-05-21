@@ -1,36 +1,36 @@
 # 队列 | Queues
 
-队列是AioScrapy中用于存储和管理请求的组件。它们负责存储待处理的请求，并按照一定的顺序提供给下载器。
+队列是AioScrapy中用于存储和管理请求的组件。它们负责存储待处理的请求，并按照一定的顺序提供给下载器。</br>
 Queues are components in AioScrapy used to store and manage requests. They are responsible for storing pending requests and providing them to the downloader in a certain order.
 
 ## 队列架构 | Queue Architecture
 
-AioScrapy的队列系统基于一个抽象基类`AbsQueue`，所有具体的队列实现都必须继承自这个基类。队列系统支持多种存储后端，包括内存、磁盘和Redis。
+AioScrapy的队列系统基于一个抽象基类`AbsQueue`，所有具体的队列实现都必须继承自这个基类。队列系统支持多种存储后端，包括内存、磁盘和Redis。</br>
 AioScrapy's queue system is based on an abstract base class `AbsQueue`, and all concrete queue implementations must inherit from this base class. The queue system supports multiple storage backends, including memory, disk, and Redis.
 
 ## 队列类型 | Queue Types
 
-AioScrapy提供了多种类型的队列，每种都有其特点和适用场景：
+AioScrapy提供了多种类型的队列，每种都有其特点和适用场景：</br>
 AioScrapy provides multiple types of queues, each with its own characteristics and use cases:
 
 ### 内存队列 | Memory Queues
 
-内存队列将请求存储在内存中，适用于单机爬取和小规模爬取任务。
+内存队列将请求存储在内存中，适用于单机爬取和小规模爬取任务。</br>
 Memory queues store requests in memory, suitable for single-machine crawling and small-scale crawling tasks.
 
 ###### SpiderQueue
 
-基本的内存队列，按照先进先出（FIFO）的顺序处理请求。
+基本的内存队列，按照先进先出（FIFO）的顺序处理请求。</br>
 Basic memory queue, processing requests in first-in-first-out (FIFO) order.
 
 ###### SpiderStack
 
-后进先出（LIFO）内存队列，最后添加的请求会先被处理。这种队列适用于深度优先爬取。
+后进先出（LIFO）内存队列，最后添加的请求会先被处理。这种队列适用于深度优先爬取。</br>
 Last-in-first-out (LIFO) memory queue, where the most recently added requests are processed first. This type of queue is suitable for depth-first crawling.
 
 ###### PriorityQueue
 
-优先级内存队列，根据请求的优先级处理请求。优先级高的请求会先被处理。
+优先级内存队列，根据请求的优先级处理请求。优先级高的请求会先被处理。</br>
 Priority memory queue, processing requests based on their priority. Requests with higher priority will be processed first.
 
 ```python
@@ -42,22 +42,22 @@ SCHEDULER_QUEUE_CLASS = 'aioscrapy.queue.memory.SpiderPriorityQueue'
 
 ### Redis队列 | Redis Queues
 
-Redis队列将请求存储在Redis数据库中，适用于分布式爬取和需要跨进程共享队列的场景。
+Redis队列将请求存储在Redis数据库中，适用于分布式爬取和需要跨进程共享队列的场景。</br>
 Redis queues store requests in a Redis database, suitable for distributed crawling and scenarios requiring cross-process queue sharing.
 
 ###### SpiderQueue
 
-基本的Redis队列，按照先进先出（FIFO）的顺序处理请求。
+基本的Redis队列，按照先进先出（FIFO）的顺序处理请求。</br>
 Basic Redis queue, processing requests in first-in-first-out (FIFO) order.
 
 ###### SpiderStack
 
-后进先出（LIFO）Redis队列，最后添加的请求会先被处理。
+后进先出（LIFO）Redis队列，最后添加的请求会先被处理。</br>
 Last-in-first-out (LIFO) Redis queue, where the most recently added requests are processed first.
 
 ###### SpiderPriorityQueue
 
-优先级Redis队列，根据请求的优先级处理请求。
+优先级Redis队列，根据请求的优先级处理请求。</br>
 Priority Redis queue, processing requests based on their priority.
 
 ```python
@@ -77,12 +77,12 @@ SCHEDULER_QUEUE_CLASS = 'aioscrapy.queue.redis.SpiderPriorityQueue'
 
 ### RabbitMQ队列 | RabbitMQ Queues
 
-RabbitMQ队列将请求存储在RabbitMQ消息队列中，适用于分布式爬取和需要可靠消息传递的场景。RabbitMQ提供了强大的消息路由、持久化和负载均衡功能。
+RabbitMQ队列将请求存储在RabbitMQ消息队列中，适用于分布式爬取和需要可靠消息传递的场景。RabbitMQ提供了强大的消息路由、持久化和负载均衡功能。</br>
 RabbitMQ queues store requests in a RabbitMQ message queue, suitable for distributed crawling and scenarios requiring reliable message delivery. RabbitMQ provides powerful message routing, persistence, and load balancing capabilities.
 
 ##### RabbitMqPriorityQueue
 
-基于RabbitMQ的优先级队列，根据请求的优先级处理请求。
+基于RabbitMQ的优先级队列，根据请求的优先级处理请求。</br>
 RabbitMQ-based priority queue, processing requests based on their priority.
 
 ```python
@@ -102,7 +102,7 @@ SCHEDULER_QUEUE_CLASS = 'aioscrapy.queue.rabbitmq.RabbitMqPriorityQueue'
 
 ## 自定义队列 | Custom Queues
 
-您可以创建自己的队列，只需继承`AbsQueue`类并实现必要的方法：
+您可以创建自己的队列，只需继承`AbsQueue`类并实现必要的方法：</br>
 You can create your own queue by inheriting from the `AbsQueue` class and implementing the necessary methods:
 
 ```python
@@ -139,7 +139,7 @@ class MyCustomQueue(AbsQueue):
         return cls()
 ```
 
-然后在设置中注册您的队列：
+然后在设置中注册您的队列：</br>
 Then register your queue in the settings:
 
 ```python
@@ -153,11 +153,9 @@ SCHEDULER_QUEUE_CLASS = 'myproject.queues.MyCustomQueue'
 
 ```python
 # 队列类 | Queue class
-
 SCHEDULER_QUEUE_CLASS = 'aioscrapy.queue.memory.PriorityQueue'
 
 # 启动时是否清空队列 | Whether to clear the queue on startup
-
 SCHEDULER_FLUSH_ON_START = False
 
 # 队列别名，用于Redis队列 | Queue alias, used for Redis queues

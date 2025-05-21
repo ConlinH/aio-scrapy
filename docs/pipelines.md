@@ -1,16 +1,16 @@
 # 管道 | Pipelines
 
-管道是AioScrapy中处理爬虫提取的数据的组件。它们负责处理数据、验证数据、清洗数据，以及将数据存储到数据库或文件中。
+管道是AioScrapy中处理爬虫提取的数据的组件。它们负责处理数据、验证数据、清洗数据，以及将数据存储到数据库或文件中。</br>
 Pipelines are components in AioScrapy that process data extracted by spiders. They are responsible for processing data, validating data, cleaning data, and storing data in databases or files.
 
 ## 管道架构 | Pipeline Architecture
 
-AioScrapy的管道系统基于一个处理链，每个管道组件按顺序处理爬虫提取的数据项。
+AioScrapy的管道系统基于一个处理链，每个管道组件按顺序处理爬虫提取的数据项。</br>
 AioScrapy's pipeline system is based on a processing chain, where each pipeline component processes items extracted by the spider in sequence.
 
 ## 创建管道 | Creating a Pipeline
 
-管道是一个Python类，实现了一个或多个以下方法：
+管道是一个Python类，实现了一个或多个以下方法：</br>
 A pipeline is a Python class that implements one or more of the following methods:
 
 ```python
@@ -41,7 +41,7 @@ class MyPipeline:
 
 ## 启用管道 | Enabling a Pipeline
 
-要启用管道，将其添加到项目的`settings.py`文件中的`ITEM_PIPELINES`设置：
+要启用管道，将其添加到项目的`settings.py`文件中的`ITEM_PIPELINES`设置：</br>
 To enable a pipeline, add it to the `ITEM_PIPELINES` setting in your project's `settings.py` file:
 
 ```python
@@ -50,19 +50,19 @@ ITEM_PIPELINES = {
 }
 ```
 
-数字表示管道的顺序，数字越小，管道越靠前执行；数字越大，管道越靠后执行。
+数字表示管道的顺序，数字越小，管道越靠前执行；数字越大，管道越靠后执行。</br>
 The number represents the order of the pipeline, with lower numbers being executed earlier and higher numbers being executed later.
 
 ## 内置管道 | Built-in Pipelines
 
-AioScrapy提供了多个内置管道，用于将爬取的数据导出到不同的文件格式或存储到不同的数据库中。这些管道位于`aioscrapy.libs.pipelines`包中。
+AioScrapy提供了多个内置管道，用于将爬取的数据导出到不同的文件格式或存储到不同的数据库中。这些管道位于`aioscrapy.libs.pipelines`包中。</br>
 AioScrapy provides several built-in pipelines for exporting scraped data to different file formats or storing it in different databases. These pipelines are located in the `aioscrapy.libs.pipelines` package.
 
 ### 文件导出管道 | File Export Pipelines
 
 #### CsvPipeline | CSV Pipeline
 
-将数据项导出为CSV文件。
+将数据项导出为CSV文件。</br>
 Exports items to CSV files.
 
 ```python
@@ -86,7 +86,7 @@ async def parse(self, response):
 
 #### ExcelPipeline | Excel Pipeline
 
-将数据项导出为Excel文件。
+将数据项导出为Excel文件。</br>
 Exports items to Excel files.
 
 ```python
@@ -119,7 +119,7 @@ async def parse(self, response):
 
 #### MySQLPipeline | MySQL Pipeline
 
-将数据项存储到MySQL数据库。
+将数据项存储到MySQL数据库。</br>
 Stores items in a MySQL database.
 
 ```python
@@ -170,7 +170,7 @@ async def parse(self, response):
 
 #### MongoPipeline | MongoDB Pipeline
 
-将数据项存储到MongoDB数据库。
+将数据项存储到MongoDB数据库。</br>
 Stores items in a MongoDB database.
 
 ```python
@@ -211,7 +211,7 @@ async def parse(self, response):
 
 #### PGPipeline | PostgreSQL Pipeline
 
-将数据项存储到PostgreSQL数据库。
+将数据项存储到PostgreSQL数据库。</br>
 Stores items in a PostgreSQL database.
 
 ```python
@@ -365,7 +365,7 @@ class ImageDownloadPipeline:
 
 ### 完整的爬虫示例（使用内置管道）/ Complete Spider Example (Using Built-in Pipelines)
 
-以下是一个使用内置CSV和MongoDB管道的完整爬虫示例：
+以下是一个使用内置CSV和MongoDB管道的完整爬虫示例：</br>
 Here is a complete spider example using the built-in CSV and MongoDB pipelines:
 
 ```python
@@ -448,6 +448,8 @@ if __name__ == '__main__':
 5. **异步处理**：所有管道方法都应该是异步的，避免阻塞操作
 6. **批量处理**：对于数据库操作，考虑批量处理以提高性能
 7. **资源管理**：在`open_spider`和`close_spider`方法中正确管理资源
+
+</br>
 
 1. **Keep Pipelines Simple**: Each pipeline should focus on a single functionality
 2. **Handle Exceptions Properly**: Make sure to handle exceptions correctly in pipelines to avoid interrupting the entire processing chain

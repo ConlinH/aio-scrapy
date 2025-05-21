@@ -1,6 +1,6 @@
 # AioScrapy
 
-AioScrapy是一个基于Python异步IO的强大网络爬虫框架。它的设计理念源自Scrapy，但完全基于异步IO实现，提供更高的性能和更灵活的配置选项。
+AioScrapy是一个基于Python异步IO的强大网络爬虫框架。它的设计理念源自Scrapy，但完全基于异步IO实现，提供更高的性能和更灵活的配置选项。</br>
 AioScrapy is a powerful asynchronous web crawling framework built on Python's asyncio library. It is inspired by Scrapy but completely reimplemented with asynchronous IO, offering higher performance and more flexible configuration options.
 
 ## 特性 | Features
@@ -13,7 +13,8 @@ AioScrapy is a powerful asynchronous web crawling framework built on Python's as
 - **丰富的配置选项**：高度可定制的爬虫行为
 - **分布式爬取**：支持使用Redis和RabbitMQ进行分布式爬取
 - **数据库集成**：内置支持Redis、MySQL、MongoDB、PostgreSQL和RabbitMQ
-
+</br>
+</br>
 - **Fully Asynchronous**: Built on Python's asyncio for efficient concurrent crawling
 - **Multiple Download Handlers**: Support for various HTTP clients including aiohttp, httpx, requests, pyhttpx, curl_cffi, DrissionPage and playwright
 - **Flexible Middleware System**: Easily add custom functionality and processing logic
@@ -58,9 +59,10 @@ pip install aio-scrapy
 
 ## 许可证 | License
 
-本项目采用MIT许可证 - 详情请查看LICENSE文件。
+本项目采用MIT许可证 - 详情请查看LICENSE文件。</br>
 This project is licensed under the MIT License - see the LICENSE file for details.
 
 
 ## 联系
-QQ: 995018884 WeChat: h995018884
+QQ: 995018884 </br>
+WeChat: h995018884

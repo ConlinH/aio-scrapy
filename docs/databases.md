@@ -1,16 +1,18 @@
 # 数据库连接 | Database Connections
 
-AioScrapy提供了一个统一的数据库连接管理系统，支持多种数据库类型，包括Redis、MySQL、MongoDB、PostgreSQL和RabbitMQ。这个系统使得在爬虫中使用数据库变得简单高效。
+AioScrapy提供了一个统一的数据库连接管理系统，支持多种数据库类型，包括Redis、MySQL、MongoDB、PostgreSQL和RabbitMQ。这个系统使得在爬虫中使用数据库变得简单高效。</br>
 AioScrapy provides a unified database connection management system that supports multiple database types, including Redis, MySQL, MongoDB, PostgreSQL, and RabbitMQ. This system makes using databases in spiders simple and efficient.
 
 ## 数据库管理架构 | Database Management Architecture
 
-AioScrapy的数据库管理系统基于以下组件：
+AioScrapy的数据库管理系统基于以下组件：</br>
 AioScrapy's database management system is based on the following components:
 
 1. **DBManager**：中央数据库管理器，提供统一的接口来访问不同类型的数据库连接
 2. **AbsDBPoolManager**：数据库连接池管理器的抽象基类，所有具体的连接池管理器都继承自这个类
 3. **具体连接池管理器**：如AioRedisPoolManager、AioMysqlPoolManager等，负责管理特定类型数据库的连接池
+
+</br>
 
 1. **DBManager**: Central database manager, providing a unified interface to access different types of database connections
 2. **AbsDBPoolManager**: Abstract base class for database connection pool managers, all concrete pool managers inherit from this class
@@ -18,12 +20,12 @@ AioScrapy's database management system is based on the following components:
 
 ## 支持的数据库 | Supported Databases
 
-AioScrapy支持以下数据库类型：
+AioScrapy支持以下数据库类型：</br>
 AioScrapy supports the following database types:
 
 ### Redis
 
-基于redis.asyncio库的异步Redis客户端。
+基于redis.asyncio库的异步Redis客户端。</br>
 Asynchronous Redis client based on the redis.asyncio library.
 
 ```python
@@ -42,7 +44,7 @@ REDIS_ARGS = {
 
 ### MySQL
 
-基于aiomysql库的异步MySQL客户端。
+基于aiomysql库的异步MySQL客户端。</br>
 Asynchronous MySQL client based on the aiomysql library.
 
 ```python
@@ -70,7 +72,7 @@ MYSQL_ARGS = {
 
 ### MongoDB
 
-基于motor库的异步MongoDB客户端。
+基于motor库的异步MongoDB客户端。</br>
 Asynchronous MongoDB client based on the motor library.
 
 ```python
@@ -93,7 +95,7 @@ MONGO_ARGS = {
 
 ### PostgreSQL
 
-基于asyncpg库的异步PostgreSQL客户端。
+基于asyncpg库的异步PostgreSQL客户端。</br>
 Asynchronous PostgreSQL client based on the asyncpg library.
 
 ```python
@@ -118,7 +120,7 @@ PG_ARGS = {
 
 ### RabbitMQ
 
-基于aio_pika库的异步RabbitMQ客户端。
+基于aio_pika库的异步RabbitMQ客户端。</br>
 Asynchronous RabbitMQ client based on the aio_pika library.
 
 ```python
@@ -135,7 +137,7 @@ RABBITMQ_ARGS = {
 
 ## 使用数据库连接 | Using Database Connections
 
-AioScrapy提供了多种方式来使用数据库连接：
+AioScrapy提供了多种方式来使用数据库连接：</br>
 AioScrapy provides multiple ways to use database connections:
 
 ### 通过db_manager访问 | Accessing via db_manager
@@ -216,7 +218,7 @@ class DatabaseSpider(Spider):
 
 ## 自定义连接池管理器 | Custom Connection Pool Managers
 
-您可以创建自己的连接池管理器，只需继承`AbsDBPoolManager`类并实现必要的方法：
+您可以创建自己的连接池管理器，只需继承`AbsDBPoolManager`类并实现必要的方法：</br>
 You can create your own connection pool manager by inheriting from the `AbsDBPoolManager` class and implementing the necessary methods:
 
 ```python

@@ -1,16 +1,18 @@
 # 分布式部署 | Distributed Deployment
 
-AioScrapy支持分布式爬取，允许多个爬虫实例协同工作，提高爬取效率。本文档介绍了如何使用AioScrapy进行分布式部署。
+AioScrapy支持分布式爬取，允许多个爬虫实例协同工作，提高爬取效率。本文档介绍了如何使用AioScrapy进行分布式部署。</br>
 AioScrapy supports distributed crawling, allowing multiple spider instances to work together to improve crawling efficiency. This document describes how to use AioScrapy for distributed deployment.
 
 ## 分布式架构 | Distributed Architecture
 
-AioScrapy的分布式架构基于以下组件：
+AioScrapy的分布式架构基于以下组件：</br>
 AioScrapy's distributed architecture is based on the following components:
 
 1. **Redis队列**：存储待处理的请求，多个爬虫实例共享同一个队列
 2. **Redis过滤器**：避免重复爬取相同的URL，多个爬虫实例共享同一个过滤器
 3. **Scrapyd**：管理爬虫的部署和运行，提供REST API来控制爬虫
+
+</br>
 
 1. **Redis Queue**: Stores pending requests, multiple spider instances share the same queue
 2. **Redis Filter**: Avoids crawling the same URL multiple times, multiple spider instances share the same filter
@@ -19,7 +21,7 @@ AioScrapy's distributed architecture is based on the following components:
 ## 使用Redis进行分布式爬取 | Using Redis for Distributed Crawling
 ### 配置Redis队列和过滤器 | Configuring Redis Queue and Filter
 
-要使用Redis进行分布式爬取，您需要配置Redis队列和过滤器：
+要使用Redis进行分布式爬取，您需要配置Redis队列和过滤器：</br>
 To use Redis for distributed crawling, you need to configure Redis queue and filter:
 
 ```python
@@ -80,7 +82,7 @@ class DistributedSpider(Spider):
 
 ### 运行分布式爬虫 | Running Distributed Spiders
 
-您可以在多台机器上运行相同的爬虫，它们将共享Redis中的请求队列和已处理的URL集合：
+您可以在多台机器上运行相同的爬虫，它们将共享Redis中的请求队列和已处理的URL集合：</br>
 You can run the same spider on multiple machines, and they will share the request queue and processed URL set in Redis:
 
 ```bash
@@ -96,7 +98,7 @@ aioscrapy crawl distributed
 
 ## 使用Scrapyd进行分布式部署 | Using Scrapyd for Distributed Deployment
 
-Scrapyd是一个用于部署和运行Scrapy爬虫的应用程序，AioScrapy提供了与Scrapyd兼容的接口，允许您使用Scrapyd来管理AioScrapy爬虫。
+Scrapyd是一个用于部署和运行Scrapy爬虫的应用程序，AioScrapy提供了与Scrapyd兼容的接口，允许您使用Scrapyd来管理AioScrapy爬虫。</br>
 Scrapyd is an application for deploying and running Scrapy spiders, and AioScrapy provides a Scrapyd-compatible interface that allows you to use Scrapyd to manage AioScrapy spiders.
 
 ### 安装Scrapyd | Installing Scrapyd
@@ -107,7 +109,7 @@ pip install scrapyd
 
 ### 配置Scrapyd | Configuring Scrapyd
 
-创建一个`scrapyd.conf`文件，配置Scrapyd使用AioScrapy的运行器：
+创建一个`scrapyd.conf`文件，配置Scrapyd使用AioScrapy的运行器：</br>
 Create a `scrapyd.conf` file, configuring Scrapyd to use AioScrapy's runner:
 
 ```ini
@@ -148,12 +150,12 @@ daemonstatus.json = scrapyd.webservice.DaemonStatus
 scrapyd
 ```
 
-Scrapyd将在`http://localhost:6800`上启动一个Web服务器，您可以通过这个Web界面来管理爬虫。
+Scrapyd将在`http://localhost:6800`上启动一个Web服务器，您可以通过这个Web界面来管理爬虫。</br>
 Scrapyd will start a web server at `http://localhost:6800`, and you can manage spiders through this web interface.
 
 ### 配置项目 | Configuring the Project
 
-在项目根目录下创建一个`setup.py`文件：
+在项目根目录下创建一个`setup.py`文件：</br>
 Create a `setup.py` file in the project root directory:
 
 ```python
@@ -167,7 +169,7 @@ setup(
 )
 ```
 
-在项目根目录下创建一个`aioscrapy.cfg`文件：
+在项目根目录下创建一个`aioscrapy.cfg`文件：</br>
 Create an `aioscrapy.cfg` file in the project root directory:
 
 ```ini
@@ -185,7 +187,7 @@ project = myproject
 
 ### 部署爬虫 | Deploying Spiders
 
-使用`scrapyd-deploy`命令部署爬虫：
+使用`scrapyd-deploy`命令部署爬虫：</br>
 Use the `scrapyd-deploy` command to deploy spiders:
 
 ```bash
@@ -199,7 +201,7 @@ scrapyd-deploy local
 scrapyd-deploy production
 ```
 
-或者使用AioScrapy提供的`deploy.py`脚本：
+或者使用AioScrapy提供的`deploy.py`脚本：</br>
 Or use the `deploy.py` script provided by AioScrapy:
 
 ```bash
@@ -215,16 +217,14 @@ python deploy.py production
 
 ### 运行爬虫 | Running Spiders
 
-通过Scrapyd的REST API运行爬虫：
+通过Scrapyd的REST API运行爬虫：</br>
 Run spiders through Scrapyd's REST API:
 
 ```bash
 # 使用curl | Using curl
-
 curl http://localhost:6800/schedule.json -d project=myproject -d spider=distributed
 
 # 使用Python requests | Using Python requests
-
 import requests
 requests.post('http://localhost:6800/schedule.json', data={
     'project': 'myproject',
@@ -234,7 +234,7 @@ requests.post('http://localhost:6800/schedule.json', data={
 
 ### 监控爬虫 | Monitoring Spiders
 
-通过Scrapyd的REST API监控爬虫：
+通过Scrapyd的REST API监控爬虫：</br>
 Monitor spiders through Scrapyd's REST API:
 
 ```bash
@@ -250,12 +250,11 @@ curl http://localhost:6800/listjobs.json?project=myproject
 
 ### 取消爬虫 | Canceling Spiders
 
-通过Scrapyd的REST API取消爬虫：
+通过Scrapyd的REST API取消爬虫：</br>
 Cancel spiders through Scrapyd's REST API:
 
 ```bash
 # 取消爬虫 | Cancel a spider
-
 curl http://localhost:6800/cancel.json -d project=myproject -d job=jobid
 ```
 
@@ -266,6 +265,8 @@ curl http://localhost:6800/cancel.json -d project=myproject -d job=jobid
 3. **使用Scrapyd管理爬虫**：使用Scrapyd来部署、运行和监控爬虫
 4. **使用Redis存储爬取结果**：将爬取结果存储在Redis中，方便后续处理
 5. **使用监控工具**：使用监控工具来跟踪爬虫的性能和状态
+
+</br>
 
 1. **Use Redis Queue and Filter**: Ensure all spider instances share the same request queue and filter
 2. **Configure Appropriate Concurrency Settings**: Adjust concurrency settings based on server performance and target website limitations
