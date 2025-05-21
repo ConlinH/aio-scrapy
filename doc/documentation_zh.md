@@ -160,7 +160,7 @@ ITEM_PIPELINES = {
 """
 # item的格式要求如下
 item = {
-    '__execl__': {
+    '__excel__': {
         'filename': 'article',  # 文件名 或 存储的路径及文件名 如：D:\article.xlsx
         'sheet': 'sheet1',  # 表格的sheet名字 不指定默认为sheet1
 

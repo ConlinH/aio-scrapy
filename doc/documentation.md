@@ -139,7 +139,7 @@ ITEM_PIPELINES = {
 """
 # Format requirements for item
 item = {
-    '__execl__': {
+    '__excel__': {
         'filename': 'article',  # File name to store, eg：D:\article.xlsx
         'sheet': 'sheet1',  # sheet name,  default: sheet1
 
