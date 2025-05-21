@@ -19,11 +19,11 @@ class DemoPlaywrightSpider(Spider):
         LOG_LEVEL='INFO',
         CLOSE_SPIDER_ON_IDLE=True,
         # DOWNLOAD_HANDLERS={
-        #     'http': 'aioscrapy.core.downloader.handlers.webdriver.drissionpage.DrissionPageHandler',
-        #     'https': 'aioscrapy.core.downloader.handlers.webdriver.drissionpage.DrissionPageHandler',
+        #     'http': 'aioscrapy.core.downloader.handlers.webdriver.drissionpage.DrissionPageDownloadHandler',
+        #     'https': 'aioscrapy.core.downloader.handlers.webdriver.drissionpage.DrissionPageDownloadHandler',
         # },
         DOWNLOAD_HANDLERS_TYPE="dp",
-        DP_CLIENT_ARGS=dict(
+        DP_ARGS=dict(
             use_pool=True,  # use_pool=True时 使用完driver后不销毁 重复使用 提供效率
             max_uses=None,  # 在use_pool=True时生效，如果driver达到指定使用次数，则销毁，重新启动一个driver（处理有些driver使用次数变多则变卡的情况）
             headless=False,

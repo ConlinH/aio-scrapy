@@ -15,8 +15,8 @@ class DemoHttpxSpider(Spider):
         #     'https': 'aioscrapy.core.downloader.handlers.httpx.HttpxDownloadHandler',
         # },
         DOWNLOAD_HANDLERS_TYPE="httpx",
-        HTTPX_CLIENT_SESSION_ARGS={'http2': True},
-        HTTPERROR_ALLOW_ALL=True
+        HTTPX_ARGS={'http2': True},     # 传递给httpx.AsyncClient构造函数的参数
+        FIX_HTTPX_HEADER=True,  # 修复响应中的非标准HTTP头
     )
 
     start_urls = ['https://quotes.toscrape.com']

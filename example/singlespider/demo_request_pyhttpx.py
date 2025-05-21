@@ -18,7 +18,7 @@ class DemoPyhttpxSpider(Spider):
         #     'https': 'aioscrapy.core.downloader.handlers.pyhttpx.PyhttpxDownloadHandler',
         # },
         DOWNLOAD_HANDLERS_TYPE="pyhttpx",
-        PYHTTPX_CLIENT_ARGS=dict(
+        PYHTTPX_ARGS=dict(      # 传递给pyhttpx.HttpSession构造函数的参数
             browser_type='chrome',
             http2=True
         )

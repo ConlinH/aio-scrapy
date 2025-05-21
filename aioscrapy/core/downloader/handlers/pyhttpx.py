@@ -46,7 +46,7 @@ class PyhttpxDownloadHandler(BaseDownloadHandler):
 
         # Arguments to pass to pyhttpx HttpSession constructor
         # 传递给pyhttpx HttpSession构造函数的参数
-        self.pyhttpx_client_args: dict = self.settings.get('PYHTTPX_CLIENT_ARGS', {})
+        self.pyhttpx_args: dict = self.settings.get('PYHTTPX_ARGS', {})
 
         # SSL verification setting
         # SSL验证设置
@@ -161,7 +161,7 @@ class PyhttpxDownloadHandler(BaseDownloadHandler):
 
         # Configure pyhttpx session
         # 配置pyhttpx会话
-        session_args = self.pyhttpx_client_args.copy()
+        session_args = self.pyhttpx_args.copy()
         session_args.setdefault('http2', True)  # Enable HTTP/2 by default
                                                # 默认启用HTTP/2
 

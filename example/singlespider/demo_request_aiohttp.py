@@ -16,6 +16,7 @@ class DemoAiohttpSpider(Spider):
         #     'https': 'aioscrapy.core.downloader.handlers.aiohttp.AioHttpDownloadHandler',
         # },
         DOWNLOAD_HANDLERS_TYPE="aiohttp",
+        AIOHTTP_ARGS={}     # 传递给aiohttp.ClientSession的参数
     )
 
     start_urls = ['https://quotes.toscrape.com']

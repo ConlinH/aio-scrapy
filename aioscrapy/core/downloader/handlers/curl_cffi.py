@@ -44,7 +44,7 @@ class CurlCffiDownloadHandler(BaseDownloadHandler):
 
         # Arguments to pass to curl_cffi AsyncSession constructor
         # 传递给curl_cffi AsyncSession构造函数的参数
-        self.httpx_client_session_args: dict = self.settings.get('CURL_CFFI_CLIENT_SESSION_ARGS', {})
+        self.curl_cffi_args: dict = self.settings.get('CURL_CFFI_ARGS', {})
 
         # SSL verification setting
         # SSL验证设置
@@ -156,7 +156,7 @@ class CurlCffiDownloadHandler(BaseDownloadHandler):
 
         # Configure curl_cffi session
         # 配置curl_cffi会话
-        session_args = self.httpx_client_session_args.copy()
+        session_args = self.curl_cffi_args.copy()
 
         # Perform the request
         # 执行请求

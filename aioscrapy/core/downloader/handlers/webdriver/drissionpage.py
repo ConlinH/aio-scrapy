@@ -273,7 +273,7 @@ class DrissionPageDriver(WebDriverBase):
             self.page.set.cookies(cookies)
 
 
-class DrissionPageHandler(BaseDownloadHandler):
+class DrissionPageDownloadHandler(BaseDownloadHandler):
     """
     Download handler that uses DrissionPage to perform browser-based HTTP requests.
     使用DrissionPage执行基于浏览器的HTTP请求的下载处理程序。
@@ -298,7 +298,7 @@ class DrissionPageHandler(BaseDownloadHandler):
 
         # Get DrissionPage client arguments from settings
         # 从设置中获取DrissionPage客户端参数
-        client_args = settings.getdict('DP_CLIENT_ARGS', {})
+        client_args = settings.getdict('DP_ARGS', {})
 
         # Configure the pool size for browser instances
         # 配置浏览器实例的池大小

@@ -278,7 +278,7 @@ class PlaywrightDriver(WebDriverBase):
         ])
 
 
-class PlaywrightHandler(BaseDownloadHandler):
+class PlaywrightDownloadHandler(BaseDownloadHandler):
     """
     Download handler that uses Playwright to perform browser-based HTTP requests.
     使用Playwright执行基于浏览器的HTTP请求的下载处理程序。
@@ -303,7 +303,7 @@ class PlaywrightHandler(BaseDownloadHandler):
 
         # Get Playwright client arguments from settings
         # 从设置中获取Playwright客户端参数
-        playwright_client_args = settings.getdict('PLAYWRIGHT_CLIENT_ARGS')
+        playwright_client_args = settings.getdict('PLAYWRIGHT_ARGS')
 
         # Set the default page load event to wait for
         # 设置要等待的默认页面加载事件

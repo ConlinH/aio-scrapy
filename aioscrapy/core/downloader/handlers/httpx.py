@@ -46,7 +46,7 @@ class HttpxDownloadHandler(BaseDownloadHandler):
 
         # Arguments to pass to httpx AsyncClient constructor
         # 传递给httpx AsyncClient构造函数的参数
-        self.httpx_client_session_args: dict = self.settings.get('HTTPX_CLIENT_SESSION_ARGS', {})
+        self.httpx_args: dict = self.settings.get('HTTPX_ARGS', {})
 
         # SSL verification setting
         # SSL验证设置
@@ -147,7 +147,7 @@ class HttpxDownloadHandler(BaseDownloadHandler):
 
         # Configure httpx client session
         # 配置httpx客户端会话
-        session_args = self.httpx_client_session_args.copy()
+        session_args = self.httpx_args.copy()
         session_args.setdefault('http2', True)  # Enable HTTP/2 by default
                                                # 默认启用HTTP/2
         session_args.update({

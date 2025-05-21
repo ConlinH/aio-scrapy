@@ -50,7 +50,7 @@ class AioHttpDownloadHandler(BaseDownloadHandler):
 
         # Arguments to pass to aiohttp.ClientSession constructor
         # 传递给aiohttp.ClientSession构造函数的参数
-        self.aiohttp_client_session_args: dict = settings.getdict('AIOHTTP_CLIENT_SESSION_ARGS')
+        self.aiohttp_args: dict = settings.getdict('AIOHTTP_ARGS')
 
         # SSL verification setting
         # SSL验证设置
@@ -228,13 +228,13 @@ class AioHttpDownloadHandler(BaseDownloadHandler):
         if self.use_session:
             # Not recommended to use session, The abnormal phenomena will occurs when using tunnel proxy
             # 不建议使用会话，使用隧道代理时会出现异常现象
-            session = self.get_session(**self.aiohttp_client_session_args)
+            session = self.get_session(**self.aiohttp_args)
             async with session.request(request.method, request.url, **kwargs) as response:
                 content: bytes = await response.read()
         else:
             # Create a new session for each request (recommended)
             # 为每个请求创建一个新会话（推荐）
-            async with aiohttp.ClientSession(**self.aiohttp_client_session_args) as session:
+            async with aiohttp.ClientSession(**self.aiohttp_args) as session:
                 async with session.request(request.method, request.url, **kwargs) as response:
                     content: bytes = await response.read()
 

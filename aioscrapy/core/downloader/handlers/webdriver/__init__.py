@@ -1,2 +1,2 @@
-from .playwright import PlaywrightDriver, PlaywrightDriver
-from .drissionpage import DrissionPageHandler, DrissionPageDriver
+from .playwright import PlaywrightDownloadHandler, PlaywrightDriver
+from .drissionpage import DrissionPageDownloadHandler, DrissionPageDriver

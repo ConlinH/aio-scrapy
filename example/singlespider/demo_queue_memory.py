@@ -10,6 +10,10 @@ class DemoMemorySpider(Spider):
         # 'CONCURRENT_REQUESTS': 1,
         'LOG_LEVEL': 'INFO',
         "CLOSE_SPIDER_ON_IDLE": True,
+
+        'SCHEDULER_QUEUE_CLASS': 'aioscrapy.queue.memory.SpiderPriorityQueue',
+        # 'SCHEDULER_QUEUE_CLASS': 'aioscrapy.queue.memory.SpiderQueue',
+        # 'SCHEDULER_QUEUE_CLASS': 'aioscrapy.queue.memory.SpiderStack',
     }
 
     start_urls = ['https://quotes.toscrape.com']

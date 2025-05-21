@@ -167,15 +167,15 @@ DOWNLOAD_HANDLERS_MAP = {
     # playwright handlers (for JavaScript rendering)
     # playwright处理程序（用于JavaScript渲染）
     'playwright': {
-        'http': 'aioscrapy.core.downloader.handlers.webdriver.playwright.PlaywrightHandler',
-        'https': 'aioscrapy.core.downloader.handlers.webdriver.playwright.PlaywrightHandler',
+        'http': 'aioscrapy.core.downloader.handlers.webdriver.playwright.PlaywrightDownloadHandler',
+        'https': 'aioscrapy.core.downloader.handlers.webdriver.playwright.PlaywrightDownloadHandler',
     },
 
-    # DrissionPageHandler handlers (for JavaScript rendering)
-    # DrissionPageHandler处理程序（用于JavaScript渲染）
+    # DrissionPage handlers (for JavaScript rendering)
+    # DrissionPage处理程序（用于JavaScript渲染）
     'dp': {
-        'http': 'aioscrapy.core.downloader.handlers.webdriver.drissionpage.DrissionPageHandler',
-        'https': 'aioscrapy.core.downloader.handlers.webdriver.drissionpage.DrissionPageHandler',
+        'http': 'aioscrapy.core.downloader.handlers.webdriver.drissionpage.DrissionPageDownloadHandler',
+        'https': 'aioscrapy.core.downloader.handlers.webdriver.drissionpage.DrissionPageDownloadHandler',
     },
 
     # curl_cffi handlers
@@ -480,4 +480,4 @@ URLLENGTH_LIMIT = 2083
 
 # Whether to close the spider when it becomes idle (no more requests)
 # 当爬虫变为空闲状态（没有更多请求）时是否关闭爬虫
-CLOSE_SPIDER_ON_IDLE = False
+CLOSE_SPIDER_ON_IDLE = True
