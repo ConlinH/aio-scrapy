@@ -13,8 +13,8 @@ AioScrapy is a powerful asynchronous web crawling framework built on Python's as
 - **丰富的配置选项**：高度可定制的爬虫行为
 - **分布式爬取**：支持使用Redis和RabbitMQ进行分布式爬取
 - **数据库集成**：内置支持Redis、MySQL、MongoDB、PostgreSQL和RabbitMQ
-</br>
-</br>
+
+
 - **Fully Asynchronous**: Built on Python's asyncio for efficient concurrent crawling
 - **Multiple Download Handlers**: Support for various HTTP clients including aiohttp, httpx, requests, pyhttpx, curl_cffi, DrissionPage and playwright
 - **Flexible Middleware System**: Easily add custom functionality and processing logic
@@ -56,6 +56,7 @@ pip install aio-scrapy
 - [分布式部署 | Distributed Deployment](docs/distributed.md)
 - [配置参考 | Settings Reference](docs/settings.md)
 - [API参考 | API Reference](docs/api.md)
+- [示例 | Example](example)
 
 ## 许可证 | License
 

@@ -265,11 +265,9 @@ Then register your connection pool manager in your project:
 
 ```python
 # 在项目初始化时 | During project initialization
-
 from aioscrapy.db import db_manager_map
 from myproject.db import MyCustomPoolManager
 
 # 注册自定义连接池管理器 | Register custom connection pool manager
-
 db_manager_map['custom'] = MyCustomPoolManager()
 ```
