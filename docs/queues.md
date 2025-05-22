@@ -36,7 +36,7 @@ Priority memory queue, processing requests based on their priority. Requests wit
 ```python
 # 在settings.py中设置 | Set in settings.py
 SCHEDULER_QUEUE_CLASS = 'aioscrapy.queue.memory.SpiderPriorityQueue'
-# SCHEDULER_QUEUE_CLASS = 'aioscrapy.queue.memory.LifoMemoryQueue'
+# SCHEDULER_QUEUE_CLASS = 'aioscrapy.queue.memory.SpiderQueue'
 # SCHEDULER_QUEUE_CLASS = 'aioscrapy.queue.memory.SpiderStack'
 ```
 

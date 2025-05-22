@@ -17,7 +17,7 @@ class DemoCurlCffiSpider(Spider):
         #     'https': 'aioscrapy.core.downloader.handlers.curl_cffi.CurlCffiDownloadHandler',
         # },
         DOWNLOAD_HANDLERS_TYPE="curl_cffi",
-        CURL_CFFI_ARGS=dict(impersonate="chrome110"),   # 传递给curl_cffi AsyncSession构造函数的参数
+        CURL_CFFI_ARGS=dict(impersonate="chrome110"),   # 传递给curl_cffi.AsyncSession构造函数的参数
     )
 
     start_urls = ["https://quotes.toscrape.com"]

@@ -34,11 +34,10 @@ from aioscrapy import Request, Spider, logger
 class DemoProxySpider(Spider):
     name = 'demo_proxy'
     custom_settings = {
-        "USER_AGENT": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36",
         "CLOSE_SPIDER_ON_IDLE": True,
     }
     
-    start_urls = ['https://quotes.toscrape.com']
+    start_urls = ['https://httpbin.org/ip']
     
     @staticmethod
     async def process_request(request, spider):
@@ -47,15 +46,10 @@ class DemoProxySpider(Spider):
         request.meta['proxy'] = 'http://127.0.0.1:7890'
     
     async def parse(self, response):
-        for quote in response.css('div.quote'):
-            yield {
-                'author': quote.xpath('span/small/text()').get(),
-                'text': quote.css('span.text::text').get(),
-            }
-        
-        next_page = response.css('li.next a::attr("href")').get()
-        if next_page is not None:
-            yield Request(f"https://quotes.toscrape.com{next_page}", callback=self.parse)
+        print(response.text)
+
+if __name__ == '__main__':
+    DemoProxySpider.start()
 ```
 
 ### 方法2：使用Redis代理池 | Method 2: Use Redis Proxy Pool
@@ -69,7 +63,6 @@ from aioscrapy import Request, Spider, logger
 class DemoRedisProxySpider(Spider):
     name = 'demo_redis_proxy'
     custom_settings = {
-        "USER_AGENT": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36",
         "CLOSE_SPIDER_ON_IDLE": True,
         
         # 代理配置 | Proxy configuration
@@ -92,18 +85,14 @@ class DemoRedisProxySpider(Spider):
         }
     }
     
-    start_urls = ['https://quotes.toscrape.com']
+    start_urls = ['https://httpbin.org/ip']
     
     async def parse(self, response):
-        for quote in response.css('div.quote'):
-            yield {
-                'author': quote.xpath('span/small/text()').get(),
-                'text': quote.css('span.text::text').get(),
-            }
-        
-        next_page = response.css('li.next a::attr("href")').get()
-        if next_page is not None:
-            yield Request(f"https://quotes.toscrape.com{next_page}", callback=self.parse)
+        print(response.text)
+
+
+if __name__ == '__main__':
+    DemoRedisProxySpider.start()
 ```
 
 ### 方法3：实现自定义代理处理程序 | Method 3: Implement Custom Proxy Handler
@@ -143,18 +132,14 @@ class DemoCustomProxySpider(Spider):
         "PROXY_HANDLER": 'myproject.proxies.MyProxy',  # 自定义代理处理程序类 | Custom proxy handler class
     }
     
-    start_urls = ['https://quotes.toscrape.com']
+    start_urls = ['https://httpbin.org/ip']
     
     async def parse(self, response):
-        for quote in response.css('div.quote'):
-            yield {
-                'author': quote.xpath('span/small/text()').get(),
-                'text': quote.css('span.text::text').get(),
-            }
-        
-        next_page = response.css('li.next a::attr("href")').get()
-        if next_page is not None:
-            yield Request(f"https://quotes.toscrape.com{next_page}", callback=self.parse)
+        print(response.text)
+
+
+if __name__ == '__main__':
+    DemoCustomProxySpider.start()
 ```
 
 ## 代理配置参数 | Proxy Configuration Parameters

@@ -73,7 +73,6 @@ REDIS_ARGS = {
 
 # RedisRFPDupeFilter
 DUPEFILTER_CLASS = 'aioscrapy.dupefilters.redis.RedisRFPDupeFilter'
-JOBDIR = './job_dir'    # 作业目录，用于存储请求指纹文件 | Job directory, used to store request fingerprint files
 
 # ExRedisRFPDupeFilter
 DUPEFILTER_CLASS = 'aioscrapy.dupefilters.redis.ExRedisRFPDupeFilter'
@@ -155,8 +154,6 @@ DUPEFILTER_DEBUG = False
 # 是否记录重复请求（INFO级别） | Whether to log duplicate requests (INFO level)
 DUPEFILTER_INFO = False
 
-# 作业目录，用于磁盘过滤器 | Job directory, used for disk filters
-JOBDIR = './job_dir'
 ```
 
 ## 过滤器使用示例 | Filter Usage Examples
@@ -167,20 +164,21 @@ from aioscrapy import Spider, Request
 
 class MySpider(Spider):
     name = 'myspider'
-    start_urls = ['https://example.com']
+    start_urls = [
+        'https://example.com',
+        'https://example.com',
+    ]
     
     custom_settings = {
         'DUPEFILTER_CLASS': 'aioscrapy.dupefilters.disk.DiskRFPDupeFilter',
         'JOBDIR': './job_dir',
+        'DUPEFILTER_INFO': True
     }
     
     # 处理响应 | Process the response
     async def parse(self, response):
         yield {'url': response.url, 'title': response.css('title::text').get()}
         
-        # 添加新请求，过滤器会自动过滤重复的URL | Add new requests, the filter will automatically filter duplicate URLs
-        for href in response.css('a::attr(href)'):
-            yield Request(response.urljoin(href), callback=self.parse)
 
 if __name__ == '__main__':
     MySpider.start()
@@ -193,12 +191,16 @@ from aioscrapy import Spider, Request
 
 class DistributedSpider(Spider):
     name = 'distributed'
-    start_urls = ['https://example.com']
+    start_urls = [
+        'https://example.com',
+        'https://example.com',
+    ]
     
     custom_settings = {
         'DUPEFILTER_CLASS': 'aioscrapy.dupefilters.redis.RedisBloomDupeFilter',
         'BLOOMFILTER_BIT': 30,
         'BLOOMFILTER_HASH_NUMBER': 6,
+        'DUPEFILTER_INFO': True,
         'REDIS_ARGS': {
             'queue': {
                 'url': 'redis://localhost:6379/0',
@@ -209,10 +211,6 @@ class DistributedSpider(Spider):
     # 处理响应 | Process the response
     async def parse(self, response):
         yield {'url': response.url, 'title': response.css('title::text').get()}
-        
-        # 添加新请求，过滤器会自动过滤重复的URL | Add new requests, the filter will automatically filter duplicate URLs
-        for href in response.css('a::attr(href)'):
-            yield Request(response.urljoin(href), callback=self.parse)
 
 
 if __name__ == '__main__':
@@ -233,6 +231,7 @@ class RetrySpider(Spider):
         'BLOOMFILTER_BIT': 30,
         'BLOOMFILTER_HASH_NUMBER': 6,
         'DUPEFILTER_SET_KEY_TTL': 180,
+        'DUPEFILTER_INFO': True,
         'REDIS_ARGS': {
             'queue': {
                 'url': 'redis://localhost:6379/0',
@@ -243,10 +242,6 @@ class RetrySpider(Spider):
     # 处理响应 | Process the response
     async def parse(self, response):
         yield {'url': response.url, 'title': response.css('title::text').get()}
-        
-        # 添加新请求，如果请求失败，过滤器会自动移除指纹，允许重试 | Add new requests, if the request fails, the filter will automatically remove the fingerprint, allowing retry
-        for href in response.css('a::attr(href)'):
-            yield Request(response.urljoin(href), callback=self.parse)
 
 if __name__ == '__main__':
     RetrySpider.start()

@@ -69,7 +69,7 @@ Exports items to CSV files.
 # 在settings.py中设置
 # Set in settings.py
 ITEM_PIPELINES = {
-    'aioscrapy.libs.pipelines.csv.CsvPipeline': 300,
+    'aioscrapy.libs.pipelines.csv.CsvPipeline': 100,
 }
 
 # 在爬虫中使用
@@ -93,7 +93,7 @@ Exports items to Excel files.
 # 在settings.py中设置
 # Set in settings.py
 ITEM_PIPELINES = {
-    'aioscrapy.libs.pipelines.excel.ExcelPipeline': 300,
+    'aioscrapy.libs.pipelines.excel.ExcelPipeline': 100,
 }
 
 # 在爬虫中使用
@@ -126,7 +126,7 @@ Stores items in a MySQL database.
 # 在settings.py中设置
 # Set in settings.py
 ITEM_PIPELINES = {
-    'aioscrapy.libs.pipelines.mysql.MySQLPipeline': 300,
+    'aioscrapy.libs.pipelines.mysql.MySQLPipeline': 100,
 }
 
 # MySQL连接设置
@@ -177,7 +177,7 @@ Stores items in a MongoDB database.
 # 在settings.py中设置
 # Set in settings.py
 ITEM_PIPELINES = {
-    'aioscrapy.libs.pipelines.mongo.MongoPipeline': 300,
+    'aioscrapy.libs.pipelines.mongo.MongoPipeline': 100,
 }
 
 # MongoDB连接设置
@@ -218,7 +218,7 @@ Stores items in a PostgreSQL database.
 # 在settings.py中设置
 # Set in settings.py
 ITEM_PIPELINES = {
-    'aioscrapy.libs.pipelines.pg.PGPipeline': 300,
+    'aioscrapy.libs.pipelines.pg.PGPipeline': 100,
 }
 
 # PostgreSQL连接设置

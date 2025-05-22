@@ -5,7 +5,7 @@ This document introduces the core concepts and architecture of AioScrapy, helpin
 
 ## 架构概述 | Architecture Overview
 
-AioScrapy是一个基于异步IO的网络爬虫框架，它的架构由以下主要组件组成：</br>
+AioScrapy是一个基于异步IO的网络爬虫框架，它的流程和Scrapy基本是一样的，它的架构由以下主要组件组成：</br>
 AioScrapy is an asynchronous IO-based web crawling framework with an architecture composed of the following main components:
 
 1. **引擎（Engine）**：协调所有组件之间的数据流
@@ -114,24 +114,6 @@ Responses consist of the following main attributes:
 - **body**：响应体 | Response body
 - **request**：生成此响应的请求 | The request that generated this response
 - **meta**：响应元数据，继承自请求的meta | Response metadata, inherited from the request's meta
-
-## 选择器 | Selectors
-
-AioScrapy提供了强大的选择器API，用于从HTML和XML响应中提取数据。</br>
-AioScrapy provides a powerful selector API for extracting data from HTML and XML responses.
-
-选择器基于lxml库，支持CSS和XPath表达式：</br>
-Selectors are based on the lxml library and support CSS and XPath expressions:
-
-```python
-# 使用CSS选择器 | Using CSS selectors
-title = response.css('title::text').get()
-links = response.css('a::attr(href)').getall()
-
-# 使用XPath选择器 | Using XPath selectors
-title = response.xpath('//title/text()').get()
-links = response.xpath('//a/@href').getall()
-```
 
 ## 中间件 | Middlewares
 

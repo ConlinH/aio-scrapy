@@ -49,10 +49,7 @@ DOWNLOAD_HANDLERS_TYPE = "aiohttp"  # 默认值，可以省略 | Default value, 
 # }
 
 # aiohttp特定设置 | aiohttp-specific settings
-AIOHTTP_ARGS = {
-    'timeout': 30,
-    'connector': {'limit': 100, 'force_close': True}
-}
+AIOHTTP_ARGS = {}     # 传递给aiohttp.ClientSession的参数
 ```
 
 ### httpx
@@ -83,9 +80,8 @@ DOWNLOAD_HANDLERS_TYPE = "httpx"
 # }
 
 # httpx特定设置 | httpx-specific settings
-HTTPX_ARGS = {
-    'timeout': 30,
-    'limits': {'max_connections': 100}
+HTTPX_ARGS = {  # 传递给httpx.AsyncClient构造函数的参数
+    'http2': True,
 }
 ```
 
@@ -116,10 +112,7 @@ DOWNLOAD_HANDLERS_TYPE = "pyhttpx"
 # }
 
 # pyhttpx特定设置 | pyhttpx-specific settings
-PYHTTPX_ARGS = {
-    'timeout': 30,
-    'http2': True
-}
+PYHTTPX_ARGS={}      # 传递给pyhttpx.HttpSession构造函数的参数
 ```
 
 ### requests
@@ -177,8 +170,7 @@ DOWNLOAD_HANDLERS_TYPE = "curl_cffi"
 # }
 
 # curl_cffi特定设置 | curl_cffi-specific settings
-CURL_CFFI_ARGS = {
-    'timeout': 30,
+CURL_CFFI_ARGS = {  # 传递给curl_cffi.AsyncSession构造函数的参数
     'impersonate': 'chrome131'
 }
 ```
@@ -192,7 +184,6 @@ A browser automation tool based on Playwright, with JavaScript rendering support
 - 支持JavaScript渲染 | JavaScript rendering support
 - 完整的浏览器环境 | Full browser environment
 - 支持多种浏览器（Chromium、Firefox、WebKit） | Support for multiple browsers (Chromium, Firefox, WebKit)
-- 支持截图和PDF生成 | Screenshot and PDF generation support
 - 支持代理 | Proxy support
 
 **配置示例 | Configuration Example**：
@@ -266,7 +257,7 @@ DP_ARGS = {
     'use_pool': True,
     'max_uses': None,
     'headless': False,
-     arguments=['--no-sandbox', ('--window-size', '1024,800')]
+    'arguments': ['--no-sandbox', ('--window-size', '1024,800')]
     # 'proxy': 'http://user:pwd@127.0.0.1:7890',
 }
 ```

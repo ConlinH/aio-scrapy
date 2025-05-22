@@ -165,6 +165,9 @@ class PyhttpxDownloadHandler(BaseDownloadHandler):
         session_args.setdefault('http2', True)  # Enable HTTP/2 by default
                                                # 默认启用HTTP/2
 
+        if ja3 := request.meta.get("ja3"):
+            session_args['ja3'] = ja3
+
         # Execute the request in a thread pool since pyhttpx is synchronous
         # 由于pyhttpx是同步的，在线程池中执行请求
         with pyhttpx.HttpSession(**session_args) as session:

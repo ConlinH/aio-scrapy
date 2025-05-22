@@ -78,6 +78,9 @@ class DistributedSpider(Spider):
         # 添加新请求到队列 | Add new requests to the queue
         for href in response.css('a::attr(href)'):
             yield Request(response.urljoin(href), callback=self.parse)
+
+if __name__ == '__main__':
+    DistributedSpider.start()
 ```
 
 ### 运行分布式爬虫 | Running Distributed Spiders
