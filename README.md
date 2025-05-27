@@ -39,6 +39,49 @@ pip install aio-scrapy
 # pip install git+https://github.com/ConlinH/aio-scrapy
 ```
 
+### 开始 | Start
+```python
+from aioscrapy import Spider, logger
+
+
+class MyspiderSpider(Spider):
+    name = 'myspider'
+    custom_settings = {
+        "CLOSE_SPIDER_ON_IDLE": True
+    }
+    start_urls = ["https://quotes.toscrape.com"]
+
+    @staticmethod
+    async def process_request(request, spider):
+        """ request middleware """
+        pass
+
+    @staticmethod
+    async def process_response(request, response, spider):
+        """ response middleware """
+        return response
+
+    @staticmethod
+    async def process_exception(request, exception, spider):
+        """ exception middleware """
+        pass
+
+    async def parse(self, response):
+        for quote in response.css('div.quote'):
+            item = {
+                'author': quote.xpath('span/small/text()').get(),
+                'text': quote.css('span.text::text').get(),
+            }
+            yield item
+
+    async def process_item(self, item):
+        logger.info(item)
+
+
+if __name__ == '__main__':
+    MyspiderSpider.start()
+```
+
 ## 文档 | Documentation
 
 ## 文档目录 | Documentation Contents
