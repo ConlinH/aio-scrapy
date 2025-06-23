@@ -11,9 +11,11 @@ It handles URL normalization, fingerprinting, serialization, and other request-r
 
 import hashlib
 import inspect
-import json
-from typing import Callable, List, Optional, Tuple, Type, TypeVar
+from collections import Counter
+from typing import Callable, List, Optional, Tuple, Type, TypeVar, Union
+from urllib.parse import ParseResult, parse_qsl, urlencode, urlparse
 
+import ujson
 from w3lib.url import canonicalize_url
 from w3lib.url import safe_url_string
 
@@ -23,9 +25,65 @@ from aioscrapy.utils.curl import curl_to_request_kwargs
 from aioscrapy.utils.python import to_unicode
 from aioscrapy.utils.url import escape_ajax
 
+
 # Type variable for Request class to use in class methods
 # 用于在类方法中使用的Request类的类型变量
 RequestTypeVar = TypeVar("RequestTypeVar", bound="Request")
+
+
+def _update_url_params(url: str, params: Union[dict, list, tuple]) -> str:
+    """Add URL query params to provided URL being aware of existing.
+
+    Args:
+        url: string of target URL
+        params: dict containing requested params to be added
+
+    Returns:
+        string with updated URL
+
+    >> url = 'http://stackoverflow.com/test?answers=true'
+    >> new_params = {'answers': False, 'data': ['some','values']}
+    >> update_url_params(url, new_params)
+    'http://stackoverflow.com/test?data=some&data=values&answers=false'
+    """
+    # No need to unquote, since requote_uri will be called later.
+    parsed_url = urlparse(url)
+
+    # Extracting URL arguments from parsed URL, NOTE the result is a list, not dict
+    parsed_get_args = parse_qsl(parsed_url.query, keep_blank_values=True)
+
+    # Merging URL arguments dict with new params
+    old_args_counter = Counter(x[0] for x in parsed_get_args)
+    if isinstance(params, dict):
+        params = list(params.items())
+    new_args_counter = Counter(x[0] for x in params)
+    for key, value in params:
+        # Bool and Dict values should be converted to json-friendly values
+        if isinstance(value, (bool, dict)):
+            value = ujson.dumps(value)
+        # 1 to 1 mapping, we have to search and update it.
+        if old_args_counter.get(key) == 1 and new_args_counter.get(key) == 1:
+            parsed_get_args = [
+                (x if x[0] != key else (key, value)) for x in parsed_get_args
+            ]
+        else:
+            parsed_get_args.append((key, value))
+
+    # Converting URL argument to proper query string
+    encoded_get_args = urlencode(parsed_get_args, doseq=True)
+
+    # Creating new parsed result object based on provided with new
+    # URL arguments. Same thing happens inside of urlparse.
+    new_url = ParseResult(
+        parsed_url.scheme,
+        parsed_url.netloc,
+        parsed_url.path,
+        parsed_url.params,
+        encoded_get_args,
+        parsed_url.fragment,
+    ).geturl()
+
+    return new_url
 
 
 class Request(object):
@@ -42,7 +100,10 @@ class Request(object):
             callback: Optional[Callable] = None,
             method: str = 'GET',
             headers: Optional[dict] = None,
+            params: Optional[Union[dict, list, tuple]] = None,
             body: Optional[str] = None,
+            data: Optional[Union[dict[str, str], list[tuple], str, bytes]] = None,
+            json: Optional[dict | list] = None,
             cookies: Optional[dict] = None,
             meta: Optional[dict] = None,
             encoding: str = 'utf-8',
@@ -77,8 +138,32 @@ class Request(object):
         """
         self._encoding = encoding
         self.method = str(method).upper()
+
+        self.headers = Headers(headers or {})
+
+        # url
+        if params:
+            url = _update_url_params(url, params)
         self._set_url(url)
+
+        # body/data/json
+        if data is not None:
+            if isinstance(data, (dict, list, tuple)):
+                body = urlencode(data)
+            elif isinstance(data, str):
+                body = data
+            elif isinstance(data, bytes):
+                body = data.decode(self._encoding)
+            self.headers.setdefault('Content-Type', 'application/x-www-form-urlencoded')
+
+        if json is not None:
+            body = ujson.dumps(json, separators=(",", ":"))
+            # Set default headers for JSON content
+            # 设置JSON内容的默认头部
+            self.headers.setdefault('Content-Type', 'application/json')
+
         self._set_body(body)
+
         assert isinstance(priority, int), f"Request priority not an integer: {priority!r}"
         self.priority = priority
 
@@ -86,7 +171,6 @@ class Request(object):
         self.errback = errback
 
         self.cookies = cookies or {}
-        self.headers = Headers(headers or {})
         self.dont_filter = dont_filter
         self.use_proxy = use_proxy
 
@@ -207,7 +291,7 @@ class Request(object):
         """
         return self._body
 
-    def _set_body(self, body: str) -> None:
+    def _set_body(self, body: Optional[str]) -> None:
         """
         Set the request body.
         设置请求体。
@@ -361,7 +445,7 @@ class Request(object):
             The request fingerprint. 请求指纹。
         """
         return hashlib.sha1(
-            json.dumps({
+            ujson.dumps({
                 'method': to_unicode(self.method),
                 'url': canonicalize_url(self.url, keep_fragments=keep_fragments),
                 'body': self.body,
