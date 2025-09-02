@@ -17,6 +17,7 @@ class DemoCurlCffiSpider(Spider):
         #     'https': 'aioscrapy.core.downloader.handlers.curl_cffi.CurlCffiDownloadHandler',
         # },
         DOWNLOAD_HANDLERS_TYPE="curl_cffi",
+        # USE_THREAD=True,  # True: 使用asyncio.to_thread运行curl_cffi的同步方式; False: 使用curl_cffi的异步; 默认值为False
         CURL_CFFI_ARGS=dict(impersonate="chrome110"),   # 传递给curl_cffi.AsyncSession构造函数的参数
     )
 

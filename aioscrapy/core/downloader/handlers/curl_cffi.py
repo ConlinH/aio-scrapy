@@ -8,8 +8,9 @@ It supports features like browser impersonation, proxies, and cookies.
 它支持浏览器模拟、代理和Cookie等功能。
 """
 
+import asyncio
 from curl_cffi.curl import CurlError
-from curl_cffi.requests import AsyncSession
+from curl_cffi.requests import AsyncSession, Session
 
 from aioscrapy import Request
 from aioscrapy.core.downloader.handlers import BaseDownloadHandler
@@ -49,6 +50,9 @@ class CurlCffiDownloadHandler(BaseDownloadHandler):
         # SSL verification setting
         # SSL验证设置
         self.verify_ssl: bool = self.settings.get("VERIFY_SSL", True)
+
+        # 是否在线程中执行
+        self.use_thread: bool = self.settings.get("USE_THREAD", False)
 
     @classmethod
     def from_settings(cls, settings: Settings):
@@ -160,8 +164,14 @@ class CurlCffiDownloadHandler(BaseDownloadHandler):
 
         # Perform the request
         # 执行请求
-        async with AsyncSession(**session_args) as session:
-            response = await session.request(request.method, request.url, **kwargs)
+        if self.use_thread:
+            with Session(**session_args) as session:
+                # Run the synchronous curl-cffi request in a thread pool
+                # 在线程池中运行同步的curl-cffi请求
+                response = await asyncio.to_thread(session.request, request.method, request.url, **kwargs)
+        else:
+            async with AsyncSession(**session_args) as session:
+                response = await session.request(request.method, request.url, **kwargs)
 
         # Convert curl_cffi response to HtmlResponse
         # 将curl_cffi响应转换为HtmlResponse
