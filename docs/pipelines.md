@@ -257,6 +257,49 @@ async def parse(self, response):
     }
 ```
 
+#### RedisPipeline | Redis Pipeline
+
+将数据项存储到Redis中。</br>
+Stores items into Redis.
+
+```python
+# 在settings.py中设置
+# Set in settings.py
+ITEM_PIPELINES = {
+    'aioscrapy.libs.pipelines.redis.RedisPipeline': 100,
+}
+
+# Redis连接设置
+# Redis connection settings
+REDIS_ARGS = {
+    'default': {
+        'url': 'redis://:@redis:6379/0',
+        'max_connections': 2,
+        'timeout': None,
+        'retry_on_timeout': True,
+        'health_check_interval': 30,
+    },
+}
+
+# 批量存储设置
+# Batch storage settings
+SAVE_CACHE_NUM = 1000  # 每次存储的最大数量 | Maximum number of items to store at once
+SAVE_CACHE_INTERVAL = 10  # 存储间隔（秒）/ Storage interval (seconds)
+
+# 在爬虫中使用
+# Usage in spider
+async def parse(self, response):
+    yield {
+        'title': 'Example Title',
+        'content': 'Example Content',
+        "__redis__": {
+            "db_alias": "default", # Redis连接别名，对应REDIS_ARGS中的键 | Redis connection alias, corresponding to the key in REDIS_ARGS
+            "key_name": "test:articles", # 要存储的key的键名
+            "insert_method": "lpush" # 写入redis中的方式，支持RedisExecutor的所有写入方法
+        }
+    }
+```
+
 ## 管道示例 | Pipeline Examples
 ### 基本管道 | Basic Pipeline
 
