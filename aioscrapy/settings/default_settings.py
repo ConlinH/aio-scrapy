@@ -184,6 +184,13 @@ DOWNLOAD_HANDLERS_MAP = {
         'http': 'aioscrapy.core.downloader.handlers.curl_cffi.CurlCffiDownloadHandler',
         'https': 'aioscrapy.core.downloader.handlers.curl_cffi.CurlCffiDownloadHandler',
     },
+
+    # sbcdp handlers (for JavaScript rendering)
+    # sbcdp处理程序（用于JavaScript渲染）
+    'sbcdp': {
+        'http': 'aioscrapy.core.downloader.handlers.webdriver.sbcdp.SbcdpDownloadHandler',
+        'https': 'aioscrapy.core.downloader.handlers.webdriver.sbcdp.SbcdpDownloadHandler',
+    },
 }
 
 # Download timeout in seconds (3 minutes)
