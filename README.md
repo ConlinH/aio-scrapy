@@ -6,7 +6,7 @@ AioScrapy is a powerful asynchronous web crawling framework built on Python's as
 ## 特性 | Features
 
 - **完全异步**：基于Python的asyncio库，实现高效的并发爬取
-- **多种下载处理程序**：支持多种HTTP客户端，包括aiohttp、httpx、requests、pyhttpx、curl_cffi、DrissionPage和playwright
+- **多种下载处理程序**：支持多种HTTP客户端，包括aiohttp、httpx、requests、pyhttpx、curl_cffi、DrissionPage、playwright和sbcdp
 - **灵活的中间件系统**：轻松添加自定义功能和处理逻辑
 - **强大的数据处理管道**：支持多种数据库存储选项
 - **内置信号系统**：方便的事件处理机制
@@ -16,7 +16,7 @@ AioScrapy is a powerful asynchronous web crawling framework built on Python's as
 
 
 - **Fully Asynchronous**: Built on Python's asyncio for efficient concurrent crawling
-- **Multiple Download Handlers**: Support for various HTTP clients including aiohttp, httpx, requests, pyhttpx, curl_cffi, DrissionPage and playwright
+- **Multiple Download Handlers**: Support for various HTTP clients including aiohttp, httpx, requests, pyhttpx, curl_cffi, DrissionPage, playwright and sbcdp
 - **Flexible Middleware System**: Easily add custom functionality and processing logic
 - **Powerful Data Processing Pipelines**: Support for various database storage options
 - **Built-in Signal System**: Convenient event handling mechanism

@@ -169,6 +169,8 @@ DOWNLOAD_HANDLERS_TYPE = "curl_cffi"
 #     'https': 'aioscrapy.core.downloader.handlers.curl_cffi.CurlCffiDownloadHandler',
 # }
 
+# USE_THREAD=False,  # True: 使用asyncio.to_thread运行同步的curl_cffi; False: 使用curl_cffi的异步; 默认值为False
+
 # curl_cffi特定设置 | curl_cffi-specific settings
 CURL_CFFI_ARGS = {  # 传递给curl_cffi.AsyncSession构造函数的参数
     'impersonate': 'chrome131'
@@ -262,6 +264,38 @@ DP_ARGS = {
 }
 ```
 
+### sbcdp
+
+基于sbcdp的浏览器自动化工具，支持JavaScript渲染。</br>
+A browser automation tool based on sbcdp, with JavaScript rendering support.
+
+**特点 | Features**：
+- 支持JavaScript渲染 | JavaScript rendering support
+- 完整的浏览器环境 | Full browser environment
+- 支持截图和PDF生成 | Screenshot and PDF generation support
+- 支持代理 | Proxy support
+
+**配置示例 | Configuration Example**：
+```python
+# 安装sbcdp | Install sbcdp
+# pip install sbcdp
+
+# 在settings.py中设置 | Set in settings.py
+DOWNLOAD_HANDLERS_TYPE = "sbcdp"
+
+# 或者直接指定处理程序 | Or directly specify handlers
+# DOWNLOAD_HANDLERS={
+#     'http': 'aioscrapy.core.downloader.handlers.webdriver.sbcdp.SbcdpDownloadHandler',
+#     'https': 'aioscrapy.core.downloader.handlers.webdriver.sbcdp.SbcdpDownloadHandler',
+# },
+
+# playwright特定设置 | playwright-specific settings
+SBCDP_ARGS=dict(
+    use_pool=True,  # use_pool=True时 使用完driver后不销毁 重复使用 提高效率
+    max_uses=None,  # 在use_pool=True时生效，如果driver达到指定使用次数，则销毁，重新启动一个driver（处理有些driver使用次数变多则变卡的情况）
+    # ... 传递给sbcdp.AsyncChrome构造函数的参数
+)
+```
 
 ## 自定义下载处理程序 | Custom Download Handlers
 

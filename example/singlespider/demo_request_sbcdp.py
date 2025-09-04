@@ -24,7 +24,7 @@ class DemoSbcdpSpider(Spider):
         SBCDP_ARGS=dict(
             use_pool=True,  # use_pool=True时 使用完driver后不销毁 重复使用 提高效率
             max_uses=None,  # 在use_pool=True时生效，如果driver达到指定使用次数，则销毁，重新启动一个driver（处理有些driver使用次数变多则变卡的情况）
-            # proxy='http://user:pwd@127.0.0.1:7890',
+            # ... 其它参数为sbcdp的AsyncChrome类参数
         )
     )
 
