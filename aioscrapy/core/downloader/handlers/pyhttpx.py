@@ -14,7 +14,7 @@ import pyhttpx
 from pyhttpx.exception import BaseExpetion as PyHttpxError
 
 from aioscrapy import Request
-from aioscrapy.core.downloader.handlers import BaseDownloadHandler
+from aioscrapy.core.downloader.handlers import BaseDownloadHandler, resolve_redirect_enabled
 from aioscrapy.exceptions import DownloadError
 from aioscrapy.http import HtmlResponse
 from aioscrapy.settings import Settings
@@ -133,8 +133,7 @@ class PyhttpxDownloadHandler(BaseDownloadHandler):
             'timeout': self.settings.get('DOWNLOAD_TIMEOUT'),
             'cookies': dict(request.cookies),
             'verify': self.verify_ssl,
-            'allow_redirects': self.settings.getbool('REDIRECT_ENABLED', True) if request.meta.get(
-                'dont_redirect') is None else request.meta.get('dont_redirect')
+            'allow_redirects': resolve_redirect_enabled(request, self.settings)
         }
 
         # Handle request body data

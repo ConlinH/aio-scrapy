@@ -60,6 +60,9 @@ Last-in-first-out (LIFO) Redis queue, where the most recently added requests are
 优先级Redis队列，根据请求的优先级处理请求。</br>
 Priority Redis queue, processing requests based on their priority.
 
+优先级数值越大，请求越先处理。内部实现与 scrapy-redis 一致，Redis ZSET 使用 `-request.priority` 作为 score。若从使用正 priority score 的旧版本升级，请先排空队列，或切换 `SCHEDULER_QUEUE_KEY` 后重新入队，避免两种 score 格式混用。</br>
+Larger priority values are processed first. As in scrapy-redis, the Redis ZSET score is `-request.priority`. When upgrading from a version that stored positive priority scores, drain the old queue or switch `SCHEDULER_QUEUE_KEY` and enqueue the requests again; do not mix both score formats.
+
 ```python
 
 # Redis连接设置 | Redis connection settings

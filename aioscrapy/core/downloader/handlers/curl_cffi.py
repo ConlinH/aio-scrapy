@@ -13,7 +13,7 @@ from curl_cffi.curl import CurlError
 from curl_cffi.requests import AsyncSession, Session
 
 from aioscrapy import Request
-from aioscrapy.core.downloader.handlers import BaseDownloadHandler
+from aioscrapy.core.downloader.handlers import BaseDownloadHandler, resolve_redirect_enabled
 from aioscrapy.exceptions import DownloadError
 from aioscrapy.http import HtmlResponse
 from aioscrapy.settings import Settings
@@ -130,8 +130,7 @@ class CurlCffiDownloadHandler(BaseDownloadHandler):
             'timeout': self.settings.get('DOWNLOAD_TIMEOUT'),
             'cookies': dict(request.cookies),
             'verify': request.meta.get('verify_ssl', self.verify_ssl),
-            'allow_redirects': self.settings.getbool('REDIRECT_ENABLED', True) if request.meta.get(
-                'dont_redirect') is None else request.meta.get('dont_redirect'),
+            'allow_redirects': resolve_redirect_enabled(request, self.settings),
             'impersonate': request.meta.get('impersonate'),  # Browser fingerprinting feature
                                                             # 浏览器指纹功能
         }

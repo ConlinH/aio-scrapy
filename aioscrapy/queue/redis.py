@@ -79,18 +79,22 @@ class RedisPriorityQueue(RedisQueueBase):
     async def push(self, request: aioscrapy.Request) -> None:
         """Push a request"""
         data = self._encode_request(request)
-        score = request.priority
+        # Match scrapy-redis: larger Request.priority values are represented by
+        # smaller Redis scores, so ZRANGE returns higher-priority requests first.
+        score = -request.priority
         await self.container.zadd(self.key, {data: score})
 
     async def push_batch(self, requests) -> None:
         async with self.container.pipeline() as pipe:
             for request in requests:
-                pipe.zadd(self.key, {self._encode_request(request): request.priority})
+                pipe.zadd(self.key, {self._encode_request(request): -request.priority})
             await pipe.execute()
 
     async def pop(self, count: int = 1) -> Optional[aioscrapy.Request]:
+        if count <= 0:
+            return
         async with self.container.pipeline(transaction=True) as pipe:
-            stop = count - 1 if count - 1 > 0 else 0
+            stop = count - 1
             results, _ = await (
                 pipe.zrange(self.key, 0, stop)
                 .zremrangebyrank(self.key, 0, stop)

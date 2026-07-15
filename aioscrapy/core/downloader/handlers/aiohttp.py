@@ -17,7 +17,7 @@ import aiohttp
 from aiohttp.client_exceptions import ClientError
 
 from aioscrapy import Request
-from aioscrapy.core.downloader.handlers import BaseDownloadHandler
+from aioscrapy.core.downloader.handlers import BaseDownloadHandler, resolve_redirect_enabled
 from aioscrapy.exceptions import DownloadError
 from aioscrapy.http import HtmlResponse
 from aioscrapy.settings import Settings
@@ -192,8 +192,7 @@ class AioHttpDownloadHandler(BaseDownloadHandler):
             'timeout': request.meta.get('download_timeout', 180),
             'cookies': dict(request.cookies),
             'data': request.body or None,
-            'allow_redirects': self.settings.getbool('REDIRECT_ENABLED', True) if request.meta.get(
-                'dont_redirect') is None else request.meta.get('dont_redirect'),
+            'allow_redirects': resolve_redirect_enabled(request, self.settings),
             'max_redirects': self.settings.getint('REDIRECT_MAX_TIMES', 20),
         }
 

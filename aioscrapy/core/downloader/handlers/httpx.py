@@ -14,7 +14,7 @@ import httpx
 from httpx import HTTPError as HttpxError
 
 from aioscrapy import Request
-from aioscrapy.core.downloader.handlers import BaseDownloadHandler
+from aioscrapy.core.downloader.handlers import BaseDownloadHandler, resolve_redirect_enabled
 from aioscrapy.exceptions import DownloadError
 from aioscrapy.http import HtmlResponse
 from aioscrapy.settings import Settings
@@ -152,8 +152,7 @@ class HttpxDownloadHandler(BaseDownloadHandler):
                                                # 默认启用HTTP/2
         session_args.update({
             'verify': request.meta.get('verify_ssl', self.verify_ssl),
-            'follow_redirects': self.settings.getbool('REDIRECT_ENABLED', True) if request.meta.get(
-                'dont_redirect') is None else request.meta.get('dont_redirect'),
+            'follow_redirects': resolve_redirect_enabled(request, self.settings),
             'max_redirects': self.settings.getint('REDIRECT_MAX_TIMES', 20),
         })
 

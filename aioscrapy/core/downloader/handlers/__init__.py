@@ -19,6 +19,14 @@ from aioscrapy.utils.misc import load_instance
 from aioscrapy.utils.python import without_none_values
 
 
+def resolve_redirect_enabled(request: Request, settings) -> bool:
+    """Return whether redirects are enabled for a request."""
+    dont_redirect = request.meta.get('dont_redirect')
+    if dont_redirect is None:
+        return settings.getbool('REDIRECT_ENABLED', True)
+    return not bool(dont_redirect)
+
+
 class BaseDownloadHandler:
     """
     Base class for download handlers.

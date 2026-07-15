@@ -84,13 +84,15 @@ class MemoryPriorityQueue(MemoryFifoQueue):
 
     async def push(self, request: aioscrapy.Request) -> None:
         data = self._encode_request(request)
-        score = request.priority
+        # asyncio.PriorityQueue returns the smallest value first, while the
+        # public Request contract defines larger numbers as higher priority.
+        score = -request.priority
         await self.container.put((score, data))
 
     async def pop(self, count: int = 1) -> Optional[aioscrapy.Request]:
         for _ in range(count):
             try:
-                score, data = self.container.get_nowait()
+                _score, data = self.container.get_nowait()
             except QueueEmpty:
                 break
             yield await self._decode_request(data)
