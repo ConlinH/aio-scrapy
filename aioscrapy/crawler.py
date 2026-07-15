@@ -141,12 +141,15 @@ class Crawler:
             await db_manager.from_crawler(self)
             start_requests = await async_generator_wrapper(self.spider.start_requests())
             await self.engine.start(self.spider, start_requests)
-        except Exception as e:
-            logger.exception(e)
+        except Exception:
+            logger.exception("Crawler failed")
             self.crawling = False
             if self.engine is not None:
-                await self.engine.close()
-            raise e
+                try:
+                    await self.engine.close()
+                except Exception:
+                    logger.exception("Crawler cleanup failed")
+            raise
 
     async def stop(self, signum=None) -> None:
         """

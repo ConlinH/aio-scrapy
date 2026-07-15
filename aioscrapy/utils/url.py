@@ -302,7 +302,7 @@ def _is_posix_path(string):
 
 
 def _is_windows_path(string):
-    """
+    r"""
     Check if a string looks like a Windows filesystem path.
     检查字符串是否看起来像Windows文件系统路径。
 

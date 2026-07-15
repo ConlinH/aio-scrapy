@@ -10,9 +10,9 @@ class DemoRequestSpider(Spider):
         CONCURRENT_REQUESTS=1,
         LOG_LEVEL='INFO',
         CLOSE_SPIDER_ON_IDLE=True,
-        DOWNLOAD_HANDLERS_TYPE="aiohttp",
+        # DOWNLOAD_HANDLERS_TYPE="aiohttp",
         # DOWNLOAD_HANDLERS_TYPE="curl_cffi",
-        # DOWNLOAD_HANDLERS_TYPE="requests",
+        DOWNLOAD_HANDLERS_TYPE="requests",
         # DOWNLOAD_HANDLERS_TYPE="httpx",
         # DOWNLOAD_HANDLERS_TYPE="pyhttpx",
     )

@@ -82,6 +82,25 @@ if __name__ == '__main__':
     MyspiderSpider.start()
 ```
 
+## 多版本测试 | Multi-version Testing
+
+项目使用tox验证Python 3.9至3.14。每个环境显式使用本机的`python39`至`python314`命令。</br>
+The project uses tox to test Python 3.9 through 3.14. Each environment explicitly uses the local `python39` through `python314` command.
+
+```bash
+# 安装开发依赖 | Install development dependencies
+python39 -m pip install -e ".[dev]"
+
+# 测试全部版本 | Test all versions
+python39 -m tox
+
+# 测试单个版本 | Test one version
+python39 -m tox -e py314
+
+# 透传pytest参数 | Pass arguments to pytest
+python39 -m tox -e py39 -- -q tests/test_pipeline_cache.py
+```
+
 ## 文档 | Documentation
 
 ## 文档目录 | Documentation Contents

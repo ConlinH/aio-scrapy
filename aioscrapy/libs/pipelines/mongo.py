@@ -139,50 +139,31 @@ class MongoPipeline(DBPipelineBase):
         # 返回缓存键和缓存中的项目数量
         return cache_key, len(self.item_cache[cache_key])
 
-    async def _save(self, cache_key):
+    async def _write_batch(self, cache_key, items):
         """
         Save cached items with the given cache key to the MongoDB database.
         将具有给定缓存键的缓存项目保存到MongoDB数据库。
 
-        This method implements the abstract _save method from the base class.
+        This method implements the abstract _write_batch method from the base class.
         It retrieves the cached items for the given cache key, then executes
         a batch insert operation on each configured database connection.
-        此方法实现了基类中的抽象_save方法。
+        此方法实现了基类中的抽象_write_batch方法。
         它检索给定缓存键的缓存项目，然后在每个配置的数据库连接上执行批量插入操作。
 
         Args:
             cache_key: The cache key used to retrieve the cached items and metadata.
                       用于检索缓存项目和元数据的缓存键。
+            items: The batch snapshot to write. 要写入的批次快照。
         """
-        # Get the table name from the cache
-        # 从缓存获取表名
         table_name = self.table_cache[cache_key]
-        try:
-            # Process each database alias (connection) configured for this cache key
-            # 处理为此缓存键配置的每个数据库别名（连接）
-            for alias in self.db_alias_cache[cache_key]:
-                try:
-                    # Get a MongoDB executor for this alias
-                    # 获取此别名的MongoDB执行器
-                    executor = db_manager.mongo.executor(alias)
-
-                    # Execute the batch insert operation
-                    # 执行批量插入操作
-                    result = await executor.insert(
-                        table_name, self.item_cache[cache_key], db_name=self.db_cache[cache_key],
-                        ordered=self.ordered_cache[cache_key], retry_times=self.retry_times
-                    )
-
-                    # Log the result of the operation
-                    # 记录操作结果
-                    logger.info(
-                        f'table:{alias}->{table_name} sum:{len(self.item_cache[cache_key])} ok:{len(result.inserted_ids)}'
-                    )
-                except Exception as e:
-                    # Log any errors that occur during the operation
-                    # 记录操作期间发生的任何错误
-                    logger.exception(f'save data error, table:{alias}->{table_name}, err_msg:{e}')
-        finally:
-            # Clear the cache after processing, regardless of success or failure
-            # 处理后清除缓存，无论成功或失败
-            self.item_cache[cache_key] = []
+        for alias in self.db_alias_cache[cache_key]:
+            try:
+                executor = db_manager.mongo.executor(alias)
+                result = await executor.insert(
+                    table_name, items, db_name=self.db_cache[cache_key],
+                    ordered=self.ordered_cache[cache_key], retry_times=self.retry_times
+                )
+            except Exception as exc:
+                logger.exception(f'save data error, table:{alias}->{table_name}, err_msg:{exc}')
+                raise
+            logger.info(f'table:{alias}->{table_name} sum:{len(items)} ok:{len(result.inserted_ids)}')

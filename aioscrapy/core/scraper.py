@@ -470,7 +470,7 @@ class Scraper:
         # Handle CloseSpider exceptions specially
         # 特别处理CloseSpider异常
         if isinstance(exc, CloseSpider):
-            create_task(self.crawler.engine.close_spider(self.spider, exc.reason or 'cancelled'))
+            create_task(self.crawler.engine.stop(reason=exc.reason or 'cancelled'))
             return
 
         # Log the error

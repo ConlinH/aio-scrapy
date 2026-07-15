@@ -93,7 +93,7 @@ class RedisPipeline(DBPipelineBase):
 
         return cache_key, len(self.item_cache[cache_key])  # 返回缓存键和当前缓存数量
 
-    async def _save(self, cache_key):
+    async def _write_batch(self, cache_key, items):
         """
         Save cached items with the given cache key to Redis.
         将具有给定缓存键的缓存项目保存到Redis。
@@ -101,22 +101,16 @@ class RedisPipeline(DBPipelineBase):
         Args:
             cache_key: The cache key used to retrieve the cached items and metadata.
                        用于检索缓存项目和元数据的缓存键。
+            items: The batch snapshot to write. 要写入的批次快照。
         """
         insert_method_name = self.insert_method_cache[cache_key]  # 获取插入方法名
         key_name = self.key_name_cache[cache_key]  # 获取Redis键名
-        items = self.item_cache[cache_key]  # 获取待插入项目列表
-
-        try:
-            for alias in self.db_cache[cache_key]:  # 遍历所有数据库别名
-                try:
-                    executor = db_manager.redis.executor(alias)  # 获取Redis执行器
-                    insert_method = getattr(executor, insert_method_name)  # 获取插入方法
-                    # 批量插入项目到Redis
-                    result = await insert_method(key_name, *[ujson.dumps(item) for item in items])
-                    logger.info(
-                        f"redis:{alias}->{key_name} sum:{len(items)} ok:{result}"
-                    )  # 记录插入结果
-                except Exception as e:
-                    logger.exception(f'redis:push data error: {e}')  # 记录异常
-        finally:
-            self.item_cache[cache_key] = []  # 清空缓存，无论成功
+        for alias in self.db_cache[cache_key]:  # 遍历所有数据库别名
+            try:
+                executor = db_manager.redis.executor(alias)  # 获取Redis执行器
+                insert_method = getattr(executor, insert_method_name)  # 获取插入方法
+                result = await insert_method(key_name, *[ujson.dumps(item) for item in items])
+                logger.info(f"redis:{alias}->{key_name} sum:{len(items)} ok:{result}")
+            except Exception as exc:
+                logger.exception(f'redis:push data error: {exc}')  # 记录异常
+                raise

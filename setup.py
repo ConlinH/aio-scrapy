@@ -21,7 +21,7 @@ extras_require = {
         "aiomysql>=0.1.1", "httpx[http2]>=0.23.0", "aio-pika>=8.1.1",
         "cryptography", "motor>=2.1.0", "pyhttpx>=2.10.1", "asyncpg>=0.27.0",
         "XlsxWriter>=3.1.2", "pillow>=9.4.0", "requests>=2.28.2", "curl_cffi",
-        "sbcdp", "DrissionPage"
+        "playwright>=1.31.1", "sbcdp", "DrissionPage"
     ],
     "aiomysql": ["aiomysql>=0.1.1", "cryptography"],
     "httpx": ["httpx[http2]>=0.23.0"],
@@ -34,7 +34,16 @@ extras_require = {
     "curl_cffi": ["curl_cffi>=0.6.1"],
     "requests": ["requests>=2.28.2"],
     "pg": ["asyncpg>=0.27.0"],
+    "excel": ["XlsxWriter>=3.1.2", "pillow>=9.4.0"],
+    # Backward-compatible alias for the historical typo.
     "execl": ["XlsxWriter>=3.1.2", "pillow>=9.4.0"],
+    "dev": [
+        "build>=1.2.1",
+        "pytest>=8.0",
+        "pytest-asyncio>=0.23",
+        "ruff>=0.5",
+        "tox>=4.21,<5",
+    ],
 }
 
 setup(
@@ -54,12 +63,14 @@ setup(
         'console_scripts': ['aioscrapy = aioscrapy.cmdline:execute']
     },
     classifiers=[
-        'License :: OSI Approved :: MIT License',
         'Intended Audience :: Developers',
         'Operating System :: OS Independent',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
+        'Programming Language :: Python :: 3.13',
+        'Programming Language :: Python :: 3.14',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Software Development :: Libraries :: Application Frameworks',
         'Topic :: Software Development :: Libraries :: Python Modules',

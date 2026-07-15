@@ -9,6 +9,7 @@ singletons, JavaScript execution, and task creation in aioscrapy.
 """
 
 import asyncio
+import inspect
 from types import CoroutineType, GeneratorType, AsyncGeneratorType
 
 
@@ -37,7 +38,7 @@ async def call_helper(fn, *args, **kwargs):
     """
     # Check if the function is a coroutine function
     # 检查函数是否为协程函数
-    if asyncio.iscoroutinefunction(fn):
+    if inspect.iscoroutinefunction(fn):
         # If it is, await it
         # 如果是，则等待它
         return await fn(*args, **kwargs)

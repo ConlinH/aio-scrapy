@@ -11,6 +11,7 @@ and a base pipeline class with caching functionality.
 
 import asyncio
 
+from aioscrapy.libs.pipelines.write_error_policy import WriteErrorPolicy
 from aioscrapy.utils.log import logger
 from aioscrapy.utils.tools import create_task
 
@@ -360,9 +361,22 @@ class DBPipelineBase(ItemCacheMixin):
         super().__init__(db_type)
         self.cache_num = settings.getint('SAVE_CACHE_NUM', 500)
         self.save_cache_interval = settings.getint('SAVE_CACHE_INTERVAL', 10)
+        self.write_error_policy = WriteErrorPolicy.from_settings(settings)
+        self.pause_on_connection_error = self.write_error_policy.pause_on_connection_error
+        # Keep the old setting as a compatibility fallback for existing projects.
+        # 保留旧配置作为兼容回退，避免已有项目升级后重试间隔失效。
+        self.write_error_retry_interval = max(
+            0.0,
+            settings.getfloat(
+                'DB_PIPELINE_WRITE_ERROR_RETRY_INTERVAL',
+                settings.getfloat('DB_PIPELINE_CONNECTION_RETRY_INTERVAL', 5.0),
+            )
+        )
         self.lock = asyncio.Lock()
         self.running: bool = True
         self.item_save_key: str = f'__{db_type}__'
+        self._heartbeat_task = None
+        self.spider = None
 
     async def open_spider(self, spider):
         """
@@ -375,7 +389,10 @@ class DBPipelineBase(ItemCacheMixin):
         Args:
             spider: The spider instance. 爬虫实例。
         """
-        create_task(self.save_heartbeat())
+        self.spider = spider
+        if self._heartbeat_task is None or self._heartbeat_task.done():
+            self.running = True
+            self._heartbeat_task = create_task(self.save_heartbeat())
 
     async def save_heartbeat(self):
         """
@@ -388,7 +405,14 @@ class DBPipelineBase(ItemCacheMixin):
         """
         while self.running:
             await asyncio.sleep(self.save_cache_interval)
-            create_task(self.save_all())
+            if not self.running:
+                break
+            try:
+                await self.save_all()
+            except Exception:
+                logger.exception(
+                    "Periodic pipeline flush failed; cached items remain available for retry"
+                )
 
     async def process_item(self, item, spider):
         """
@@ -425,6 +449,13 @@ class DBPipelineBase(ItemCacheMixin):
             spider: The spider instance. 爬虫实例。
         """
         self.running = False
+        if self._heartbeat_task is not None:
+            self._heartbeat_task.cancel()
+            try:
+                await self._heartbeat_task
+            except asyncio.CancelledError:
+                pass
+            self._heartbeat_task = None
         await self.save_all()
 
     async def save_all(self):
@@ -439,6 +470,109 @@ class DBPipelineBase(ItemCacheMixin):
         async with self.lock:
             for cache_key, items in self.item_cache.items():
                 items and await self._save(cache_key)
+
+    async def _save(self, cache_key):
+        """
+        Persist a cache snapshot and acknowledge it only after a successful write.
+        持久化缓存批次，并仅在写入成功后确认删除该批次。
+        """
+        cached_items = self.item_cache[cache_key]
+        if not cached_items:
+            return
+
+        # Retry the same snapshot to keep cache acknowledgment deterministic.
+        # 始终重试同一批次快照，保证缓存确认行为确定且可追踪。
+        batch = list(cached_items)
+        pause_acquired = False
+        try:
+            while True:
+                try:
+                    await self._write_batch(cache_key, batch)
+                except Exception as exc:
+                    pause_reason = self.should_pause_on_write_error(exc)
+                    if not self._can_retry_write_error() or pause_reason is None:
+                        raise
+
+                    self._pause_spider_for_write_error()
+                    pause_acquired = True
+                    logger.warning(
+                        f"{self.db_type} pipeline write paused by {pause_reason}; "
+                        f"retrying in {self.write_error_retry_interval} seconds"
+                    )
+                    await asyncio.sleep(self.write_error_retry_interval)
+                    continue
+
+                # Remove only the successfully persisted snapshot. Newer items stay cached.
+                # 只删除成功持久化的快照，写入期间新增的数据继续保留在缓存中。
+                del cached_items[:len(batch)]
+                return
+        finally:
+            if pause_acquired:
+                self._resume_spider_after_write_error()
+
+    def should_pause_on_write_error(self, exception):
+        """
+        Return the matching pause policy name for a write error.
+        返回写入异常匹配的暂停策略名称。
+
+        Subclasses may override this method for local rules. Prefer settings-based
+        error types or checkers when the rule should be reusable across pipelines.
+        子类可覆盖此方法实现局部规则；跨管道复用时优先使用配置的异常类型或判定函数。
+        """
+        return self.write_error_policy.match(exception)
+
+    def _can_retry_write_error(self):
+        """
+        Return whether the pipeline may keep retrying a paused write.
+        判断管道是否可以继续重试已暂停的写入。
+        """
+        if not self.running:
+            return False
+
+        crawler = getattr(self.spider, 'crawler', None)
+        engine = getattr(crawler, 'engine', None)
+        return engine is None or engine.running
+
+    def _pause_spider_for_write_error(self):
+        """
+        Acquire this pipeline's shared spider-pause ownership.
+        获取当前管道对共享爬虫暂停状态的所有权。
+        """
+        if self.spider is None:
+            return
+
+        state = getattr(self.spider, '_db_pipeline_pause_state', None)
+        if state is None:
+            state = {
+                'owners': set(),
+                'pause': self.spider.pause,
+                'pause_time': getattr(self.spider, '_pause_time', None),
+            }
+            setattr(self.spider, '_db_pipeline_pause_state', state)
+
+        state['owners'].add(self)
+        self.spider.pause = True
+        self.spider._pause_time = float('inf')
+
+    def _resume_spider_after_write_error(self):
+        """
+        Release pause ownership and restore the original state when all recover.
+        释放暂停所有权，并在全部管道恢复后还原爬虫原始状态。
+        """
+        if self.spider is None:
+            return
+
+        state = getattr(self.spider, '_db_pipeline_pause_state', None)
+        if state is None:
+            return
+
+        state['owners'].discard(self)
+        if state['owners']:
+            return
+
+        self.spider.pause = state['pause']
+        self.spider._pause_time = state['pause_time']
+        delattr(self.spider, '_db_pipeline_pause_state')
 
     async def save_item(self, item: dict, save_info: dict):
         """
@@ -457,24 +591,25 @@ class DBPipelineBase(ItemCacheMixin):
             if cache_count >= self.cache_num:
                 await self._save(cache_key)
 
-    async def _save(self, cache_key):
+    async def _write_batch(self, cache_key, items):
         """
-        Save cached items with the given cache key to the database.
-        将具有给定缓存键的缓存项目保存到数据库。
+        Write a fixed item batch to the database.
+        将固定的数据批次写入数据库。
 
         This is an abstract method that must be implemented by subclasses.
-        It should retrieve the cached items using the cache_key, execute the
-        appropriate database operation, and then clear the cache.
+        Cache acknowledgment, connection retries, and spider pause state are
+        handled by ``_save``.
         这是一个必须由子类实现的抽象方法。
-        它应该使用cache_key检索缓存的项目，执行适当的数据库操作，然后清除缓存。
+        缓存确认、连接重试和爬虫暂停状态由``_save``处理。
 
         Args:
             cache_key: The cache key used to retrieve the cached items, SQL statement,
                       and other metadata needed for the database operation.
                       用于检索缓存项目、SQL语句和数据库操作所需的其他元数据的缓存键。
+            items: The batch snapshot to write. 要写入的批次快照。
 
         Raises:
             NotImplementedError: This method must be implemented by subclasses.
                                 此方法必须由子类实现。
         """
-        raise NotImplementedError("Subclasses must implement the _save method")
+        raise NotImplementedError("Subclasses must implement the _write_batch method")

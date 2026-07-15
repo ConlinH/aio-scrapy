@@ -48,46 +48,29 @@ class MysqlPipeline(DBPipelineBase):
         """
         return cls(settings, 'mysql')
 
-    async def _save(self, cache_key):
+    async def _write_batch(self, cache_key, items):
         """
         Save cached items with the given cache key to the MySQL database.
         将具有给定缓存键的缓存项目保存到MySQL数据库。
 
-        This method implements the abstract _save method from the base class.
+        This method implements the abstract _write_batch method from the base class.
         It retrieves the cached items and SQL statement for the given cache key,
         then executes a batch insert operation on each configured database connection.
-        此方法实现了基类中的抽象_save方法。
+        此方法实现了基类中的抽象_write_batch方法。
         它检索给定缓存键的缓存项目和SQL语句，然后在每个配置的数据库连接上执行批量插入操作。
 
         Args:
             cache_key: The cache key used to retrieve the cached items, SQL statement,
                       and other metadata needed for the database operation.
                       用于检索缓存项目、SQL语句和数据库操作所需的其他元数据的缓存键。
+            items: The batch snapshot to write. 要写入的批次快照。
         """
-        # Get the table name from the cache
-        # 从缓存获取表名
         table_name = self.table_cache[cache_key]
-        try:
-            # Process each database alias (connection) configured for this cache key
-            # 处理为此缓存键配置的每个数据库别名（连接）
-            for alias in self.db_alias_cache[cache_key]:
-                # Get a database connection and cursor with ping to ensure the connection is alive
-                # 获取数据库连接和游标，并使用ping确保连接处于活动状态
-                async with db_manager.mysql.get(alias, ping=True) as (conn, cursor):
-                    try:
-                        # Execute the batch insert operation
-                        # 执行批量插入操作
-                        num = await cursor.executemany(
-                            self.insert_sql_cache[cache_key], self.item_cache[cache_key]
-                        )
-                        # Log the result of the operation
-                        # 记录操作结果
-                        logger.info(f'table:{alias}->{table_name} sum:{len(self.item_cache[cache_key])} ok:{num}')
-                    except Exception as e:
-                        # Log any errors that occur during the operation
-                        # 记录操作期间发生的任何错误
-                        logger.exception(f'save data error, table:{alias}->{table_name}, err_msg:{e}')
-        finally:
-            # Clear the cache after processing, regardless of success or failure
-            # 处理后清除缓存，无论成功或失败
-            self.item_cache[cache_key] = []
+        for alias in self.db_alias_cache[cache_key]:
+            try:
+                async with db_manager.mysql.get(alias, ping=True) as (_, cursor):
+                    num = await cursor.executemany(self.insert_sql_cache[cache_key], items)
+            except Exception as exc:
+                logger.exception(f'save data error, table:{alias}->{table_name}, err_msg:{exc}')
+                raise
+            logger.info(f'table:{alias}->{table_name} sum:{len(items)} ok:{num}')

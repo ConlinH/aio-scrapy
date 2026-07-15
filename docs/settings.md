@@ -38,6 +38,17 @@ When the same setting is defined in multiple places, AioScrapy uses them accordi
 | `EXTENSIONS` | dict | `{}` | 启用的扩展及其顺序 </br> Enabled extensions and their order |
 | `USER_AGENT` | string | `'aioscrapy/VERSION'` | 默认的用户代理字符串 </br> Default user agent string |
 
+### 数据库管道设置 | Database Pipeline Settings
+
+| 设置 / Setting | 类型 / Type | 默认值 / Default | 描述 / Description |
+|---------------|------------|-----------------|-------------------|
+| `SAVE_CACHE_NUM` | integer | `500` | 触发批量写入的缓存数量 </br> Cached item count that triggers a batch write |
+| `SAVE_CACHE_INTERVAL` | integer | `10` | 周期批量写入间隔（秒） </br> Periodic batch write interval in seconds |
+| `DB_PIPELINE_PAUSE_ON_CONNECTION_ERROR` | boolean | `False` | 数据库连接不可用时暂停请求调度并持续重试 </br> Pause request scheduling and keep retrying while the database connection is unavailable |
+| `DB_PIPELINE_PAUSE_ON_WRITE_ERROR_TYPES` | list | `[]` | 需要暂停并重试的其他异常类或导入路径 </br> Additional exception classes or import paths that should pause and retry |
+| `DB_PIPELINE_PAUSE_ON_WRITE_ERROR_CHECKERS` | list | `[]` | 需要暂停并重试的异常判定函数或导入路径 </br> Error checker callables or import paths that should pause and retry |
+| `DB_PIPELINE_WRITE_ERROR_RETRY_INTERVAL` | float | `5.0` | 匹配写入异常后的重试间隔（秒） </br> Retry interval after a matched write error |
+
 ### 并发设置 | Concurrent Requests Settings
 
 | 设置 / Setting | 类型 / Type | 默认值 / Default | 描述 / Description |

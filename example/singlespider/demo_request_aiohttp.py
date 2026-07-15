@@ -11,6 +11,7 @@ class DemoAiohttpSpider(Spider):
         LOG_LEVEL='INFO',
         CLOSE_SPIDER_ON_IDLE=True,
         HTTPERROR_ALLOW_ALL=True,
+        VERIFY_SSL=False,
         # DOWNLOAD_HANDLERS={
         #     'http': 'aioscrapy.core.downloader.handlers.aiohttp.AioHttpDownloadHandler',
         #     'https': 'aioscrapy.core.downloader.handlers.aiohttp.AioHttpDownloadHandler',

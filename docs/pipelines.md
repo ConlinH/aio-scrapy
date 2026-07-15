@@ -117,6 +117,38 @@ async def parse(self, response):
 
 ### 数据库管道 | Database Pipelines
 
+数据库管道的批次生命周期由基类统一管理：子类只实现`_write_batch(cache_key, items)`，缓存批次仅在写入成功后确认删除。</br>
+The database pipeline base class owns the batch lifecycle. Subclasses only implement `_write_batch(cache_key, items)`, and a cached batch is acknowledged only after a successful write.
+
+可以选择在运行期间数据库连接中断时暂停新请求调度，并持续重试当前批次：</br>
+You can optionally pause new request scheduling and keep retrying the current batch when the runtime database connection is unavailable:
+
+```python
+DB_PIPELINE_PAUSE_ON_CONNECTION_ERROR = True
+DB_PIPELINE_WRITE_ERROR_RETRY_INTERVAL = 5.0
+```
+
+该策略只处理连接、网络和连接超时错误。SQL语法、字段、约束冲突等写入错误会立即抛出，不会无限重试。连接恢复并成功写入后，爬虫自动恢复。多个数据库管道同时故障时，只有全部恢复后才解除暂停。手动关闭爬虫时不会无限等待数据库恢复。</br>
+This policy only handles connection, network, and connection-timeout errors. SQL, field, and constraint errors are raised immediately instead of retried forever. The spider resumes after the connection recovers and the batch is written successfully. If multiple database pipelines fail, scheduling resumes only after all of them recover. Manual shutdown does not wait forever for database recovery.
+
+暂停判定采用可扩展的`WriteErrorPolicy`。新增其他可重试写入异常时，可以配置异常类或同步判定函数，无需修改`DBPipelineBase._save`：</br>
+Pause matching is handled by the extensible `WriteErrorPolicy`. To support another retryable write error, configure exception classes or synchronous checker callables without changing `DBPipelineBase._save`:
+
+```python
+DB_PIPELINE_PAUSE_ON_WRITE_ERROR_TYPES = [
+    'asyncpg.exceptions.DeadlockDetectedError',
+]
+DB_PIPELINE_PAUSE_ON_WRITE_ERROR_CHECKERS = [
+    'myproject.pipelines.should_pause_on_custom_write_error',
+]
+```
+
+判定函数接收当前异常并返回布尔值；框架会保留原始异常链，异常类型配置也会匹配`__cause__`或`__context__`中的包装异常。</br>
+A checker receives the current exception and returns a boolean. Exception-type configuration also matches wrapped errors in the `__cause__` or `__context__` chain.
+
+多连接别名采用at-least-once语义：部分目标成功后其他目标失败，重试可能向已成功目标重复写入。需要严格去重时应使用唯一键、upsert或幂等写入。</br>
+Multiple connection aliases use at-least-once delivery. If one destination succeeds and another fails, retrying may write duplicates to the successful destination. Use unique keys, upserts, or idempotent writes when strict deduplication is required.
+
 #### MySQLPipeline | MySQL Pipeline
 
 将数据项存储到MySQL数据库。</br>

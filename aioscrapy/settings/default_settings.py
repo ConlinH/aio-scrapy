@@ -305,6 +305,30 @@ ITEM_PIPELINES = {}
 # 基本项目管道
 ITEM_PIPELINES_BASE = {}
 
+# Number of cached items that triggers a database batch write
+# 触发数据库批量写入的缓存数量
+SAVE_CACHE_NUM = 500
+
+# Periodic database batch write interval in seconds
+# 数据库定时批量写入间隔（秒）
+SAVE_CACHE_INTERVAL = 10
+
+# Pause request scheduling when a database pipeline loses its connection
+# 数据库管道连接不可用时是否暂停请求调度
+DB_PIPELINE_PAUSE_ON_CONNECTION_ERROR = False
+
+# Additional write-error classes that pause scheduling and retry the batch
+# 需要暂停调度并重试批次的其他写入异常类
+DB_PIPELINE_PAUSE_ON_WRITE_ERROR_TYPES = []
+
+# Additional write-error checker callables that pause scheduling and retry the batch
+# 需要暂停调度并重试批次的其他写入异常判定函数
+DB_PIPELINE_PAUSE_ON_WRITE_ERROR_CHECKERS = []
+
+# Seconds between retry attempts for matched database write errors
+# 匹配数据库写入异常后的重试间隔（秒）
+DB_PIPELINE_WRITE_ERROR_RETRY_INTERVAL = 5.0
+
 # Logging settings
 # 日志设置
 

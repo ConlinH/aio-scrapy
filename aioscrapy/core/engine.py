@@ -143,6 +143,8 @@ class ExecutionEngine(object):
         self.running: bool = False  # True when engine is running
         self.unlock: bool = True    # Lock for scheduler access
         self.finish: bool = False   # True when engine is completely finished
+        self._stop_lock = asyncio.Lock()
+        self._engine_stopped_sent: bool = False
 
     async def start(
             self,
@@ -179,7 +181,8 @@ class ExecutionEngine(object):
         while not self.finish:
             self.running and await self._next_request()
             await asyncio.sleep(1)
-            self.running and await self._spider_idle(self.spider)
+            if self.running and self.spider is not None:
+                await self._spider_idle(self.spider)
 
     async def stop(self, reason: str = 'shutdown') -> None:
         """
@@ -198,18 +201,23 @@ class ExecutionEngine(object):
             RuntimeError: If the engine is not running.
                          如果引擎没有运行。
         """
-        if not self.running:
-            raise RuntimeError("Engine not running")
-        self.running = False
+        async with self._stop_lock:
+            if self.finish:
+                return
 
-        # Wait for all pending requests to complete
-        # 等待所有待处理的请求完成
-        while not self.is_idle():
-            await asyncio.sleep(0.2)
+            self.running = False
 
-        await self.close_spider(self.spider, reason=reason)
-        await self.signals.send_catch_log_deferred(signal=signals.engine_stopped)
-        self.finish = True
+            # A partially initialized engine has nothing active to drain, but its
+            # already-created components still need to be closed.
+            if all((self.slot, self.downloader, self.scraper)):
+                while not self.is_idle():
+                    await asyncio.sleep(0.2)
+
+            await self.close_spider(self.spider, reason=reason)
+            if not self._engine_stopped_sent:
+                await self.signals.send_catch_log_deferred(signal=signals.engine_stopped)
+                self._engine_stopped_sent = True
+            self.finish = True
 
     async def open(
             self,
@@ -261,18 +269,7 @@ class ExecutionEngine(object):
         outside the engine itself.
         此方法是从引擎外部关闭引擎的主要入口点。
         """
-        if self.running:
-            # Will also close spiders and downloader
-            # 也会关闭爬虫和下载器
-            await self.stop()
-        elif self.spider:
-            # Will also close downloader
-            # 也会关闭下载器
-            await self.close_spider(self.spider, reason='shutdown')
-        else:
-            # Just close the downloader if no spider is running
-            # 如果没有爬虫在运行，只关闭下载器
-            self.downloader.close()
+        await self.stop(reason='shutdown')
 
     async def _next_request(self) -> None:
         """
@@ -457,17 +454,17 @@ class ExecutionEngine(object):
             True if the engine is idle, False otherwise.
             如果引擎空闲，则为True，否则为False。
         """
-        if self.downloader.active:
+        if self.downloader is not None and self.downloader.active:
             # downloader has pending requests
             # 下载器有待处理的请求
             return False
 
-        if self.slot.inprogress:
+        if self.slot is not None and self.slot.inprogress:
             # not all start requests are handled
             # 不是所有的起始请求都已处理
             return False
 
-        if not self.scraper.is_idle():
+        if self.scraper is not None and not self.scraper.is_idle():
             # scraper is not idle
             # 抓取器不是空闲的
             return False
@@ -488,7 +485,7 @@ class ExecutionEngine(object):
         """
         await self.scheduler.enqueue_request(request)
 
-    async def close_spider(self, spider: Spider, reason: str = 'cancelled') -> None:
+    async def close_spider(self, spider: Optional[Spider], reason: str = 'cancelled') -> None:
         """
         Close (cancel) spider and clear all its outstanding requests.
         关闭（取消）爬虫并清除其所有未完成的请求。
@@ -556,23 +553,29 @@ class ExecutionEngine(object):
             """
             try:
                 await call_helper(callback, *args, **kwargs)
-            except (Exception, BaseException) as exc:
+            except Exception as exc:
                 # Log the error message along with the exception details
                 # 记录错误消息以及异常详细信息
                 logger.exception(f"{errmsg}: {str(exc)}")
 
         # Close all components in sequence
         # 按顺序关闭所有组件
-        await close_handler(self.downloader.close, errmsg='Downloader close failure')
+        if self.downloader is not None:
+            await close_handler(self.downloader.close, errmsg='Downloader close failure')
 
-        await close_handler(self.scraper.close, errmsg='Scraper close failure')
+        if self.scraper is not None:
+            await close_handler(self.scraper.close, errmsg='Scraper close failure')
 
-        await close_handler(self.scheduler.close, reason, errmsg='Scheduler close failure')
+        if self.scheduler is not None:
+            await close_handler(self.scheduler.close, reason, errmsg='Scheduler close failure')
 
-        await close_handler(self.signals.send_catch_log_deferred, signal=signals.spider_closed, spider=spider,
-                            reason=reason, errmsg='Error while sending spider_close signal')
+        if spider is not None:
+            await close_handler(self.signals.send_catch_log_deferred, signal=signals.spider_closed, spider=spider,
+                                reason=reason, errmsg='Error while sending spider_close signal')
 
-        await close_handler(self.crawler.stats.close_spider, spider, reason=reason, errmsg='Stats close failure')
+            if self.crawler.stats is not None:
+                await close_handler(self.crawler.stats.close_spider, spider, reason=reason,
+                                    errmsg='Stats close failure')
 
         logger.info(f"Spider closed ({reason})")
 
@@ -601,7 +604,11 @@ class ExecutionEngine(object):
             spider: The idle spider.
                    空闲的爬虫。
         """
-        assert self.spider is not None
+        if self.spider is None or self.slot is None or self.scheduler is None:
+            return
+
+        if self.spider.pause:
+            return
 
         # Send spider_idle signal and check if any handler wants to keep the spider open
         # 发送spider_idle信号并检查是否有任何处理程序希望保持爬虫打开

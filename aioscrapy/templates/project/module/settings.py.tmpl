@@ -28,6 +28,17 @@ DOWNLOAD_HANDLERS_TYPE = "aiohttp"  # aiohttp httpx pyhttpx requests playwright 
 
 # DOWNLOAD_DELAY = 3
 # RANDOMIZE_DOWNLOAD_DELAY = True
+
+# Pause scheduling on a database connection error and resume after recovery
+# 数据库连接异常时暂停请求调度，并在连接恢复后自动继续
+# DB_PIPELINE_PAUSE_ON_CONNECTION_ERROR = True
+# DB_PIPELINE_WRITE_ERROR_RETRY_INTERVAL = 5.0
+
+# Register additional exception classes or checker functions without changing pipeline code
+# 注册其他异常类或判定函数，无需修改管道代码
+# DB_PIPELINE_PAUSE_ON_WRITE_ERROR_TYPES = []
+# DB_PIPELINE_PAUSE_ON_WRITE_ERROR_CHECKERS = []
+
 CONCURRENT_REQUESTS = 16
 CONCURRENT_REQUESTS_PER_DOMAIN = 8
 

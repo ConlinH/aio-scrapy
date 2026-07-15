@@ -103,7 +103,7 @@ class Request(object):
             params: Optional[Union[dict, list, tuple]] = None,
             body: Optional[str] = None,
             data: Optional[Union[dict[str, str], list[tuple], str, bytes]] = None,
-            json: Optional[dict | list] = None,
+            json: Optional[Union[dict, list]] = None,
             cookies: Optional[dict] = None,
             meta: Optional[dict] = None,
             encoding: str = 'utf-8',
