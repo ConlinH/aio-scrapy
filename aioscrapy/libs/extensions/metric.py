@@ -37,7 +37,7 @@ from aiohttp import ClientSession
 from aioscrapy import Settings
 from aioscrapy import signals
 from aioscrapy.utils.log import _logger, logger
-from aioscrapy.utils.tools import create_task
+from aioscrapy.utils.tools import TaskManager
 
 
 class InfluxBase:
@@ -410,6 +410,9 @@ class Metric:
         self.metrics = settings.getdict('METRICS') or self.stats._stats
         self.interval = interval
         self.task = None
+        # Own the periodic task so shutdown can await its cancellation
+        # 托管周期任务，以便关闭时等待其取消完成
+        self._tasks = TaskManager('metrics')
 
         # Dictionary to store previous values for calculating deltas
         # 用于存储先前值以计算增量的字典
@@ -461,7 +464,10 @@ class Metric:
         """
         # Start the periodic task
         # 启动定期任务
-        self.task = create_task(self.run(spider))
+        self.task = self._tasks.create_task(
+            self.run(spider),
+            name=f'{spider.name}:metrics',
+        )
 
     async def run(self, spider):
         """
@@ -476,17 +482,14 @@ class Metric:
             spider: The spider instance.
                    爬虫实例。
         """
-        # Wait for the configured interval
-        # 等待配置的间隔
-        await asyncio.sleep(self.interval)
+        while True:
+            # Wait for the configured interval
+            # 等待配置的间隔
+            await asyncio.sleep(self.interval)
 
-        # Record metrics
-        # 记录指标
-        await self.influx.record(self)
-
-        # Schedule next run
-        # 安排下一次运行
-        self.task = create_task(self.run(spider))
+            # Record the current metrics
+            # 记录当前指标
+            await self.influx.record(self)
 
     async def spider_closed(self, spider, reason):
         """
@@ -506,6 +509,9 @@ class Metric:
         # 如果定期任务正在运行，则取消它
         if self.task and not self.task.done():
             self.task.cancel()
+        # Await cancellation and release all managed task references
+        # 等待取消完成并释放全部托管任务引用
+        await self._tasks.cancel_all()
 
         # Record final metrics
         # 记录最终指标

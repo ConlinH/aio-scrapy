@@ -84,6 +84,7 @@ When the same setting is defined in multiple places, AioScrapy uses them accordi
 | `CLOSESPIDER_ITEMCOUNT` | integer | `0` | 收集的项目数量，超过后关闭爬虫（0表示不限制） </br> Number of items scraped after which the spider will be closed (0 means no limit) |
 | `CLOSESPIDER_PAGECOUNT` | integer | `0` | 爬取的页面数量，超过后关闭爬虫（0表示不限制） </br> Number of pages crawled after which the spider will be closed (0 means no limit) |
 | `CLOSESPIDER_ERRORCOUNT` | integer | `0` | 发生的错误数量，超过后关闭爬虫（0表示不限制） </br> Number of errors after which the spider will be closed (0 means no limit) |
+| `GRACEFUL_SHUTDOWN_TIMEOUT` | float | `30.0` | 等待活动任务完成的秒数，超时后取消剩余任务 </br> Seconds to drain active work before cancelling remaining tasks |
 
 ### 爬虫设置 | Spider Settings
 
@@ -98,8 +99,9 @@ When the same setting is defined in multiple places, AioScrapy uses them accordi
 |---------------|------------|-----------------|-------------------|
 | `LOG_ENABLED` | boolean | `True` | 是否启用日志 </br> Whether to enable logging |
 | `LOG_LEVEL` | string | `'DEBUG'` | 日志级别 </br> Logging level |
-| `LOG_FILE` | string | `None` | 日志文件路径 </br> Log file path |
-| `LOG_STDOUT` | boolean | `False` | 是否将日志输出到标准输出 </br> Whether to log to standard output |
+| `LOG_FILE` | string | `None` | 日志文件路径，支持 `{spider_name}` 和 `{crawler_id}` 占位符 </br> Log file path with optional `{spider_name}` and `{crawler_id}` placeholders |
+| `LOG_FILE_PER_CRAWLER` | boolean | `True` | 为每次爬虫运行创建独立日志文件；路径不含 `{crawler_id}` 时自动追加 </br> Create a separate file per crawler run and append the ID when omitted |
+| `LOG_STDOUT` | boolean | `True` | 是否将日志输出到标准输出 </br> Whether to log to standard output |
 | `LOG_ENCODING` | string | `'utf-8'` | 日志文件编码 </br> Log file encoding |
 | `LOG_FORMAT` | string |  | 日志格式 </br> Log format |
 

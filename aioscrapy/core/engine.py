@@ -209,15 +209,40 @@ class ExecutionEngine(object):
 
             # A partially initialized engine has nothing active to drain, but its
             # already-created components still need to be closed.
+            # 部分初始化的引擎无需等待活动任务，但仍需关闭已创建的组件。
             if all((self.slot, self.downloader, self.scraper)):
-                while not self.is_idle():
-                    await asyncio.sleep(0.2)
+                timeout = self._get_shutdown_timeout()
+                try:
+                    if timeout > 0:
+                        await asyncio.wait_for(self._wait_until_idle(), timeout=timeout)
+                except asyncio.TimeoutError:
+                    logger.warning(
+                        f'Graceful shutdown timed out after {timeout} seconds; '
+                        'cancelling remaining tasks'
+                    )
 
             await self.close_spider(self.spider, reason=reason)
             if not self._engine_stopped_sent:
                 await self.signals.send_catch_log_deferred(signal=signals.engine_stopped)
                 self._engine_stopped_sent = True
             self.finish = True
+
+    async def _wait_until_idle(self) -> None:
+        """
+        Wait until all engine components become idle.
+        等待引擎所有组件进入空闲状态。
+        """
+        while not self.is_idle():
+            await asyncio.sleep(0.2)
+
+    def _get_shutdown_timeout(self) -> float:
+        """
+        Return the configured graceful shutdown timeout in seconds.
+        返回配置的优雅关闭超时时间，单位为秒。
+        """
+        if hasattr(self.settings, 'getfloat'):
+            return self.settings.getfloat('GRACEFUL_SHUTDOWN_TIMEOUT', 30.0)
+        return float(self.settings.get('GRACEFUL_SHUTDOWN_TIMEOUT', 30.0))
 
     async def open(
             self,
@@ -511,6 +536,7 @@ class ExecutionEngine(object):
                    关闭爬虫的原因。
         """
         logger.info(f"Closing spider ({reason})")
+        shutdown_timeout = self._get_shutdown_timeout()
 
         # Helper function to handle exceptions during close operations
         # 处理关闭操作期间异常的辅助函数
@@ -546,13 +572,20 @@ class ExecutionEngine(object):
                          传递给回调的关键字参数。
 
             Note:
-                This function catches all exceptions (including BaseException) to ensure
-                that the closing process continues even if a critical error occurs.
-                此函数捕获所有异常（包括BaseException），以确保即使发生严重错误，
-                关闭过程也会继续。
+                Cancellation is propagated. Regular failures and close timeouts are
+                logged so the remaining components still get a chance to close.
+                取消异常会继续传播；普通异常和关闭超时会被记录，以便其余组件继续关闭。
             """
             try:
-                await call_helper(callback, *args, **kwargs)
+                # Apply the shutdown timeout independently to each close operation
+                # 为每个关闭操作单独应用关闭超时
+                operation = call_helper(callback, *args, **kwargs)
+                if shutdown_timeout > 0:
+                    await asyncio.wait_for(operation, timeout=shutdown_timeout)
+                else:
+                    await operation
+            except asyncio.TimeoutError:
+                logger.error(f"{errmsg}: timed out after {shutdown_timeout} seconds")
             except Exception as exc:
                 # Log the error message along with the exception details
                 # 记录错误消息以及异常详细信息

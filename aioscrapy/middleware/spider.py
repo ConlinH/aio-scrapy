@@ -222,7 +222,7 @@ class SpiderMiddlewareManager(AbsMiddlewareManager):
                     # Re-raise _InvalidOutput exceptions
                     # 重新引发_InvalidOutput异常
                     raise
-                except BaseException as exception:
+                except Exception as exception:
                     # Handle other exceptions by calling the scrape_func with the exception
                     # 通过使用异常调用scrape_func来处理其他异常
                     iterable_or_exception = await call_helper(scrape_func, exception, request)
@@ -266,7 +266,7 @@ class SpiderMiddlewareManager(AbsMiddlewareManager):
                 # 将所有非AsyncGeneratorType变成AsyncGeneratorType对象
                 async for r in await async_generator_wrapper(result):
                     yield r
-            except BaseException as ex:
+            except Exception as ex:
                 # Handle exceptions by calling process_spider_exception
                 # 通过调用process_spider_exception处理异常
                 exception_result = await process_spider_exception(ex, exception_processor_index)
@@ -392,7 +392,7 @@ class SpiderMiddlewareManager(AbsMiddlewareManager):
                     # Might fail directly if the output value is not a generator
                     # 如果输出值不是生成器，可能会直接失败
                     result = await call_helper(method, response=response, result=result, spider=spider)
-                except BaseException as ex:
+                except Exception as ex:
                     # Handle exceptions by calling process_spider_exception
                     # 通过调用process_spider_exception处理异常
                     exception_result = await process_spider_exception(ex, method_index + 1)
@@ -450,7 +450,7 @@ class SpiderMiddlewareManager(AbsMiddlewareManager):
             # Process the response through the process_spider_input chain
             # 通过process_spider_input链处理响应
             _iterable = await process_spider_input(response)
-        except BaseException as exc:
+        except Exception as exc:
             # If an exception occurs, process it through the process_spider_exception chain
             # 如果发生异常，则通过process_spider_exception链处理它
             return await process_spider_exception(exc)

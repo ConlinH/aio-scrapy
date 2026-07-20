@@ -73,6 +73,10 @@ CLOSESPIDER_ITEMCOUNT = 0
 # 爬虫将被关闭的错误数（0表示禁用）
 CLOSESPIDER_ERRORCOUNT = 0
 
+# Seconds to wait for active work before cancelling remaining background tasks
+# 取消剩余后台任务前等待活动工作的秒数
+GRACEFUL_SHUTDOWN_TIMEOUT = 30.0
+
 # Module where custom commands are defined
 # 定义自定义命令的模块
 COMMANDS_MODULE = ''
@@ -354,7 +358,7 @@ LOG_FORMATTER = 'aioscrapy.logformatter.LogFormatter'
 
 # Format string for log messages
 # 日志消息的格式字符串
-LOG_FORMAT = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{process}</cyan> | <cyan>{extra[spidername]}</cyan> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> | <level>{message}</level>"
+LOG_FORMAT = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{process}</cyan> | <cyan>{extra[spidername]}</cyan> | <cyan>{extra[crawler_id]}</cyan> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> | <level>{message}</level>"
 
 # Whether to log to standard output
 # 是否记录到标准输出
@@ -367,6 +371,10 @@ LOG_LEVEL = 'DEBUG'
 # Log file path (None means no log file)
 # 日志文件路径（None表示没有日志文件）
 LOG_FILE = None
+
+# Whether to create a separate log file for each crawler run
+# 是否为每次爬虫运行创建独立日志文件
+LOG_FILE_PER_CRAWLER = True
 
 # Whether to enable debug logging for the scheduler
 # 是否为调度器启用调试日志记录

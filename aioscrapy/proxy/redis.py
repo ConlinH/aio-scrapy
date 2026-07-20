@@ -16,7 +16,6 @@ from aioscrapy.db import db_manager
 from aioscrapy.exceptions import ProxyException
 from aioscrapy.proxy import AbsProxy
 from aioscrapy.utils.log import logger
-from aioscrapy.utils.tools import create_task
 
 
 class RedisProxy(AbsProxy):
@@ -202,5 +201,10 @@ class RedisProxy(AbsProxy):
             # If no proxies are available, stop the crawler and raise an exception
             # 如果没有可用的代理，停止爬虫并引发异常
             logger.warning("Not available proxy, Closing spider")
-            create_task(self.crawler.engine.stop(reason="Not available proxy"))
+            # Register the stop task with the crawler for lifecycle management
+            # 将停止任务注册到爬虫，由其统一管理生命周期
+            self.crawler.create_task(
+                self.crawler.engine.stop(reason="Not available proxy"),
+                name=f'{self.crawler.spider.name}:stop',
+            )
             raise ProxyException("Not available proxy")

@@ -80,7 +80,11 @@ async def robustApplyWrap(f, recv, *args, **kw):
         if asyncio.iscoroutine(result):
             return await result
         return result
-    except (Exception, BaseException) as exc:  # noqa: E722
+    # Cancellation controls task lifecycle and must propagate to the caller
+    # 取消异常用于控制任务生命周期，必须继续传播给调用方
+    except asyncio.CancelledError:
+        raise
+    except Exception as exc:
         # Log the exception unless it's a type we should ignore
         # 记录异常，除非它是我们应该忽略的类型
         if dont_log is None or not isinstance(exc, dont_log):

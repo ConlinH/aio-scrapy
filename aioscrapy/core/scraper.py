@@ -42,7 +42,7 @@ from aioscrapy.middleware import ItemPipelineManager, SpiderMiddlewareManager
 from aioscrapy.signalmanager import SignalManager
 from aioscrapy.utils.log import logger
 from aioscrapy.utils.misc import load_object
-from aioscrapy.utils.tools import call_helper, create_task
+from aioscrapy.utils.tools import call_helper
 
 
 class Slot:
@@ -338,7 +338,7 @@ class Scraper:
                     # Process the result through spider middleware and callbacks
                     # 通过爬虫中间件和回调处理结果
                     output = await self._scrape2(result, request)  # returns spider's processed output
-                except BaseException as e:
+                except Exception as e:
                     # Handle any errors during processing
                     # 处理处理过程中的任何错误
                     await self.handle_spider_error(e, request, result)
@@ -346,7 +346,7 @@ class Scraper:
                     # Handle the output from the spider
                     # 处理爬虫的输出
                     await self.handle_spider_output(output, request, result)
-            except BaseException as e:
+            except Exception as e:
                 # Handle any errors that weren't caught earlier
                 # 处理之前未捕获的任何错误
                 await self.handle_spider_error(e, request, result)
@@ -399,7 +399,7 @@ class Scraper:
                 # Processing Exception of download and download's middleware
                 # 处理下载和下载中间件的异常
                 return await self.call_spider(result, request)
-            except BaseException as e:
+            except Exception as e:
                 # Log any errors that occur during exception handling
                 # 记录异常处理期间发生的任何错误
                 await self._log_download_errors(e, result, request)
@@ -470,7 +470,12 @@ class Scraper:
         # Handle CloseSpider exceptions specially
         # 特别处理CloseSpider异常
         if isinstance(exc, CloseSpider):
-            create_task(self.crawler.engine.stop(reason=exc.reason or 'cancelled'))
+            # Register the stop task with the crawler for lifecycle management
+            # 将停止任务注册到爬虫，由其统一管理生命周期
+            self.crawler.create_task(
+                self.crawler.engine.stop(reason=exc.reason or 'cancelled'),
+                name=f'{self.spider.name}:stop',
+            )
             return
 
         # Log the error

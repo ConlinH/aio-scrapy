@@ -14,7 +14,7 @@ import asyncio
 from aioscrapy import signals
 from aioscrapy.exceptions import NotConfigured
 from aioscrapy.utils.log import logger
-from aioscrapy.utils.tools import create_task
+from aioscrapy.utils.tools import TaskManager
 
 
 class LogStats:
@@ -59,6 +59,9 @@ class LogStats:
         # Async task for periodic logging
         # 用于定期记录的异步任务
         self.task = None
+        # Own the periodic task so shutdown can await its cancellation
+        # 托管周期任务，以便关闭时等待其取消完成
+        self._tasks = TaskManager('logstats')
 
         # Previous values for calculating rates
         # 用于计算速率的先前值
@@ -123,7 +126,10 @@ class LogStats:
         """
         # Start the periodic logging task
         # 启动定期记录任务
-        self.task = create_task(self.log(spider))
+        self.task = self._tasks.create_task(
+            self.log(spider),
+            name=f'{spider.name}:logstats',
+        )
 
     async def log(self, spider):
         """
@@ -140,40 +146,31 @@ class LogStats:
             spider: The spider whose statistics to log.
                    要记录其统计信息的爬虫。
         """
-        # Wait for the configured interval
-        # 等待配置的间隔
-        await asyncio.sleep(self.interval)
+        while True:
+            # Wait for the configured interval
+            # 等待配置的间隔
+            await asyncio.sleep(self.interval)
 
-        # Get current statistics
-        # 获取当前统计信息
-        items = self.stats.get_value('item_scraped_count', 0)
-        pages = self.stats.get_value('response_received_count', 0)
+            # Get current statistics and calculate per-minute rates
+            # 获取当前统计信息并计算每分钟速率
+            items = self.stats.get_value('item_scraped_count', 0)
+            pages = self.stats.get_value('response_received_count', 0)
+            irate = (items - self.itemsprev) * self.multiplier
+            prate = (pages - self.pagesprev) * self.multiplier
 
-        # Calculate rates (per minute)
-        # 计算速率（每分钟）
-        irate = (items - self.itemsprev) * self.multiplier
-        prate = (pages - self.pagesprev) * self.multiplier
+            # Update previous values for the next calculation
+            # 更新先前值以供下次计算
+            self.pagesprev, self.itemsprev = pages, items
 
-        # Update previous values for next calculation
-        # 更新先前值以供下次计算
-        self.pagesprev, self.itemsprev = pages, items
+            # Log the current statistics
+            # 记录当前统计信息
+            msg = ("<%(spider_name)s> Crawled %(pages)d pages (at %(pagerate)d pages/min), "
+                   "scraped %(items)d items (at %(itemrate)d items/min)")
+            log_args = {'pages': pages, 'pagerate': prate, 'spider_name': spider.name,
+                        'items': items, 'itemrate': irate}
+            logger.info(msg % log_args)
 
-        # Prepare log message
-        # 准备日志消息
-        msg = ("<%(spider_name)s> Crawled %(pages)d pages (at %(pagerate)d pages/min), "
-               "scraped %(items)d items (at %(itemrate)d items/min)")
-        log_args = {'pages': pages, 'pagerate': prate, 'spider_name': spider.name,
-                    'items': items, 'itemrate': irate}
-
-        # Log the statistics
-        # 记录统计信息
-        logger.info(msg % log_args)
-
-        # Schedule the next log
-        # 安排下一次记录
-        self.task = create_task(self.log(spider))
-
-    def spider_closed(self, spider, reason):
+    async def spider_closed(self, spider, reason):
         """
         Handle the spider_closed signal.
         处理spider_closed信号。
@@ -192,3 +189,6 @@ class LogStats:
         # 如果记录任务仍在运行，则取消它
         if self.task and not self.task.done():
             self.task.cancel()
+        # Await cancellation and release all managed task references
+        # 等待取消完成并释放全部托管任务引用
+        await self._tasks.cancel_all()

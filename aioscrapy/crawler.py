@@ -28,6 +28,7 @@ import signal
 import sys
 import warnings
 from typing import Optional, Type, Union, Any
+from uuid import uuid4
 
 from zope.interface.exceptions import DoesNotImplement
 
@@ -41,13 +42,19 @@ from zope.interface.verify import verifyClass
 from aioscrapy.logformatter import LogFormatter
 from aioscrapy import Spider
 from aioscrapy.settings import overridden_settings, Settings
-from aioscrapy.utils.log import configure_logging, logger
+from aioscrapy.utils.log import (
+    bind_log_context,
+    close_logging,
+    configure_logging,
+    logger,
+    reset_log_context,
+)
 from aioscrapy.utils.misc import load_object, load_instance
 from aioscrapy.spiderloader import ISpiderLoader
 from aioscrapy.exceptions import AioScrapyDeprecationWarning
 from aioscrapy.db import db_manager
 
-from aioscrapy.utils.tools import async_generator_wrapper
+from aioscrapy.utils.tools import async_generator_wrapper, TaskManager
 from aioscrapy.middleware import ExtensionManager
 from aioscrapy.core.engine import ExecutionEngine
 from aioscrapy.signalmanager import SignalManager
@@ -99,6 +106,27 @@ class Crawler:
         self.engine: Optional[ExecutionEngine] = None
         self.extensions: Optional[ExtensionManager] = None
         self.logformatter: Optional[LogFormatter] = None
+        self.crawler_id: Optional[str] = None
+        self._log_handler_ids = ()
+        # Own background tasks created during this crawler's lifecycle
+        # 托管此爬虫生命周期内创建的后台任务
+        self._tasks = TaskManager(f'crawler:{self.spidercls.name}')
+
+    def create_task(self, coro, name=None):
+        """
+        Create a background task owned by this crawler.
+        创建一个由当前爬虫托管的后台任务。
+        """
+        if self.crawler_id is None:
+            return self._tasks.create_task(coro, name=name)
+
+        # Capture this crawler's log context in tasks created by external callbacks
+        # 将当前爬虫日志上下文传递给外部回调创建的任务
+        token = bind_log_context(self.spidercls.name, self.crawler_id)
+        try:
+            return self._tasks.create_task(coro, name=name)
+        finally:
+            reset_log_context(token)
 
     async def crawl(self, *args, **kwargs) -> None:
         """
@@ -120,13 +148,19 @@ class Crawler:
             Exception: Any exception that occurs during the crawling process.
                       爬取过程中发生的任何异常。
         """
+        if self.crawling:
+            raise RuntimeError("Crawling already taking place")
+
+        self.crawling = True
+        self.crawler_id = uuid4().hex[:12]
+        log_context_token = bind_log_context(self.spidercls.name, self.crawler_id)
+
         try:
-            configure_logging(self.spidercls, self.settings)
-
-            if self.crawling:
-                raise RuntimeError("Crawling already taking place")
-
-            self.crawling = True
+            self._log_handler_ids = configure_logging(
+                self.spidercls,
+                self.settings,
+                crawler_id=self.crawler_id,
+            )
             self.signals = SignalManager(self)
             self.stats = load_object(self.settings['STATS_CLASS'])(self)
 
@@ -141,15 +175,36 @@ class Crawler:
             await db_manager.from_crawler(self)
             start_requests = await async_generator_wrapper(self.spider.start_requests())
             await self.engine.start(self.spider, start_requests)
+        # Propagate cancellation after closing initialized resources
+        # 关闭已初始化资源后继续传播取消异常
+        except asyncio.CancelledError:
+            logger.info('Crawler task cancelled; closing engine')
+            if self.engine is not None:
+                try:
+                    await self.engine.close()
+                except Exception:
+                    logger.exception("Crawler cleanup after cancellation failed")
+            raise
         except Exception:
             logger.exception("Crawler failed")
-            self.crawling = False
             if self.engine is not None:
                 try:
                     await self.engine.close()
                 except Exception:
                     logger.exception("Crawler cleanup failed")
             raise
+        finally:
+            # Always release crawler-owned background tasks
+            # 始终释放爬虫托管的后台任务
+            self.crawling = False
+            try:
+                await self._tasks.cancel_all()
+            finally:
+                try:
+                    await close_logging(self._log_handler_ids)
+                finally:
+                    self._log_handler_ids = ()
+                    reset_log_context(log_context_token)
 
     async def stop(self, signum=None) -> None:
         """
@@ -164,16 +219,25 @@ class Crawler:
             signum: The signal number that triggered the stop, if any.
                    触发停止的信号编号（如果有）。
         """
-        if signum is not None:
-            asyncio.current_task().set_name(self.spidercls.name)
-            logger.info(
-                "Received  %(signame)s, shutting down gracefully. Send again to force" % {
-                    'signame': signal_names[signum]
-                }
-            )
-        if self.crawling:
-            self.crawling = False
-            await self.engine.stop()
+        token = None
+        if self.crawler_id is not None:
+            # Stop may be invoked from a runner task without crawler context
+            # stop可能由不含爬虫上下文的运行器任务调用
+            token = bind_log_context(self.spidercls.name, self.crawler_id)
+
+        try:
+            if signum is not None:
+                logger.info(
+                    "Received  %(signame)s, shutting down gracefully. Send again to force" % {
+                        'signame': signal_names[signum]
+                    }
+                )
+            if self.crawling:
+                self.crawling = False
+                await self.engine.stop()
+        finally:
+            if token is not None:
+                reset_log_context(token)
 
     def _signal_shutdown(self, signum: Any, _) -> None:
         """
@@ -189,7 +253,7 @@ class Crawler:
             _: The frame object (not used).
                帧对象（未使用）。
         """
-        asyncio.create_task(self.stop(signum))
+        self.create_task(self.stop(signum), name=f'{self.spidercls.name}:stop')
 
 
 class CrawlerRunner:
@@ -263,6 +327,9 @@ class CrawlerRunner:
                             # 爬虫及其参数/关键字参数的字典
         self._active = set()  # Set of active crawling tasks
                              # 活动爬取任务的集合
+        # Own process-level signal and shutdown tasks
+        # 托管进程级信号处理和关闭任务
+        self._tasks = TaskManager('crawler-runner')
         self.bootstrap_failed = False  # Flag indicating if bootstrap failed
                                       # 指示引导是否失败的标志
 
@@ -547,7 +614,7 @@ class CrawlerProcess(CrawlerRunner):
                帧对象（未使用）。
         """
         install_shutdown_handlers(self._signal_kill)
-        asyncio.create_task(self.stop(signum))
+        self._tasks.create_task(self.stop(signum), name='crawler-runner:stop')
 
     def _signal_kill(self, signum: Any, _) -> None:
         """
@@ -569,7 +636,7 @@ class CrawlerProcess(CrawlerRunner):
         install_shutdown_handlers(signal.SIG_IGN)
         signame = signal_names[signum]
         logger.info('Received %(signame)s twice, forcing unclean shutdown' % {'signame': signame})
-        asyncio.create_task(self._stop_reactor())
+        self._tasks.create_task(self._stop_reactor(), name='crawler-runner:force-stop')
 
     async def run(self) -> None:
         """
@@ -588,6 +655,9 @@ class CrawlerProcess(CrawlerRunner):
             while self._active:
                 await asyncio.gather(*self._active)
         finally:
+            # Cancel process-level tasks before recycling shared connections
+            # 回收共享连接前取消进程级任务
+            await self._tasks.cancel_all()
             await self.recycle_db_connect()
 
     def start(self, use_windows_selector_eventLoop: bool = False) -> None:

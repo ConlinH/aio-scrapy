@@ -12,6 +12,8 @@ import asyncio
 import inspect
 from types import CoroutineType, GeneratorType, AsyncGeneratorType
 
+from aioscrapy.utils.log import logger
+
 
 async def call_helper(fn, *args, **kwargs):
     """
@@ -245,9 +247,64 @@ def create_task(coros, name=None):
         RuntimeError: If there is no current task.
                      如果没有当前任务。
     """
-    # Create a new task with the coroutine and inherit the current task's name
-    # 使用协程创建新任务并继承当前任务的名称
-    return asyncio.create_task(
-        coros,
-        name=asyncio.current_task().get_name()
-    )
+    # Prefer the explicit name, then inherit the current task name
+    # 优先使用显式名称，否则继承当前任务名称
+    current_task = asyncio.current_task()
+    task_name = name or (current_task.get_name() if current_task else None)
+    if task_name is None:
+        return asyncio.create_task(coros)
+    return asyncio.create_task(coros, name=task_name)
+
+
+class TaskManager:
+    """
+    Own background tasks and make their shutdown deterministic.
+    托管后台任务，并使其关闭过程可追踪且确定。
+    """
+
+    def __init__(self, owner='background'):
+        self.owner = owner
+        self._tasks = set()
+
+    @property
+    def tasks(self):
+        """
+        Return a snapshot of the currently managed tasks.
+        返回当前托管任务的只读快照。
+        """
+        return frozenset(self._tasks)
+
+    def create_task(self, coro, name=None):
+        """
+        Create and register a background task.
+        创建并注册一个后台任务。
+        """
+        task = create_task(coro, name=name)
+        self._tasks.add(task)
+        task.add_done_callback(self._task_done)
+        return task
+
+    def _task_done(self, task):
+        # Remove completed tasks from ownership before inspecting the result
+        # 先移除已完成任务的托管关系，再检查执行结果
+        self._tasks.discard(task)
+        if task.cancelled():
+            return
+        exception = task.exception()
+        if exception is not None:
+            logger.opt(exception=exception).error(
+                f'Unhandled exception in {self.owner} task {task.get_name()!r}'
+            )
+
+    async def cancel_all(self):
+        """
+        Cancel and await all managed tasks.
+        取消并等待所有托管任务结束。
+        """
+        tasks = tuple(self._tasks)
+        for task in tasks:
+            if not task.done():
+                task.cancel()
+        if tasks:
+            await asyncio.gather(*tasks, return_exceptions=True)
+        self._tasks.difference_update(tasks)

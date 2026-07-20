@@ -7,6 +7,7 @@ from aioscrapy import signals
 from aioscrapy.core.engine import ExecutionEngine
 from aioscrapy.core.scraper import Scraper
 from aioscrapy.exceptions import CloseSpider
+from aioscrapy.utils.tools import TaskManager
 
 
 class FakeSignals:
@@ -78,12 +79,13 @@ async def test_close_spider_exception_routes_through_engine_stop():
             reasons.append(reason)
             stopped.set()
 
+    tasks = TaskManager('test-crawler')
     scraper = object.__new__(Scraper)
-    scraper.crawler = SimpleNamespace(engine=Engine())
-    scraper.spider = object()
+    scraper.crawler = SimpleNamespace(engine=Engine(), create_task=tasks.create_task)
+    scraper.spider = SimpleNamespace(name='test')
 
     await scraper.handle_spider_error(CloseSpider("callback_requested"), None, None)
     await asyncio.wait_for(stopped.wait(), timeout=1)
+    await tasks.cancel_all()
 
     assert reasons == ["callback_requested"]
-

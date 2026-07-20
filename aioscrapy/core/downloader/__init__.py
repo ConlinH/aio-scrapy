@@ -52,7 +52,7 @@ from aioscrapy.signalmanager import SignalManager
 from aioscrapy.utils.httpobj import urlparse_cached
 from aioscrapy.utils.log import logger
 from aioscrapy.utils.misc import load_instance
-from aioscrapy.utils.tools import call_helper, create_task
+from aioscrapy.utils.tools import call_helper, TaskManager
 
 
 class BaseDownloaderMeta(type):
@@ -391,10 +391,13 @@ class Downloader(BaseDownloader):
         self.slots: dict = {}  # Domain/IP -> Slot mapping
                               # 域名/IP -> 槽映射
         self.running: bool = True
+        # Own downloader background tasks for deterministic shutdown
+        # 托管下载器后台任务，确保关闭过程确定可控
+        self._tasks = TaskManager(f'downloader:{self.spider.name}')
 
         # Start slot garbage collector
         # 启动槽垃圾收集器
-        create_task(self._slot_gc(60))
+        self._tasks.create_task(self._slot_gc(60), name=f'{self.spider.name}:slot-gc')
 
     @classmethod
     async def from_crawler(cls, crawler) -> "Downloader":
@@ -481,6 +484,11 @@ class Downloader(BaseDownloader):
             slot: The slot whose queue should be processed.
                  应处理其队列的槽。
         """
+        # Stop processing queued requests after downloader shutdown
+        # 下载器关闭后停止处理排队请求
+        if not self.running:
+            return
+
         # If the slot is already waiting for a delay, don't process again
         # 如果槽已经在等待延迟，则不要再次处理
         if slot.delay_lock:
@@ -501,7 +509,10 @@ class Downloader(BaseDownloader):
                 slot.delay_lock = False
                 # Schedule another processing after the delay
                 # 延迟后安排另一次处理
-                create_task(self._process_queue(slot))
+                self._tasks.create_task(
+                    self._process_queue(slot),
+                    name=f'{self.spider.name}:download-delay',
+                )
                 return
 
         # Process as many queued requests as possible
@@ -509,7 +520,10 @@ class Downloader(BaseDownloader):
         while slot.queue and slot.free_transfer_slots() > 0:
             request = slot.queue.popleft()
             slot.transferring.add(request)
-            create_task(self._download(slot, request))
+            self._tasks.create_task(
+                self._download(slot, request),
+                name=f'{self.spider.name}:download',
+            )
             # If there's a delay, only process one request at a time
             # 如果有延迟，一次只处理一个请求
             if delay:
@@ -567,7 +581,9 @@ class Downloader(BaseDownloader):
                 # 如果可用，添加代理
                 self.proxy and await self.proxy.add_proxy(request)
                 result = await self.handler.download_request(request, self.spider)
-        except BaseException as exc:
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
             # Handle exceptions
             # 处理异常
             self.proxy and self.proxy.check(request, exception=exc)
@@ -581,14 +597,16 @@ class Downloader(BaseDownloader):
                     # 使用响应检查代理状态
                     self.proxy and self.proxy.check(request, response=result)
                     result = await self.middleware.process_response(self.spider, request, result)
-                except BaseException as exc:
+                except asyncio.CancelledError:
+                    raise
+                except Exception as exc:
                     result = exc
         finally:
             # Cleanup: remove request from all tracking collections
             # 清理：从所有跟踪集合中删除请求
-            slot.transferring.remove(request)
-            slot.active.remove(request)
-            self.active.remove(request)
+            slot.transferring.discard(request)
+            slot.active.discard(request)
+            self.active.discard(request)
 
             # Send signal if we got a response
             # 如果我们得到响应，发送信号
@@ -621,6 +639,27 @@ class Downloader(BaseDownloader):
         # Stop accepting new requests
         # 停止接受新请求
         self.running = False
+
+        # Cancel and await every task owned by the downloader. Download tasks run
+        # their finally blocks before this returns, so active state is released.
+        # 取消并等待下载器托管的全部任务；下载任务会先执行finally清理活动状态。
+        await self._tasks.cancel_all()
+
+        # Requests still waiting in a slot have no task of their own. Remove them
+        # explicitly and notify the engine so its in-progress state is released.
+        # 槽中等待的请求没有独立任务，需要显式移除并通知引擎释放处理中状态。
+        queued_requests = []
+        for slot in self.slots.values():
+            queued_requests.extend(slot.queue)
+            slot.queue.clear()
+            slot.delay_lock = False
+            for request in tuple(slot.active):
+                if request not in slot.transferring:
+                    slot.active.discard(request)
+                    self.active.discard(request)
+
+        for request in queued_requests:
+            await self._call_engine(None, request)
 
         # Close the dupefilter if one exists
         # 如果存在重复过滤器，则关闭它

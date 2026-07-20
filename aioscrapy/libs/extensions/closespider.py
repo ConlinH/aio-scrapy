@@ -29,7 +29,6 @@ from collections import defaultdict
 
 from aioscrapy import signals
 from aioscrapy.exceptions import NotConfigured
-from aioscrapy.utils.tools import create_task
 
 
 class CloseSpider:
@@ -139,7 +138,10 @@ class CloseSpider:
         # Check if we've reached the maximum number of errors
         # 检查是否达到最大错误数
         if self.counter['errorcount'] == self.close_on['errorcount']:
-            create_task(self.crawler.engine.stop(reason='closespider_errorcount'))
+            self.crawler.create_task(
+                self.crawler.engine.stop(reason='closespider_errorcount'),
+                name=f'{spider.name}:stop',
+            )
 
     async def page_count(self, response, request, spider):
         """
@@ -165,7 +167,10 @@ class CloseSpider:
         # Check if we've reached the maximum number of pages
         # 检查是否达到最大页面数
         if self.counter['pagecount'] == self.close_on['pagecount']:
-            create_task(self.crawler.engine.stop(reason='closespider_pagecount'))
+            self.crawler.create_task(
+                self.crawler.engine.stop(reason='closespider_pagecount'),
+                name=f'{spider.name}:stop',
+            )
 
     async def timeout_close(self, spider):
         """
@@ -185,11 +190,17 @@ class CloseSpider:
             等待超时然后停止引擎的内部函数。
             """
             await asyncio.sleep(self.close_on['timeout'])
-            create_task(self.crawler.engine.stop(reason='closespider_timeout'))
+            self.crawler.create_task(
+                self.crawler.engine.stop(reason='closespider_timeout'),
+                name=f'{spider.name}:stop',
+            )
 
         # Start the timeout task
         # 启动超时任务
-        self.task = create_task(close())
+        self.task = self.crawler.create_task(
+            close(),
+            name=f'{spider.name}:close-timeout',
+        )
 
     async def item_scraped(self, item, spider):
         """
@@ -213,9 +224,12 @@ class CloseSpider:
         # Check if we've reached the maximum number of items
         # 检查是否达到最大项目数
         if self.counter['itemcount'] == self.close_on['itemcount']:
-            create_task(self.crawler.engine.stop(reason='closespider_itemcount'))
+            self.crawler.create_task(
+                self.crawler.engine.stop(reason='closespider_itemcount'),
+                name=f'{spider.name}:stop',
+            )
 
-    def spider_closed(self, spider):
+    async def spider_closed(self, spider):
         """
         Signal handler for the spider_closed signal.
         spider_closed信号的处理程序。
@@ -231,3 +245,6 @@ class CloseSpider:
         # 如果超时任务存在且未完成，则取消它
         if self.task and not self.task.done():
             self.task.cancel()
+            # Await cancellation so the timeout task cannot leak during shutdown
+            # 等待取消完成，避免超时任务在关闭期间泄漏
+            await asyncio.gather(self.task, return_exceptions=True)
