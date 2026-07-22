@@ -11,6 +11,14 @@ from aioscrapy.utils.misc import load_object
 class MemoryQueueBase(AbsQueue):
     inc_key = 'scheduler/enqueued/memory'
 
+    @property
+    def requires_periodic_poll(self) -> bool:
+        """
+        Return False because in-memory queues only receive local notifications.
+        返回False，因为内存队列只接收本地通知。
+        """
+        return False
+
     def __init__(
             self,
             container: Queue,

@@ -17,6 +17,17 @@ class AbsQueue(metaclass=ABCMeta):
     它提供了推送、弹出和管理队列中请求的方法。
     """
 
+    @property
+    def requires_periodic_poll(self) -> bool:
+        """
+        Return whether this queue needs polling to discover external producers.
+        返回当前队列是否需要通过轮询发现外部生产者。
+
+        Unknown queue implementations default to polling for compatibility.
+        未知队列实现默认保留轮询以确保兼容性。
+        """
+        return True
+
     def __init__(
             self,
             container: Any,

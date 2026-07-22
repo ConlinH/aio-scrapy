@@ -444,6 +444,10 @@ SCHEDULER = 'aioscrapy.core.scheduler.Scheduler'
 # 调度器使用的队列类
 SCHEDULER_QUEUE_CLASS = 'aioscrapy.queue.memory.SpiderPriorityQueue'
 
+# Fallback polling interval for queues populated by external producers
+# 外部生产者队列的兜底轮询间隔
+SCHEDULER_POLL_INTERVAL = 1.0
+
 # Serializer class used by the scheduler for serializing requests
 # 调度器用于序列化请求的序列化器类
 SCHEDULER_SERIALIZER = 'aioscrapy.serializer.JsonSerializer'

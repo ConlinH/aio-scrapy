@@ -283,6 +283,14 @@ class Scheduler(BaseScheduler):
         self.persist = persist  # Whether to persist the queue between runs
                                # 是否在运行之间持久化队列
 
+    @property
+    def requires_periodic_poll(self) -> bool:
+        """
+        Return whether the main queue may receive requests from external producers.
+        返回主队列是否可能接收外部生产者写入的请求。
+        """
+        return getattr(self.queue, 'requires_periodic_poll', True)
+
     @classmethod
     async def from_crawler(cls: Type[SchedulerTV], crawler: "aioscrapy.Crawler") -> SchedulerTV:
         """

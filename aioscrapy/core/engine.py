@@ -145,6 +145,9 @@ class ExecutionEngine(object):
         self.finish: bool = False   # True when engine is completely finished
         self._stop_lock = asyncio.Lock()
         self._engine_stopped_sent: bool = False
+        # Wake the scheduler loop when local work or lifecycle state changes
+        # 本地工作或生命周期状态变化时唤醒调度循环
+        self._wakeup_event = asyncio.Event()
 
     async def start(
             self,
@@ -176,13 +179,17 @@ class ExecutionEngine(object):
         await self.signals.send_catch_log_deferred(signal=signals.engine_started)
         await self.open(spider, start_requests)
 
-        # Main crawling loop
-        # 主爬取循环
+        # Process local notifications immediately and only poll external queues
+        # 本地通知立即处理，仅对外部队列保留周期轮询
         while not self.finish:
+            # Clear before processing so notifications raised during this cycle remain visible
+            # 在处理前清除事件，确保本轮产生的通知不会丢失
+            self._wakeup_event.clear()
             self.running and await self._next_request()
-            await asyncio.sleep(1)
             if self.running and self.spider is not None:
                 await self._spider_idle(self.spider)
+            if not self.finish:
+                await self._wait_for_wakeup()
 
     async def stop(self, reason: str = 'shutdown') -> None:
         """
@@ -206,6 +213,7 @@ class ExecutionEngine(object):
                 return
 
             self.running = False
+            self.wakeup()
 
             # A partially initialized engine has nothing active to drain, but its
             # already-created components still need to be closed.
@@ -226,6 +234,61 @@ class ExecutionEngine(object):
                 await self.signals.send_catch_log_deferred(signal=signals.engine_stopped)
                 self._engine_stopped_sent = True
             self.finish = True
+            self.wakeup()
+
+    def wakeup(self) -> None:
+        """
+        Notify the engine that scheduling or lifecycle state has changed.
+        通知引擎调度状态或生命周期状态已经变化。
+        """
+        self._wakeup_event.set()
+
+    def _get_scheduler_poll_interval(self) -> Optional[float]:
+        """
+        Return the fallback polling interval required by the current scheduler.
+        返回当前调度器所需的兜底轮询间隔。
+
+        In-memory queues rely entirely on local notifications. External and unknown
+        queues keep polling so requests inserted by other processes are discovered.
+        内存队列完全依赖本地通知；外部及未知队列保留轮询，以发现其他进程写入的请求。
+        """
+        if self.scheduler is not None and not getattr(self.scheduler, 'requires_periodic_poll', True):
+            return None
+
+        if hasattr(self.settings, 'getfloat'):
+            interval = self.settings.getfloat('SCHEDULER_POLL_INTERVAL', 1.0)
+        else:
+            interval = float(self.settings.get('SCHEDULER_POLL_INTERVAL', 1.0))
+        return interval if interval > 0 else None
+
+    def _get_wakeup_timeout(self) -> Optional[float]:
+        """
+        Return the next timed wakeup for pause expiry or external queue polling.
+        返回暂停到期或外部队列轮询所需的下一次定时唤醒时间。
+        """
+        if self.spider is not None and self.spider.pause:
+            pause_time = self.spider.pause_time
+            if pause_time == float('inf'):
+                return None
+            return max(0.0, pause_time - time.time())
+        return self._get_scheduler_poll_interval()
+
+    async def _wait_for_wakeup(self) -> None:
+        """
+        Wait for a local notification or the configured external queue poll tick.
+        等待本地通知或配置的外部队列轮询时钟。
+        """
+        timeout = self._get_wakeup_timeout()
+        if timeout is None:
+            await self._wakeup_event.wait()
+            return
+
+        try:
+            await asyncio.wait_for(self._wakeup_event.wait(), timeout=timeout)
+        except asyncio.TimeoutError:
+            # Timeout is the expected fallback for externally populated queues
+            # 超时是外部生产者队列的预期兜底唤醒方式
+            pass
 
     async def _wait_until_idle(self) -> None:
         """
@@ -455,10 +518,10 @@ class ExecutionEngine(object):
             await self.scraper.enqueue_scrape(result, request)
 
         finally:
-            # Always remove the request from in-progress and process next request
-            # 始终从进行中移除请求并处理下一个请求
+            # Always remove the request and notify the central scheduler loop
+            # 始终移除进行中的请求并通知中央调度循环
             self.slot.remove_request(request)
-            await self._next_request()
+            self.wakeup()
 
     def is_idle(self) -> bool:
         """
@@ -508,7 +571,9 @@ class ExecutionEngine(object):
             request: The request to schedule.
                     要调度的请求。
         """
-        await self.scheduler.enqueue_request(request)
+        accepted = await self.scheduler.enqueue_request(request)
+        if accepted:
+            self.wakeup()
 
     async def close_spider(self, spider: Optional[Spider], reason: str = 'cancelled') -> None:
         """

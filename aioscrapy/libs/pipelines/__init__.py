@@ -574,6 +574,13 @@ class DBPipelineBase(ItemCacheMixin):
         self.spider._pause_time = state['pause_time']
         delattr(self.spider, '_db_pipeline_pause_state')
 
+        # Wake the event-driven scheduler after restoring spider execution
+        # 恢复爬虫执行状态后唤醒事件驱动调度器
+        crawler = getattr(self.spider, 'crawler', None)
+        engine = getattr(crawler, 'engine', None)
+        if engine is not None:
+            engine.wakeup()
+
     async def save_item(self, item: dict, save_info: dict):
         """
         Save an item to the cache and possibly to the database.

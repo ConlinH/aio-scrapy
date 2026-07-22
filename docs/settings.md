@@ -64,6 +64,7 @@ When the same setting is defined in multiple places, AioScrapy uses them accordi
 |---------------|------------|-----------------|-------------------|
 | `DUPEFILTER_CLASS` | string | `'aioscrapy.dupefilters.desk.RFPDupeFilter'` | 用于过滤重复请求的类 </br> Class used to filter duplicate requests |
 | `SCHEDULER_QUEUE_CLASS` | string | `'aioscrapy.queue.memory.SpiderPriorityQueue'` | 用于存储请求的队列类 </br> Queue class used to store requests |
+| `SCHEDULER_POLL_INTERVAL` | float | `1.0` | 外部生产者队列的兜底轮询间隔；内存队列使用事件通知且不轮询 </br> Fallback polling interval for externally populated queues; memory queues use notifications only |
 | `SCHEDULER_SERIALIZER` | string | `'aioscrapy.serializer.JsonSerializer'` | 用于序列化请求的序列化器 </br> Serializer used to serialize requests |
 
 ### 重试设置 | Retry Settings
