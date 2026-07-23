@@ -1,9 +1,11 @@
-from asyncio import PriorityQueue, Queue, LifoQueue
+from asyncio import LifoQueue, PriorityQueue, Queue
 from asyncio.queues import QueueEmpty
-from typing import Optional
+from typing import List, Optional, Sequence
+from uuid import uuid4
 
 import aioscrapy
-from aioscrapy.queue import AbsQueue
+
+from aioscrapy.queue import AbsQueue, QueueDelivery
 from aioscrapy.serializer import AbsSerializer
 from aioscrapy.utils.misc import load_object
 
@@ -13,10 +15,6 @@ class MemoryQueueBase(AbsQueue):
 
     @property
     def requires_periodic_poll(self) -> bool:
-        """
-        Return False because in-memory queues only receive local notifications.
-        返回False，因为内存队列只接收本地通知。
-        """
         return False
 
     def __init__(
@@ -25,55 +23,80 @@ class MemoryQueueBase(AbsQueue):
             spider: Optional[aioscrapy.Spider],
             key: Optional[str] = None,
             serializer: Optional[AbsSerializer] = None,
-            max_size: int = 0
+            max_size: int = 0,
     ) -> None:
         super().__init__(container, spider, key, serializer)
         self.max_size = max_size
 
     @classmethod
     async def from_spider(cls, spider: aioscrapy.Spider) -> "MemoryQueueBase":
-        max_size: int = spider.settings.getint("QUEUE_MAXSIZE", 0)
-        queue: Queue = cls.get_queue(max_size)
-        queue_key: str = spider.settings.get("SCHEDULER_QUEUE_KEY", '%(spider)s:requests')
-        serializer: str = spider.settings.get("SCHEDULER_SERIALIZER", "aioscrapy.serializer.PickleSerializer")
-        serializer: AbsSerializer = load_object(serializer)
+        max_size = spider.settings.getint("QUEUE_MAXSIZE", 0)
+        queue_key = spider.settings.get("SCHEDULER_QUEUE_KEY", '%(spider)s:requests')
+        serializer = load_object(
+            spider.settings.get("SCHEDULER_SERIALIZER", "aioscrapy.serializer.PickleSerializer")
+        )
         return cls(
-            queue,
+            cls.get_queue(max_size),
             spider,
             queue_key % {'spider': spider.name},
-            serializer=serializer
+            serializer=serializer,
+            max_size=max_size,
         )
 
-    def len(self) -> int:
-        """Return the length of the queue"""
+    async def len(self) -> int:
         return self.container.qsize()
 
     @staticmethod
     def get_queue(max_size: int) -> Queue:
         raise NotImplementedError
 
+    def _make_entry(self, request, *, task_id=None, redelivered=False):
+        return task_id or uuid4().hex, redelivered, self._encode_request(request)
+
     async def push(self, request) -> None:
-        data = self._encode_request(request)
-        await self.container.put(data)
+        await self.container.put(self._make_entry(request))
 
     async def push_batch(self, requests) -> None:
         for request in requests:
             await self.push(request)
 
-    async def pop(self, count: int = 1) -> None:
-        for _ in range(count):
+    def _pop_entry(self):
+        return self.container.get_nowait()
+
+    async def reserve(self, count: int = 1, visibility_timeout: float = 600) -> List[QueueDelivery]:
+        deliveries = []
+        for _ in range(max(0, count)):
             try:
-                data = self.container.get_nowait()
+                task_id, redelivered, data = self._pop_entry()
             except QueueEmpty:
                 break
-            yield await self._decode_request(data)
+            token = uuid4().hex
+            deliveries.append(QueueDelivery(
+                request=await self._decode_request(data),
+                task_id=task_id,
+                token=token,
+                receipt=(task_id, token, data),
+                redelivered=redelivered,
+            ))
+        return deliveries
 
-    async def clear(self, timeout: int = 0) -> None:
+    async def ack_batch(self, deliveries: Sequence[QueueDelivery]) -> List[bool]:
+        return [True] * len(deliveries)
+
+    async def nack_batch(self, deliveries: Sequence[QueueDelivery]) -> List[bool]:
+        for delivery in deliveries:
+            _task_id, _token, data = delivery.receipt
+            await self._put_requeued((delivery.task_id, True, data), delivery.score)
+        return [True] * len(deliveries)
+
+    async def _put_requeued(self, entry, score=0) -> None:
+        await self.container.put(entry)
+
+    async def clear(self) -> None:
         self.container = self.get_queue(self.max_size)
 
 
 class MemoryFifoQueue(MemoryQueueBase):
-
     @staticmethod
     def get_queue(max_size: int) -> Queue:
         return Queue(max_size)
@@ -85,25 +108,40 @@ class MemoryLifoQueue(MemoryFifoQueue):
         return LifoQueue(max_size)
 
 
-class MemoryPriorityQueue(MemoryFifoQueue):
+class MemoryPriorityQueue(MemoryQueueBase):
     @staticmethod
     def get_queue(max_size: int) -> PriorityQueue:
         return PriorityQueue(max_size)
 
     async def push(self, request: aioscrapy.Request) -> None:
-        data = self._encode_request(request)
-        # asyncio.PriorityQueue returns the smallest value first, while the
-        # public Request contract defines larger numbers as higher priority.
-        score = -request.priority
-        await self.container.put((score, data))
+        task_id, redelivered, data = self._make_entry(request)
+        await self.container.put((-request.priority, task_id, redelivered, data))
 
-    async def pop(self, count: int = 1) -> Optional[aioscrapy.Request]:
-        for _ in range(count):
+    def _pop_entry(self):
+        score, task_id, redelivered, data = self.container.get_nowait()
+        return task_id, redelivered, data, score
+
+    async def reserve(self, count: int = 1, visibility_timeout: float = 600) -> List[QueueDelivery]:
+        deliveries = []
+        for _ in range(max(0, count)):
             try:
-                _score, data = self.container.get_nowait()
+                task_id, redelivered, data, score = self._pop_entry()
             except QueueEmpty:
                 break
-            yield await self._decode_request(data)
+            token = uuid4().hex
+            deliveries.append(QueueDelivery(
+                request=await self._decode_request(data),
+                task_id=task_id,
+                token=token,
+                receipt=(task_id, token, data),
+                redelivered=redelivered,
+                score=score,
+            ))
+        return deliveries
+
+    async def _put_requeued(self, entry, score=0) -> None:
+        task_id, redelivered, data = entry
+        await self.container.put((score, task_id, redelivered, data))
 
 
 SpiderQueue = MemoryFifoQueue

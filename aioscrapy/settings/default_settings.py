@@ -52,7 +52,7 @@ AUTOTHROTTLE_TARGET_CONCURRENCY = 1.0
 
 # Default bot name used for the User-Agent header and logging
 # 用于User-Agent头和日志记录的默认机器人名称
-BOT_NAME = 'aioscrapybot'
+BOT_NAME = "aioscrapybot"
 
 # Close spider settings
 # 关闭爬虫设置
@@ -79,7 +79,7 @@ GRACEFUL_SHUTDOWN_TIMEOUT = 30.0
 
 # Module where custom commands are defined
 # 定义自定义命令的模块
-COMMANDS_MODULE = ''
+COMMANDS_MODULE = ""
 
 # Number of concurrent parsers for processing responses
 # 用于处理响应的并发解析器数量
@@ -103,8 +103,8 @@ CONCURRENT_REQUESTS_PER_IP = 0
 # Default headers used for all requests
 # 用于所有请求的默认头
 DEFAULT_REQUEST_HEADERS = {
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-    'Accept-Language': 'en',
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "en",
 }
 
 # Depth settings
@@ -136,8 +136,8 @@ DOWNLOAD_HANDLERS = {}
 # Base download handlers for http and https
 # http和https的基本下载处理程序
 DOWNLOAD_HANDLERS_BASE = {
-    'http': 'aioscrapy.core.downloader.handlers.aiohttp.AioHttpDownloadHandler',
-    'https': 'aioscrapy.core.downloader.handlers.aiohttp.AioHttpDownloadHandler',
+    "http": "aioscrapy.core.downloader.handlers.aiohttp.AioHttpDownloadHandler",
+    "https": "aioscrapy.core.downloader.handlers.aiohttp.AioHttpDownloadHandler",
 }
 
 # Mapping of different HTTP client libraries to their download handlers
@@ -145,55 +145,48 @@ DOWNLOAD_HANDLERS_BASE = {
 DOWNLOAD_HANDLERS_MAP = {
     # aiohttp handlers (default)
     # aiohttp处理程序（默认）
-    'aiohttp': DOWNLOAD_HANDLERS_BASE,
-
+    "aiohttp": DOWNLOAD_HANDLERS_BASE,
     # httpx handlers
     # httpx处理程序
-    'httpx': {
-        'http': 'aioscrapy.core.downloader.handlers.httpx.HttpxDownloadHandler',
-        'https': 'aioscrapy.core.downloader.handlers.httpx.HttpxDownloadHandler',
+    "httpx": {
+        "http": "aioscrapy.core.downloader.handlers.httpx.HttpxDownloadHandler",
+        "https": "aioscrapy.core.downloader.handlers.httpx.HttpxDownloadHandler",
     },
-
     # requests handlers
     # requests处理程序
-    'requests': {
-        'http': 'aioscrapy.core.downloader.handlers.requests.RequestsDownloadHandler',
-        'https': 'aioscrapy.core.downloader.handlers.requests.RequestsDownloadHandler',
+    "requests": {
+        "http": "aioscrapy.core.downloader.handlers.requests.RequestsDownloadHandler",
+        "https": "aioscrapy.core.downloader.handlers.requests.RequestsDownloadHandler",
     },
-
     # pyhttpx handlers
     # pyhttpx处理程序
-    'pyhttpx': {
-        'http': 'aioscrapy.core.downloader.handlers.pyhttpx.PyhttpxDownloadHandler',
-        'https': 'aioscrapy.core.downloader.handlers.pyhttpx.PyhttpxDownloadHandler',
+    "pyhttpx": {
+        "http": "aioscrapy.core.downloader.handlers.pyhttpx.PyhttpxDownloadHandler",
+        "https": "aioscrapy.core.downloader.handlers.pyhttpx.PyhttpxDownloadHandler",
     },
-
     # playwright handlers (for JavaScript rendering)
     # playwright处理程序（用于JavaScript渲染）
-    'playwright': {
-        'http': 'aioscrapy.core.downloader.handlers.webdriver.playwright.PlaywrightDownloadHandler',
-        'https': 'aioscrapy.core.downloader.handlers.webdriver.playwright.PlaywrightDownloadHandler',
+    "playwright": {
+        "http": "aioscrapy.core.downloader.handlers.webdriver.playwright.PlaywrightDownloadHandler",
+        "https": "aioscrapy.core.downloader.handlers.webdriver.playwright.PlaywrightDownloadHandler",
     },
-
     # DrissionPage handlers (for JavaScript rendering)
     # DrissionPage处理程序（用于JavaScript渲染）
-    'dp': {
-        'http': 'aioscrapy.core.downloader.handlers.webdriver.drissionpage.DrissionPageDownloadHandler',
-        'https': 'aioscrapy.core.downloader.handlers.webdriver.drissionpage.DrissionPageDownloadHandler',
+    "dp": {
+        "http": "aioscrapy.core.downloader.handlers.webdriver.drissionpage.DrissionPageDownloadHandler",
+        "https": "aioscrapy.core.downloader.handlers.webdriver.drissionpage.DrissionPageDownloadHandler",
     },
-
     # curl_cffi handlers
     # curl_cffi处理程序
-    'curl_cffi': {
-        'http': 'aioscrapy.core.downloader.handlers.curl_cffi.CurlCffiDownloadHandler',
-        'https': 'aioscrapy.core.downloader.handlers.curl_cffi.CurlCffiDownloadHandler',
+    "curl_cffi": {
+        "http": "aioscrapy.core.downloader.handlers.curl_cffi.CurlCffiDownloadHandler",
+        "https": "aioscrapy.core.downloader.handlers.curl_cffi.CurlCffiDownloadHandler",
     },
-
     # sbcdp handlers (for JavaScript rendering)
     # sbcdp处理程序（用于JavaScript渲染）
-    'sbcdp': {
-        'http': 'aioscrapy.core.downloader.handlers.webdriver.sbcdp.SbcdpDownloadHandler',
-        'https': 'aioscrapy.core.downloader.handlers.webdriver.sbcdp.SbcdpDownloadHandler',
+    "sbcdp": {
+        "http": "aioscrapy.core.downloader.handlers.webdriver.sbcdp.SbcdpDownloadHandler",
+        "https": "aioscrapy.core.downloader.handlers.webdriver.sbcdp.SbcdpDownloadHandler",
     },
 }
 
@@ -203,7 +196,7 @@ DOWNLOAD_TIMEOUT = 180  # 3mins
 
 # Downloader class to use
 # 要使用的下载器类
-DOWNLOADER = 'aioscrapy.core.downloader.Downloader'
+DOWNLOADER = "aioscrapy.core.downloader.Downloader"
 
 # Custom downloader middlewares
 # 自定义下载器中间件
@@ -214,12 +207,12 @@ DOWNLOADER_MIDDLEWARES = {}
 DOWNLOADER_MIDDLEWARES_BASE = {
     # Engine side middlewares
     # 引擎端中间件
-    'aioscrapy.libs.downloader.downloadtimeout.DownloadTimeoutMiddleware': 350,  # Handles download timeouts
-    'aioscrapy.libs.downloader.defaultheaders.DefaultHeadersMiddleware': 400,    # Adds default headers
-    'aioscrapy.libs.downloader.useragent.UserAgentMiddleware': 500,              # Sets User-Agent
-    'aioscrapy.libs.downloader.retry.RetryMiddleware': 550,                      # Retries failed requests
-    'aioscrapy.libs.downloader.stats.DownloaderStats': 850,                      # Collects download stats
-    'aioscrapy.libs.downloader.ja3fingerprint.TLSCiphersMiddleware': 950,        # Manages TLS fingerprints
+    "aioscrapy.libs.downloader.downloadtimeout.DownloadTimeoutMiddleware": 350,  # Handles download timeouts
+    "aioscrapy.libs.downloader.defaultheaders.DefaultHeadersMiddleware": 400,  # Adds default headers
+    "aioscrapy.libs.downloader.useragent.UserAgentMiddleware": 500,  # Sets User-Agent
+    "aioscrapy.libs.downloader.retry.RetryMiddleware": 550,  # Retries failed requests
+    "aioscrapy.libs.downloader.stats.DownloaderStats": 850,  # Collects download stats
+    "aioscrapy.libs.downloader.ja3fingerprint.TLSCiphersMiddleware": 950,  # Manages TLS fingerprints
     # Downloader side middlewares
     # 下载器端中间件
 }
@@ -241,9 +234,9 @@ DOWNLOADER_STATS = True
 
 # Editor to use when editing spiders with the 'edit' command
 # 使用'edit'命令编辑爬虫时使用的编辑器
-EDITOR = 'vi'
-if sys.platform == 'win32':
-    EDITOR = '%s -m idlelibs.idle'
+EDITOR = "vi"
+if sys.platform == "win32":
+    EDITOR = "%s -m idlelibs.idle"
 
 # Extensions settings
 # 扩展设置
@@ -257,16 +250,13 @@ EXTENSIONS = {}
 EXTENSIONS_BASE = {
     # Core statistics extension
     # 核心统计扩展
-    'aioscrapy.libs.extensions.corestats.CoreStats': 0,
-
+    "aioscrapy.libs.extensions.corestats.CoreStats": 0,
     # Close spider extension (handles automatic closing)
     # 关闭爬虫扩展（处理自动关闭）
-    'aioscrapy.libs.extensions.closespider.CloseSpider': 0,
-
+    "aioscrapy.libs.extensions.closespider.CloseSpider": 0,
     # Log statistics extension
     # 日志统计扩展
-    'aioscrapy.libs.extensions.logstats.LogStats': 0,
-
+    "aioscrapy.libs.extensions.logstats.LogStats": 0,
     # Auto throttle extension (commented out by default)
     # 自动限流扩展（默认注释掉）
     # 'aioscrapy.libs.extensions.throttle.AutoThrottle': 0,
@@ -277,11 +267,11 @@ EXTENSIONS_BASE = {
 
 # Access control list for Amazon S3 file storage
 # Amazon S3文件存储的访问控制列表
-FILES_STORE_S3_ACL = 'private'
+FILES_STORE_S3_ACL = "private"
 
 # Access control list for Google Cloud Storage file storage
 # Google Cloud Storage文件存储的访问控制列表
-FILES_STORE_GCS_ACL = ''
+FILES_STORE_GCS_ACL = ""
 
 # HTTP proxy settings
 # HTTP代理设置
@@ -292,14 +282,14 @@ HTTPPROXY_ENABLED = True
 
 # Encoding used for proxy authentication
 # 用于代理认证的编码
-HTTPPROXY_AUTH_ENCODING = 'latin-1'
+HTTPPROXY_AUTH_ENCODING = "latin-1"
 
 # Item processing settings
 # 项目处理设置
 
 # Class to use for processing items
 # 用于处理项目的类
-ITEM_PROCESSOR = 'aioscrapy.middleware.ItemPipelineManager'
+ITEM_PROCESSOR = "aioscrapy.middleware.ItemPipelineManager"
 
 # Custom item pipelines to enable
 # 要启用的自定义项目管道
@@ -342,11 +332,11 @@ LOG_ENABLED = True
 
 # Encoding used for log files
 # 用于日志文件的编码
-LOG_ENCODING = 'utf-8'
+LOG_ENCODING = "utf-8"
 
 # Log file rotation size
 # 日志文件轮转大小
-LOG_ROTATION = '20MB'
+LOG_ROTATION = "20MB"
 
 # Number of log files to keep
 # 要保留的日志文件数量
@@ -354,7 +344,7 @@ LOG_RETENTION = 10
 
 # Class to use for formatting log messages
 # 用于格式化日志消息的类
-LOG_FORMATTER = 'aioscrapy.logformatter.LogFormatter'
+LOG_FORMATTER = "aioscrapy.logformatter.LogFormatter"
 
 # Format string for log messages
 # 日志消息的格式字符串
@@ -366,7 +356,7 @@ LOG_STDOUT = True
 
 # Minimum level of messages to log
 # 要记录的消息的最低级别
-LOG_LEVEL = 'DEBUG'
+LOG_LEVEL = "DEBUG"
 
 # Log file path (None means no log file)
 # 日志文件路径（None表示没有日志文件）
@@ -386,7 +376,7 @@ LOGSTATS_INTERVAL = 60.0
 
 # Module where newly created spiders will be placed
 # 新创建的爬虫将被放置的模块
-NEWSPIDER_MODULE = ''
+NEWSPIDER_MODULE = ""
 
 # Whether to randomize the download delay (between 0.5 * DOWNLOAD_DELAY and 1.5 * DOWNLOAD_DELAY)
 # 是否随机化下载延迟（在0.5 * DOWNLOAD_DELAY和1.5 * DOWNLOAD_DELAY之间）
@@ -412,7 +402,7 @@ REFERER_ENABLED = True
 
 # Policy for setting the Referer header
 # 设置Referer头的策略
-REFERRER_POLICY = 'aioscrapy.libs.spider.referer.DefaultReferrerPolicy'
+REFERRER_POLICY = "aioscrapy.libs.spider.referer.DefaultReferrerPolicy"
 
 # Retry settings
 # 重试设置
@@ -438,11 +428,11 @@ RETRY_PRIORITY_ADJUST = -1
 
 # Scheduler class to use
 # 要使用的调度器类
-SCHEDULER = 'aioscrapy.core.scheduler.Scheduler'
+SCHEDULER = "aioscrapy.core.scheduler.Scheduler"
 
 # Queue class used by the scheduler
 # 调度器使用的队列类
-SCHEDULER_QUEUE_CLASS = 'aioscrapy.queue.memory.SpiderPriorityQueue'
+SCHEDULER_QUEUE_CLASS = "aioscrapy.queue.memory.SpiderPriorityQueue"
 
 # Fallback polling interval for queues populated by external producers
 # 外部生产者队列的兜底轮询间隔
@@ -450,7 +440,16 @@ SCHEDULER_POLL_INTERVAL = 1.0
 
 # Serializer class used by the scheduler for serializing requests
 # 调度器用于序列化请求的序列化器类
-SCHEDULER_SERIALIZER = 'aioscrapy.serializer.JsonSerializer'
+SCHEDULER_SERIALIZER = "aioscrapy.serializer.JsonSerializer"
+
+# Visibility timeout for a reserved durable queue request.
+# 持久化队列请求的可见性超时时间；超时后未确认任务会重新入队
+SCHEDULER_VISIBILITY_TIMEOUT = 600.0
+
+# Batch completed deliveries before acknowledging them.
+# 完成任务的批量确认设置
+SCHEDULER_ACK_BATCH_SIZE = 100
+SCHEDULER_ACK_FLUSH_INTERVAL = 1
 
 # Maximum size in bytes for the scraper slot (controls memory usage)
 # 刮取器槽的最大大小（字节）（控制内存使用）
@@ -461,7 +460,7 @@ SCRAPER_SLOT_MAX_ACTIVE_SIZE = 5000000
 
 # Class to use for loading spiders
 # 用于加载爬虫的类
-SPIDER_LOADER_CLASS = 'aioscrapy.spiderloader.SpiderLoader'
+SPIDER_LOADER_CLASS = "aioscrapy.spiderloader.SpiderLoader"
 
 # Whether to only warn (instead of error) when a spider module cannot be imported
 # 当爬虫模块无法导入时是否只发出警告（而不是错误）
@@ -479,23 +478,19 @@ SPIDER_MIDDLEWARES = {}
 SPIDER_MIDDLEWARES_BASE = {
     # Handles HTTP errors (e.g., 404, 500)
     # 处理HTTP错误（例如，404、500）
-    'aioscrapy.libs.spider.httperror.HttpErrorMiddleware': 50,
-
+    "aioscrapy.libs.spider.httperror.HttpErrorMiddleware": 50,
     # Filters out requests to URLs outside the domains allowed by the spider
     # 过滤掉对爬虫允许的域之外的URL的请求
-    'aioscrapy.libs.spider.offsite.OffsiteMiddleware': 500,
-
+    "aioscrapy.libs.spider.offsite.OffsiteMiddleware": 500,
     # Sets the Referer header
     # 设置Referer头
-    'aioscrapy.libs.spider.referer.RefererMiddleware': 700,
-
+    "aioscrapy.libs.spider.referer.RefererMiddleware": 700,
     # Filters out requests with URLs longer than URLLENGTH_LIMIT
     # 过滤掉URL长度超过URLLENGTH_LIMIT的请求
-    'aioscrapy.libs.spider.urllength.UrlLengthMiddleware': 800,
-
+    "aioscrapy.libs.spider.urllength.UrlLengthMiddleware": 800,
     # Tracks request depth
     # 跟踪请求深度
-    'aioscrapy.libs.spider.depth.DepthMiddleware': 900,
+    "aioscrapy.libs.spider.depth.DepthMiddleware": 900,
 }
 
 # List of modules where spiders are expected to be defined
@@ -507,7 +502,7 @@ SPIDER_MODULES = []
 
 # Class to use for collecting crawler stats
 # 用于收集爬虫统计信息的类
-STATS_CLASS = 'aioscrapy.statscollectors.MemoryStatsCollector'
+STATS_CLASS = "aioscrapy.statscollectors.MemoryStatsCollector"
 
 # Whether to dump stats when the spider finishes
 # 爬虫完成时是否转储统计信息
@@ -515,7 +510,7 @@ STATS_DUMP = True
 
 # Directory where project templates are stored
 # 存储项目模板的目录
-TEMPLATES_DIR = abspath(join(dirname(__file__), '..', 'templates'))
+TEMPLATES_DIR = abspath(join(dirname(__file__), "..", "templates"))
 
 # Maximum allowed length for URLs
 # URL的最大允许长度

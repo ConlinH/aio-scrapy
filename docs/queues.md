@@ -103,13 +103,19 @@ RABBITMQ_ARGS = {
 SCHEDULER_QUEUE_CLASS = 'aioscrapy.queue.rabbitmq.RabbitMqPriorityQueue'
 ```
 
+Redis queues now use separate `{queue}:ready`, `{queue}:processing`, and
+`{queue}:payload` keys. This layout is not compatible with the former single-key
+queue format; drain or migrate the old queue before upgrading a running spider.
+
 ## 自定义队列 | Custom Queues
 
 您可以创建自己的队列，只需继承`AbsQueue`类并实现必要的方法：</br>
 You can create your own queue by inheriting from the `AbsQueue` class and implementing the necessary methods:
 
 ```python
-from aioscrapy.queue import AbsQueue
+from uuid import uuid4
+
+from aioscrapy.queue import AbsQueue, QueueDelivery
 from aioscrapy import Request
 
 class MyCustomQueue(AbsQueue):
@@ -123,17 +129,26 @@ class MyCustomQueue(AbsQueue):
         self.queue.append(request)
 
     # 从队列中获取一个请求 | Get a request from the queue
-    async def pop(self) -> Request:
-        if self.queue:
-            return self.queue.pop(0)
-        return None
+    async def reserve(self, count=1, visibility_timeout=600):
+        deliveries = []
+        for _ in range(min(count, len(self.queue))):
+            request = self.queue.pop(0)
+            deliveries.append(QueueDelivery(request, uuid4().hex, uuid4().hex))
+        return deliveries
+
+    async def ack_batch(self, deliveries):
+        return [True] * len(deliveries)
+
+    async def nack_batch(self, deliveries):
+        self.queue.extend(delivery.request for delivery in deliveries)
+        return [True] * len(deliveries)
 
     # 清空队列 | Clear the queue
     async def clear(self) -> None:
         self.queue.clear()
 
     # 获取队列大小 | Get the queue size
-    async def qsize(self) -> int:
+    async def len(self) -> int:
         return len(self.queue)
 
     # 从爬虫创建队列 | Create a queue from a spider

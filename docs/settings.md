@@ -66,6 +66,9 @@ When the same setting is defined in multiple places, AioScrapy uses them accordi
 | `SCHEDULER_QUEUE_CLASS` | string | `'aioscrapy.queue.memory.SpiderPriorityQueue'` | 用于存储请求的队列类 </br> Queue class used to store requests |
 | `SCHEDULER_POLL_INTERVAL` | float | `1.0` | 外部生产者队列的兜底轮询间隔；内存队列使用事件通知且不轮询 </br> Fallback polling interval for externally populated queues; memory queues use notifications only |
 | `SCHEDULER_SERIALIZER` | string | `'aioscrapy.serializer.JsonSerializer'` | 用于序列化请求的序列化器 </br> Serializer used to serialize requests |
+| `SCHEDULER_VISIBILITY_TIMEOUT` | float | `600.0` | 持久化队列任务领取后的可见性超时；没有自动续租，应覆盖最长处理时长 </br> Visibility timeout for reserved durable queue requests; there is no automatic renewal, so it must cover the longest processing time |
+| `SCHEDULER_ACK_BATCH_SIZE` | integer | `100` | 批量确认任务的最大数量 </br> Maximum completed deliveries per acknowledgement batch |
+| `SCHEDULER_ACK_FLUSH_INTERVAL` | float | `1` | ack 缓冲最长等待时间（秒） </br> Maximum seconds to wait before flushing acknowledgement buffer |
 
 ### 重试设置 | Retry Settings
 

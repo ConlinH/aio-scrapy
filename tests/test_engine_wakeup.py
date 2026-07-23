@@ -89,6 +89,30 @@ async def test_downloader_completion_notifies_central_scheduler_loop():
 
 
 @pytest.mark.asyncio
+async def test_retry_request_is_persisted_before_parent_is_completed():
+    events = []
+
+    class Scheduler:
+        async def enqueue_request(self, request):
+            events.append(('enqueue', request))
+            return True
+
+        async def complete_request(self, request):
+            events.append(('ack', request))
+
+    engine = make_engine()
+    engine.scheduler = Scheduler()
+    engine.slot = Slot(None)
+    parent = Request('https://example.com/parent')
+    retry = Request('https://example.com/retry', dont_filter=True)
+    engine.slot.add_request(parent)
+
+    await engine.handle_downloader_output(retry, parent)
+
+    assert events == [('enqueue', retry), ('ack', parent)]
+
+
+@pytest.mark.asyncio
 async def test_engine_processes_notification_without_fixed_one_second_sleep():
     engine = make_engine()
     spider = SimpleNamespace(pause=False)

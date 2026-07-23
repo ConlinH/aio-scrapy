@@ -136,6 +136,13 @@ class RabbitmqExecutor:
                 # 如果队列为空，则返回0
                 return 0
 
+    async def get_ready_message_count(self, routing_key: str, *args, **kwargs) -> int:
+        """Return the broker's ready count without consuming a message."""
+        async with self.pool_manager.get(self.alias) as channel:
+            queue = await channel.declare_queue(routing_key, *args, **kwargs)
+            declaration = queue.declaration_result
+            return declaration.message_count if declaration is not None else 0
+
     async def get_message(
             self,
             routing_key: str,
@@ -179,6 +186,15 @@ class RabbitmqExecutor:
             except QueueEmpty:
                 # If the queue is empty, return None
                 # 如果队列为空，则返回None
+                return None
+
+    async def reserve_message(self, routing_key: str, *args, **kwargs):
+        """Get a message that must be acknowledged by the caller."""
+        async with self.pool_manager.get(self.alias) as channel:
+            queue = await channel.declare_queue(routing_key, *args, **kwargs)
+            try:
+                return await queue.get(no_ack=False)
+            except QueueEmpty:
                 return None
 
     async def publish(

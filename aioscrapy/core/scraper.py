@@ -351,20 +351,21 @@ class Scraper:
                 # 处理之前未捕获的任何错误
                 await self.handle_spider_error(e, request, result)
             finally:
-                # Update dupefilter with parse status
-                # 使用解析状态更新重复过滤器
-                self.spider.dupefilter and \
-                    not request.dont_filter and \
-                    await self.spider.dupefilter.done(request, done_type="parse_ok" if getattr(request, "parse_ok", False) else "parse_err")
+                try:
+                    # Update dupefilter with parse status
+                    # 使用解析状态更新重复过滤器
+                    self.spider.dupefilter and \
+                        not request.dont_filter and \
+                        await self.spider.dupefilter.done(request, done_type="parse_ok" if getattr(request, "parse_ok", False) else "parse_err")
 
-                # Release playwright/drissionpage response resources if applicable
-                # 如果适用，释放playwright/drissionpage等响应资源
-                if isinstance(result, WebDriverResponse):
-                    await result.release()
-
-                # Delete the cache result from the slot
-                # 从槽中删除缓存结果
-                self.slot.finish_response(request, result)
+                    # Release playwright/drissionpage response resources if applicable
+                    # 如果适用，释放playwright/drissionpage等响应资源
+                    if isinstance(result, WebDriverResponse):
+                        await result.release()
+                finally:
+                    # Delete the cache result from the slot even when infrastructure fails
+                    # 即使基础设施失败，也从槽中删除缓存结果
+                    self.slot.finish_response(request, result)
 
     async def _scrape2(self, result: Union[Response, BaseException], request: Request) -> Optional[AsyncGenerator]:
         """

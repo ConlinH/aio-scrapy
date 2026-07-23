@@ -398,7 +398,12 @@ class ExecutionEngine(object):
                 async for request in self.scheduler.next_request(self.downloader.get_requests_count):
                     if request:
                         self.slot.add_request(request)
-                        await self.downloader.fetch(request)
+                        try:
+                            await self.downloader.fetch(request)
+                        except BaseException:
+                            self.slot.remove_request(request)
+                            await self._release_scheduler_request(request)
+                            raise
                 break
             finally:
                 self.unlock = True
@@ -486,8 +491,10 @@ class ExecutionEngine(object):
             TypeError: If the result is not None, Request, Response, or BaseException.
                       如果结果不是None、Request、Response或BaseException。
         """
+        completed = False
         try:
             if result is None:
+                completed = True
                 return
 
             if not isinstance(result, (Request, Response, BaseException)):
@@ -500,6 +507,7 @@ class ExecutionEngine(object):
                 # Schedule new request
                 # 调度新请求
                 await self.crawl(result)
+                completed = True
                 return
 
             # Set the original request on the result
@@ -516,12 +524,38 @@ class ExecutionEngine(object):
             # Send result to scraper for processing
             # 将结果发送到抓取器进行处理
             await self.scraper.enqueue_scrape(result, request)
+            completed = True
 
         finally:
-            # Always remove the request and notify the central scheduler loop
-            # 始终移除进行中的请求并通知中央调度循环
-            self.slot.remove_request(request)
+            try:
+                if completed:
+                    await self._complete_scheduler_request(request)
+                else:
+                    await self._release_scheduler_request(request)
+            finally:
+                # Always remove the request and notify the central scheduler loop
+                # 始终移除进行中的请求并通知中央调度循环
+                self.slot.remove_request(request)
+                self.wakeup()
+
+    async def handle_downloader_cancelled(self, request: Request) -> None:
+        """Return a reserved request that was cancelled before completion."""
+        try:
+            await self._release_scheduler_request(request)
+        finally:
+            if self.slot is not None and request in self.slot.inprogress:
+                self.slot.remove_request(request)
             self.wakeup()
+
+    async def _complete_scheduler_request(self, request: Request) -> None:
+        callback = getattr(self.scheduler, 'complete_request', None)
+        if callback is not None:
+            await callback(request)
+
+    async def _release_scheduler_request(self, request: Request) -> None:
+        callback = getattr(self.scheduler, 'release_request', None)
+        if callback is not None:
+            await callback(request)
 
     def is_idle(self) -> bool:
         """

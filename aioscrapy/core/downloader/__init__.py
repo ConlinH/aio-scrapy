@@ -368,6 +368,11 @@ class Downloader(BaseDownloader):
         self.spider: Spider = crawler.spider
         self.spider.proxy = proxy
         self._call_engine: Callable = crawler.engine.handle_downloader_output
+        self._cancel_engine: Callable = getattr(
+            crawler.engine,
+            'handle_downloader_cancelled',
+            lambda request: self._call_engine(None, request),
+        )
 
         # External components
         # 外部组件
@@ -559,12 +564,22 @@ class Downloader(BaseDownloader):
                     要下载的请求。
         """
         result = None
+        cancelled = False
+        dupefilter_admitted = self.dupefilter is None or request.dont_filter
+        dupefilter_failed = False
         try:
             # Check if request is a duplicate
             # 检查请求是否重复
-            if self.dupefilter and not request.dont_filter and await self.dupefilter.request_seen(request):
-                self.dupefilter.log(request, self.spider)
-                return
+            if self.dupefilter and not request.dont_filter:
+                try:
+                    seen = await self.dupefilter.request_seen(request)
+                except Exception:
+                    dupefilter_failed = True
+                    raise
+                if seen and not getattr(request, '_queue_redelivered', False):
+                    self.dupefilter.log(request, self.spider)
+                    return
+                dupefilter_admitted = True
 
             # Update last seen timestamp
             # 更新上次看到的时间戳
@@ -582,8 +597,11 @@ class Downloader(BaseDownloader):
                 self.proxy and await self.proxy.add_proxy(request)
                 result = await self.handler.download_request(request, self.spider)
         except asyncio.CancelledError:
+            cancelled = True
             raise
         except Exception as exc:
+            if dupefilter_failed:
+                raise
             # Handle exceptions
             # 处理异常
             self.proxy and self.proxy.check(request, exception=exc)
@@ -608,24 +626,35 @@ class Downloader(BaseDownloader):
             slot.active.discard(request)
             self.active.discard(request)
 
-            # Send signal if we got a response
-            # 如果我们得到响应，发送信号
-            if isinstance(result, Response):
-                await self.signals.send_catch_log(signal=signals.response_downloaded,
-                                                  response=result,
-                                                  request=request,
-                                                  spider=self.spider)
+            try:
+                # Send signal if we got a response
+                # 如果我们得到响应，发送信号
+                if isinstance(result, Response):
+                    await self.signals.send_catch_log(signal=signals.response_downloaded,
+                                                      response=result,
+                                                      request=request,
+                                                      spider=self.spider)
 
-            # Update dupefilter with request status
-            # 使用请求状态更新重复过滤器
-            self.dupefilter and \
-                not request.dont_filter and \
-                await self.dupefilter.done(request, done_type="request_ok" if isinstance(result, Response) else "request_err")
+                # Update dupefilter with request status
+                # 使用请求状态更新重复过滤器
+                if self.dupefilter and not request.dont_filter and dupefilter_admitted and not cancelled:
+                    await self.dupefilter.done(
+                        request,
+                        done_type="request_ok" if isinstance(result, Response) else "request_err",
+                    )
 
-            # Send result to engine and process next request
-            # 将结果发送到引擎并处理下一个请求
-            await self._call_engine(result, request)
-            await self._process_queue(slot)
+                # Send result to engine
+                # 将结果发送到引擎
+                if cancelled or dupefilter_failed:
+                    await self._cancel_engine(request)
+                else:
+                    await self._call_engine(result, request)
+            except BaseException:
+                if not cancelled and not dupefilter_failed:
+                    await self._cancel_engine(request)
+                raise
+            finally:
+                await self._process_queue(slot)
 
     async def close(self) -> None:
         """
@@ -659,7 +688,7 @@ class Downloader(BaseDownloader):
                     self.active.discard(request)
 
         for request in queued_requests:
-            await self._call_engine(None, request)
+            await self._cancel_engine(request)
 
         # Close the dupefilter if one exists
         # 如果存在重复过滤器，则关闭它
